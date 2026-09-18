@@ -1,0 +1,10 @@
+2026-04-20T03:24:39: [0mGET /api/papers/published [36m304[0m 1604.034 ms - -[0m
+2026-04-20T03:25:03: [0mGET /api/issues [36m304[0m 472.037 ms - -[0m
+2026-04-20T03:25:03: [0mGET /api/issues/4/papers [36m304[0m 97.155 ms - -[0m
+2026-04-20T03:25:06: [0mGET /api/issues/1/papers [36m304[0m 458.839 ms - -[0m
+2026-04-20T03:25:08: [0mGET /api/issues/2/papers [36m304[0m 94.275 ms - -[0m
+2026-04-20T03:25:09: [0mGET /api/issues/3/papers [36m304[0m 62.428 ms - -[0m
+2026-04-20T09:02:13: [0mGET /api/papers/published [32m200[0m 1617.977 ms - 12457[0m
+2026-04-20T09:39:14: [0mGET /api/papers/published [32m200[0m 1068.772 ms - 12457[0m
+2026-04-20T11:22:18: [0mGET /api/issues/assignments [32m200[0m 1313.154 ms - 784[0m
+2026-04-20T11:22:21: [0mGET /api/papers/published [32m200[0m 126.270 ms - 12457[0m

@@ -1,0 +1,12 @@
+2026-03-20T03:32:54: Unexpected error in GET /api/papers/:id/download TypeError [ERR_INVALID_CHAR]: Invalid character in header content ["Content-Disposition"]
+2026-03-20T03:32:54:     at ServerResponse.setHeader (node:_http_outgoing:651:3)
+2026-03-20T03:32:54:     at /root/researchpprs/backend/src/routes/papers.js:206:9
+2026-03-20T03:32:54:     at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+2026-03-20T03:32:54:   code: 'ERR_INVALID_CHAR'
+2026-03-20T03:32:54: }
+2026-03-20T04:32:26: Unexpected error in GET /api/papers/:id/download TypeError [ERR_INVALID_CHAR]: Invalid character in header content ["Content-Disposition"]
+2026-03-20T04:32:26:     at ServerResponse.setHeader (node:_http_outgoing:651:3)
+2026-03-20T04:32:26:     at /root/researchpprs/backend/src/routes/papers.js:206:9
+2026-03-20T04:32:26:     at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+2026-03-20T04:32:26:   code: 'ERR_INVALID_CHAR'
+2026-03-20T04:32:26: }

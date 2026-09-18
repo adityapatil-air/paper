@@ -1,0 +1,555 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+    height: 100%;
+  }
+  
+  body {
+    @apply bg-academic-50 text-academic-900;
+    min-height: 100%;
+  }
+
+  #root {
+    min-height: 100%;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply bg-academic-200 hover:bg-academic-300 text-academic-800 font-medium py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95;
+  }
+  
+  .btn-outline {
+    @apply border border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-academic-200 p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-academic-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 hover:border-primary-400;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-academic-700 mb-1;
+  }
+
+  /* Animation classes */
+  .fade-in {
+    animation: fadeIn 0.6s ease-in-out;
+  }
+
+  .slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+
+  .bounce-in {
+    animation: bounceIn 0.8s ease-out;
+  }
+
+  .pulse-glow {
+    animation: pulseGlow 2s infinite;
+  }
+
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .gradient-text {
+    background: linear-gradient(45deg, #3b82f6, #8b5cf6, #06b6d4);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 3s ease infinite;
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl;
+  }
+
+  .interactive-card {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-105 active:scale-95;
+  }
+
+  /* Simple Pay Now button style by vinodjangid07 */
+  .Btn {
+    width: 130px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(15, 15, 15);
+    border: none;
+    color: white;
+    font-weight: 600;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.103);
+    position: relative;
+    overflow: hidden;
+    transition-duration: .3s;
+  }
+
+  .Btn .svgIcon {
+    width: 16px;
+  }
+
+  .Btn .svgIcon path {
+    fill: white;
+  }
+
+  .Btn::before {
+    width: 130px;
+    height: 130px;
+    position: absolute;
+    content: "";
+    background-color: white;
+    border-radius: 50%;
+    left: -100%;
+    top: 0;
+    transition-duration: .3s;
+    mix-blend-mode: difference;
+  }
+
+  .Btn:hover::before {
+    transition-duration: .3s;
+    transform: translate(100%,-50%);
+    border-radius: 0;
+  }
+
+  .Btn:active {
+    transform: translate(5px,5px);
+    transition-duration: .3s;
+  }
+
+  .back-to-top-btn {
+    @apply fixed bottom-8 right-8 bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl z-50 flex items-center justify-center;
+  }
+
+  .back-to-top-btn .svgIcon {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Primary glowing button style used for main actions (e.g., Submit New Paper, Upload Revised) */
+  .btn-glow {
+    @apply inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-primary-600 text-white font-semibold shadow-md transition-all duration-200;
+    @apply hover:bg-primary-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  /* Login/Signup button style by MuhammadHasann */
+  .button-auth {
+    --black-700: hsla(0 0% 12% / 1);
+    --border_radius: 9999px;
+    --transtion: 0.3s ease-in-out;
+    --offset: 2px;
+
+    cursor: pointer;
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    transform-origin: center;
+
+    padding: 1rem 2rem;
+    background-color: transparent;
+
+    border: none;
+    border-radius: var(--border_radius);
+    /* Keep a consistent size on hover/press (no scaling) */
+    transform: scale(1);
+
+    transition: transform var(--transtion);
+  }
+
+  .button-auth::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 100%;
+    height: 100%;
+    background-color: var(--black-700);
+
+    border-radius: var(--border_radius);
+    box-shadow: inset 0 0.5px hsl(0, 0%, 100%), inset 0 -1px 2px 0 hsl(0, 0%, 0%),
+      0px 4px 10px -4px hsla(0 0% 0% / calc(1 - var(--active, 0))),
+      0 0 0 calc(var(--active, 0) * 0.375rem) hsl(260 97% 50% / 0.75);
+
+    transition: all var(--transtion);
+    z-index: 0;
+  }
+
+  .button-auth::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 100%;
+    height: 100%;
+    background-color: hsla(260 97% 61% / 0.75);
+    background-image: radial-gradient(
+        at 51% 89%,
+        hsla(266, 45%, 74%, 1) 0px,
+        transparent 50%
+      ),
+      radial-gradient(at 100% 100%, hsla(266, 36%, 60%, 1) 0px, transparent 50%),
+      radial-gradient(at 22% 91%, hsla(266, 36%, 60%, 1) 0px, transparent 50%);
+    background-position: top;
+
+    opacity: var(--active, 0);
+    border-radius: var(--border_radius);
+    transition: opacity var(--transtion);
+    z-index: 2;
+  }
+
+  .button-auth:is(:hover, :focus-visible) {
+    --active: 1;
+  }
+  .button-auth:active {
+    transform: scale(1);
+  }
+
+  .button-auth .dots_border {
+    --size_border: calc(100% + 2px);
+
+    overflow: hidden;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: var(--size_border);
+    height: var(--size_border);
+    background-color: transparent;
+
+    border-radius: var(--border_radius);
+    z-index: -10;
+  }
+
+  .button-auth .dots_border::before {
+    content: "";
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transform-origin: left;
+    transform: rotate(0deg);
+
+    width: 100%;
+    height: 2rem;
+    background-color: white;
+
+    mask: linear-gradient(transparent 0%, white 120%);
+    animation: rotate 2s linear infinite;
+  }
+
+  @keyframes rotate {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .button-auth .sparkle {
+    position: relative;
+    z-index: 10;
+
+    width: 1.75rem;
+  }
+
+  .button-auth .sparkle .path {
+    fill: currentColor;
+    stroke: currentColor;
+
+    transform-origin: center;
+
+    color: hsl(0, 0%, 100%);
+  }
+
+  .button-auth:is(:hover, :focus) .sparkle .path {
+    animation: path 1.5s linear 0.5s infinite;
+  }
+
+  .button-auth .sparkle .path:nth-child(1) {
+    --scale_path_1: 1.2;
+  }
+  .button-auth .sparkle .path:nth-child(2) {
+    --scale_path_2: 1.2;
+  }
+  .button-auth .sparkle .path:nth-child(3) {
+    --scale_path_3: 1.2;
+  }
+
+  @keyframes path {
+    0%,
+    34%,
+    71%,
+    100% {
+      transform: scale(1);
+    }
+    17% {
+      transform: scale(var(--scale_path_1, 1));
+    }
+    49% {
+      transform: scale(var(--scale_path_2, 1));
+    }
+    83% {
+      transform: scale(var(--scale_path_3, 1));
+    }
+  }
+
+  .button-auth .text_button {
+    position: relative;
+    z-index: 10;
+
+    background-image: linear-gradient(
+      90deg,
+      hsla(0 0% 100% / 1) 0%,
+      hsla(0 0% 100% / var(--active, 0)) 120%
+    );
+    background-clip: text;
+
+    font-size: 1rem;
+    color: transparent;
+  }
+
+  /* Auth primary button style from Uiverse.io by Randdose - brown/amber theme */
+  .button {
+    all: unset;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0.6em 0.8em;
+    border: #a16207 solid 0.15em;
+    border-radius: 0.25em;
+    color: #a16207;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border 300ms, color 300ms;
+    user-select: none;
+  }
+
+  .button p {
+    z-index: 1;
+  }
+
+  .button:hover {
+    color: #212121;
+  }
+
+  .button:active {
+    border-color: #78350f;
+  }
+
+  .button::after,
+  .button::before {
+    content: "";
+    position: absolute;
+    width: 6em;
+    aspect-ratio: 1;
+    background: #a16207;
+    opacity: 45%;
+    border-radius: 50%;
+    transition: transform 500ms, background 300ms;
+  }
+
+  .button::before {
+    left: 0;
+    transform: translateX(-5em);
+  }
+
+  .button::after {
+    right: 0;
+    transform: translateX(5em);
+  }
+
+  .button:hover::before {
+    transform: translateX(-0.8em);
+  }
+
+  .button:hover::after {
+    transform: translateX(0.8em);
+  }
+
+  .button:active::before,
+  .button:active::after {
+    background: #78350f;
+  }
+
+  .button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Badge styles by kamehame-ha - neutral design for paper cards */
+  .badges {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* 16px */
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .badges > button {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.25rem; /* 20px */
+    padding: 2px .5rem; /* 8px*/
+    cursor: pointer;
+    border: none;
+    border-radius: 0.375rem; /* 6px */
+    outline: none;
+  }
+
+  .badges .blue {
+    background-color: rgba(59, 130, 246, 0.10);
+    color: rgb(59 130 246);
+    border: 1px rgb(59 130 246) solid;
+  }
+
+  .badges .yellow {
+    background-color: rgba(234, 179, 8, 0.10);
+    color: rgb(234 179 8);
+    border: 1px rgb(234 179 8) solid;
+  }
+
+  .badges .green {
+    background-color: rgba(34, 197, 94, 0.10);
+    color: rgb(34 197 94);
+    border: 1px rgb(34 197 94) solid;
+  }
+
+  .badges .red {
+    background-color: rgba(239, 68, 68, 0.10);
+    color: rgb(239 68 68);
+    border: 1px rgb(239 68 68) solid;
+  }
+
+  /* Badge classes for paper status */
+  .badge-success {
+    @apply inline-flex items-center px-2 py-[2px] text-sm font-medium bg-green-500/10 text-green-500 border border-green-500 rounded-md;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center px-2 py-[2px] text-sm font-medium bg-yellow-500/10 text-yellow-500 border border-yellow-500 rounded-md;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center px-2 py-[2px] text-sm font-medium bg-blue-500/10 text-blue-500 border border-blue-500 rounded-md;
+  }
+
+  .badge-danger {
+    @apply inline-flex items-center px-2 py-[2px] text-sm font-medium bg-red-500/10 text-red-500 border border-red-500 rounded-md;
+  }
+
+  .badge-revised {
+    @apply inline-flex items-center px-2 py-[2px] text-sm font-medium bg-purple-500/10 text-purple-600 border border-black rounded-md;
+  }
+
+  .loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

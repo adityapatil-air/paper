@@ -1,0 +1,9 @@
+2026-04-11T08:55:46: [0mGET /api/papers/published [32m200[0m 1695.402 ms - 4272[0m
+2026-04-11T09:16:13: [0mGET /api/settings/editorial-board [36m304[0m 1160.894 ms - -[0m
+2026-04-11T09:43:29: [0mGET /api/settings/important-dates [32m200[0m 1029.376 ms - 190[0m
+2026-04-11T09:54:11: [0mGET /api/issues [36m304[0m 611.857 ms - -[0m
+2026-04-11T09:54:12: [0mGET /api/issues/4/papers [36m304[0m 605.396 ms - -[0m
+2026-04-11T09:54:15: [0mGET /api/issues/2/papers [36m304[0m 85.913 ms - -[0m
+2026-04-11T10:40:13: [0mGET /api/papers/published [32m200[0m 1349.028 ms - 4272[0m
+2026-04-11T15:40:31: [0mGET /api/papers/published [36m304[0m 1561.580 ms - -[0m
+2026-04-11T23:31:28: [0mGET /api/settings/important-dates [32m200[0m 1412.795 ms - 190[0m

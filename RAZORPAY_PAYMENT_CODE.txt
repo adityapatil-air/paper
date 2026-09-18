@@ -1,0 +1,86 @@
+// Replace lines 144-153 in AuthorDashboard.js with this code:
+
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayment = async (paperId) => {
+    const res = await loadRazorpay();
+
+    if (!res) {
+      setAlert({ type: 'error', message: 'Razorpay SDK failed to load. Are you online?' });
+      return;
+    }
+
+    try {
+      const paper = papers.find(p => p.id === paperId);
+      if (!paper) return;
+
+      const key = await mockAPI.getRazorpayKey();
+      if (!key) {
+        setAlert({ type: 'error', message: 'Failed to load payment configuration.' });
+        return;
+      }
+
+      const result = await mockAPI.createPaymentOrder(paperId, 150);
+      
+      if (!result.success) {
+        setAlert({ type: 'error', message: result.error || 'Failed to initiate payment.' });
+        return;
+      }
+
+      const { amount, id: order_id, currency } = result.order;
+
+      const options = {
+        key: key,
+        amount: amount.toString(),
+        currency: currency,
+        name: "Research Paper Submission",
+        description: `Submission Fee for ${paper.title}`,
+        order_id: order_id,
+        handler: async function (response) {
+          const data = {
+            orderCreationId: order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpaySignature: response.razorpay_signature,
+            paperId: paperId
+          };
+
+          const verifyResult = await mockAPI.verifyPayment(data);
+
+          if (verifyResult.success) {
+            setAlert({ type: 'success', message: 'Payment processed successfully!' });
+            loadAuthorPapers();
+          } else {
+            setAlert({ type: 'error', message: verifyResult.error || 'Payment verification failed.' });
+          }
+        },
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: "",
+        },
+        theme: {
+          color: "#b45309",
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
+    } catch (error) {
+      console.error(error);
+      setAlert({ type: 'error', message: 'Payment failed. Please try again.' });
+    }
+  };

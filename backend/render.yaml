@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: research-paper-backend
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: FRONTEND_ORIGIN
+        sync: false # Set this to your frontend URL
+      - key: SUPABASE_URL
+        value: https://vvtpfaohltoeevwicrnv.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false # Set this in Render dashboard
+      - key: SUPABASE_STORAGE_BUCKET
+        value: manuscripts
+      - key: JWT_SECRET
+        generateValue: true
+    healthCheckPath: /api/health

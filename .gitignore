@@ -1,0 +1,9 @@
+node_modules
+.vercel
+
+# Environment variables
+backend/.env
+backend/.env.production
+.env
+.env.*
+!.env.example

@@ -1,0 +1,54 @@
+{
+  "name": "research-paper-review-platform",
+  "version": "0.1.0",
+  "description": "A comprehensive React-based platform for academic research paper submission, review, and publication. Built with React, Tailwind CSS, and React Router.",
+  "license": "ISC",
+  "author": "",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.89.0",
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "firebase": "^12.6.0",
+    "pdfjs-dist": "^5.4.394",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-pdf": "^10.2.0",
+    "react-router-dom": "^6.3.0",
+    "react-scripts": "5.0.1",
+    "react-to-print": "^3.1.1",
+    "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/preset-react": "^7.27.1",
+    "autoprefixer": "^10.4.7",
+    "babel-loader": "^10.0.0",
+    "postcss": "^8.4.14",
+    "tailwindcss": "^3.1.6"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

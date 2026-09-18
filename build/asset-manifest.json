@@ -1,0 +1,19 @@
+{
+  "files": {
+    "main.css": "/static/css/main.d0f9a35b.css",
+    "main.js": "/static/js/main.fb7ac4af.js",
+    "static/media/annie-spratt-5cFwQ-WMcJU-unsplash.jpg": "/static/media/annie-spratt-5cFwQ-WMcJU-unsplash.86674f4906898eaa3102.jpg",
+    "static/media/logo.png": "/static/media/logo.cf9b360146cb13df747a.png",
+    "static/media/rclient.png": "/static/media/rclient.e9425a99ef06d4f79ac9.png",
+    "static/media/build.png": "/static/media/build.e1366a38d5b3aa9629af.png",
+    "static/media/Paper Template.docx": "/static/media/Paper Template.ddb306f4ae25dfb53c51.docx",
+    "static/media/Copyright.pdf": "/static/media/Copyright.9ba88e2cacc2a183c741.pdf",
+    "index.html": "/index.html",
+    "main.d0f9a35b.css.map": "/static/css/main.d0f9a35b.css.map",
+    "main.fb7ac4af.js.map": "/static/js/main.fb7ac4af.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d0f9a35b.css",
+    "static/js/main.fb7ac4af.js"
+  ]
+}
