@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/static/css/main.03d2b487.css",
-    "main.js": "/static/js/main.99a44267.js",
+    "main.css": "/static/css/main.5398b2d7.css",
+    "main.js": "/static/js/main.814efa7f.js",
     "static/media/logo.png": "/static/media/logo.cf9b360146cb13df747a.png",
     "static/media/Paper Template.docx": "/static/media/Paper Template.ddb306f4ae25dfb53c51.docx",
     "static/media/Copyright.pdf": "/static/media/Copyright.9ba88e2cacc2a183c741.pdf",
     "index.html": "/index.html",
-    "main.03d2b487.css.map": "/static/css/main.03d2b487.css.map",
-    "main.99a44267.js.map": "/static/js/main.99a44267.js.map"
+    "main.5398b2d7.css.map": "/static/css/main.5398b2d7.css.map",
+    "main.814efa7f.js.map": "/static/js/main.814efa7f.js.map"
   },
   "entrypoints": [
-    "static/css/main.03d2b487.css",
-    "static/js/main.99a44267.js"
+    "static/css/main.5398b2d7.css",
+    "static/js/main.814efa7f.js"
   ]
 }

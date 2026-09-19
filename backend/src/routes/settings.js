@@ -115,6 +115,7 @@ router.post('/editorial-board', async (req, res) => {
           affiliation: String(m?.affiliation || '').trim(),
           email: String(m?.email || '').trim(),
           profileUrl: String(m?.profileUrl || '').trim(),
+          photo: String(m?.photo || '').trim(),
           sortOrder: Number.isNaN(parsedOrder) ? idx : parsedOrder,
         };
       })

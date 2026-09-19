@@ -14,7 +14,13 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const from = location.state?.from?.pathname || null;
+  const fromState = location.state?.from;
+  const from = (typeof fromState === 'string' ? fromState : fromState?.pathname) || null;
+  const contextMessage = from === '/submitform'
+    ? 'Sign in (or create a free account) to submit your manuscript — it only takes a minute.'
+    : from
+      ? 'Sign in to continue where you left off.'
+      : null;
 
   const getDashboardPath = (role) => {
     if (role === 'admin') return '/admin-dashboard';
@@ -81,6 +87,7 @@ const Login = () => {
               New here? <Link to="/register">Create a free account</Link>
             </p>
 
+            {contextMessage && !error && <Alert type="info" message={contextMessage} />}
             {error && <Alert type="error" message={error} onClose={() => setError('')} />}
 
             <form onSubmit={handleSubmit} style={{ marginTop: 18 }}>

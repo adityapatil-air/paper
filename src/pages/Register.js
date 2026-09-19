@@ -200,6 +200,11 @@ const Register = () => {
                     <option value="reviewer">Reviewer</option>
                     <option value="editor">Editor</option>
                   </select>
+                  <p className="form-hint">
+                    {formData.role === 'author' && 'Submit your own manuscripts for review.'}
+                    {formData.role === 'reviewer' && 'Review manuscripts assigned to you by editors.'}
+                    {formData.role === 'editor' && 'Manage submissions and assign reviewers.'}
+                  </p>
                 </div>
               </div>
 
@@ -229,7 +234,11 @@ const Register = () => {
                     onChange={handleChange}
                     className="form-input"
                     placeholder="Confirm password"
+                    style={formData.confirmPassword && formData.password !== formData.confirmPassword ? { borderColor: 'var(--danger)' } : undefined}
                   />
+                  {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                    <p className="form-hint" style={{ color: 'var(--danger)' }}>Passwords don't match yet.</p>
+                  )}
                 </div>
               </div>
 

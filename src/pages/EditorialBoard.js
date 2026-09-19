@@ -196,7 +196,9 @@ const EditorialBoard = () => {
               <div className="board-grid">
                 {members.map((m) => (
                   <article className="board-card" key={m.id || `${m.section}-${m.name}-${m.email}`}>
-                    <div className="member-avatar">{initialsOf(m.name)}</div>
+                    {m.photo
+                      ? <img className="member-avatar member-photo" src={m.photo} alt={m.name} />
+                      : <div className="member-avatar">{initialsOf(m.name)}</div>}
                     <strong>{m.name}</strong>
                     {m.title && <span>{m.title}</span>}
                     {m.affiliation && <small>{m.affiliation}</small>}
