@@ -10,36 +10,28 @@ const PaperViewer = () => {
   const downloadHref = `/api/papers/${id}/download?download=1`;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col">
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link to="/journal-issues" className="text-sm text-amber-700 hover:underline">
+    <div className="page-body">
+      <div className="journal-container">
+        <div className="page-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Link to="/journal-issues" style={{ color: 'var(--blue)', fontSize: 10, fontWeight: 700 }}>
               Back to Journal Issues
             </Link>
-            <span className="text-slate-400">/</span>
-            <span className="text-sm text-slate-700">Paper #{id}</span>
+            <span style={{ color: 'var(--muted)' }}>/</span>
+            <span style={{ fontSize: 10, color: 'var(--ink)' }}>Paper #{id}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <a
-              href={pdfSrc}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-2 text-sm border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
-            >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <a href={pdfSrc} target="_blank" rel="noreferrer" className="button button-small button-light">
               Open in new tab
             </a>
-            <a
-              href={downloadHref}
-              className="px-3 py-2 text-sm bg-amber-700 hover:bg-amber-800 text-white rounded-lg"
-            >
+            <a href={downloadHref} className="button button-small button-dark">
               Download
             </a>
           </div>
         </div>
 
-        <div className="mt-4 flex-1 bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <iframe title={`paper-${id}`} src={pdfSrc} className="w-full h-full" />
+        <div className="page-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <iframe title={`paper-${id}`} src={pdfSrc} style={{ width: '100%', height: '75vh', border: 0, display: 'block' }} />
         </div>
       </div>
     </div>

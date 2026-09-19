@@ -68,7 +68,7 @@ const ReviewPaper = () => {
 
   if (loading) {
     return (
-      <div className="min-h-full flex items-center justify-center bg-academic-50">
+      <div className="dash-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <LoadingSpinner size="lg" text="Loading manuscript..." />
       </div>
     );
@@ -76,13 +76,13 @@ const ReviewPaper = () => {
 
   if (error || !paper) {
     return (
-      <div className="min-h-full bg-academic-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-6 text-center">
-          <h1 className="text-xl font-semibold text-academic-900 mb-3">Unable to open manuscript</h1>
-          <p className="text-academic-600 mb-6">{error || 'Paper not found.'}</p>
+      <div className="dash-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="page-card" style={{ maxWidth: 420, textAlign: 'center' }}>
+          <h1 style={{ color: 'var(--navy)', fontSize: 16, margin: '0 0 10px' }}>Unable to open manuscript</h1>
+          <p style={{ color: 'var(--muted)', fontSize: 11, margin: '0 0 18px' }}>{error || 'Paper not found.'}</p>
           <button
             onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium"
+            className="button button-primary"
           >
             Go Back
           </button>
@@ -94,66 +94,62 @@ const ReviewPaper = () => {
   const viewerSupported = paper.pdfUrl && paper.pdfUrl.toLowerCase().endsWith('.pdf');
 
   return (
-    <div className="min-h-full bg-academic-50 py-6 sm:py-10">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex items-center justify-between gap-3">
+    <div className="dash-page">
+      <div className="journal-container" style={{ maxWidth: 1000 }}>
+        <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <button
             onClick={() => navigate('/reviewer-dashboard')}
-            className="inline-flex items-center text-sm text-academic-600 hover:text-academic-900"
+            className="icon-btn"
           >
-            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Reviewer Dashboard
+            &larr; Back to Reviewer Dashboard
           </button>
-          <span className="text-xs text-academic-500">Paper ID: {paper.id}</span>
+          <span style={{ fontSize: 9, color: 'var(--muted)' }}>Paper ID: {paper.id}</span>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-academic-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-academic-200 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--line)', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
             <div>
-              <h1 className="text-2xl font-bold text-academic-900 mb-2 leading-snug">{paper.title}</h1>
-              <p className="text-sm text-academic-600 mb-1">
-                <span className="font-medium">Authors:</span> {paper.authors?.join(', ') || 'N/A'}
+              <h1 style={{ color: 'var(--navy)', fontSize: 16, margin: '0 0 8px' }}>{paper.title}</h1>
+              <p style={{ fontSize: 10, color: 'var(--muted)', margin: '0 0 4px' }}>
+                <strong style={{ color: 'var(--ink)' }}>Authors:</strong> {paper.authors?.join(', ') || 'N/A'}
               </p>
-              <p className="text-sm text-academic-600 mb-1">
-                <span className="font-medium">Category:</span> {paper.category || 'N/A'}
+              <p style={{ fontSize: 10, color: 'var(--muted)', margin: '0 0 4px' }}>
+                <strong style={{ color: 'var(--ink)' }}>Category:</strong> {paper.category || 'N/A'}
               </p>
-              <p className="text-sm text-academic-600">
-                <span className="font-medium">Submitted:</span>{' '}
+              <p style={{ fontSize: 10, color: 'var(--muted)', margin: 0 }}>
+                <strong style={{ color: 'var(--ink)' }}>Submitted:</strong>{' '}
                 {paper.submissionDate ? new Date(paper.submissionDate).toLocaleDateString() : 'N/A'}
               </p>
             </div>
-            <div className="text-right text-xs text-academic-500">
-              <p className="mb-1">Confidential review copy</p>
+            <div style={{ textAlign: 'right', fontSize: 9, color: 'var(--muted)' }}>
+              <p style={{ margin: '0 0 4px' }}>Confidential review copy</p>
               {user && (
-                <p>Reviewer: {user.name} ({user.email})</p>
+                <p style={{ margin: 0 }}>Reviewer: {user.name} ({user.email})</p>
               )}
             </div>
           </div>
 
           {!viewerSupported && (
-            <div className="px-6 py-4 bg-amber-50 border-b border-amber-200 text-sm text-amber-800">
+            <div className="badge badge-warning" style={{ display: 'block', padding: '10px 22px', fontSize: 10, borderRadius: 0 }}>
               This manuscript is not a PDF file, so inline viewing may be limited. You may need to request a PDF version from the editor.
             </div>
           )}
 
           <div
-            className="relative bg-academic-900/95"
-            style={{ maxHeight: '80vh', overflowY: 'auto' }}
+            style={{ position: 'relative', background: 'var(--navy)', maxHeight: '80vh', overflowY: 'auto' }}
           >
             {viewerSupported ? (
-              <div className="relative z-10 flex flex-col items-center justify-start py-6">
+              <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '24px 0' }}>
                 <Document
                   file={paper.pdfUrl}
                   onLoadSuccess={onDocumentLoadSuccess}
                   loading={
-                    <div className="flex items-center justify-center text-academic-100 text-sm">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#eaf5fd', fontSize: 11 }}>
                       <LoadingSpinner size="sm" text="Loading PDF..." />
                     </div>
                   }
                   error={
-                    <div className="flex items-center justify-center text-red-200 text-sm">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fde8e8', fontSize: 11 }}>
                       Failed to load PDF.
                     </div>
                   }
@@ -161,12 +157,12 @@ const ReviewPaper = () => {
                   <Page pageNumber={pageNumber} height={650} scale={zoom} />
                 </Document>
                 {numPages && (
-                  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-academic-100 justify-center">
-                    <div className="flex items-center gap-2">
+                  <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, fontSize: 9, color: '#eaf5fd', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <button
                         type="button"
                         onClick={handleZoomOut}
-                        className="px-2 py-1 rounded bg-academic-800 disabled:opacity-50"
+                        className="icon-btn button-small"
                         disabled={zoom <= 0.5}
                       >
                         -
@@ -175,7 +171,7 @@ const ReviewPaper = () => {
                       <button
                         type="button"
                         onClick={handleZoomIn}
-                        className="px-2 py-1 rounded bg-academic-800 disabled:opacity-50"
+                        className="icon-btn button-small"
                         disabled={zoom >= 2}
                       >
                         +
@@ -183,18 +179,18 @@ const ReviewPaper = () => {
                       <button
                         type="button"
                         onClick={handleResetZoom}
-                        className="px-3 py-1 rounded bg-academic-800/70 hover:bg-academic-800"
+                        className="icon-btn button-small"
                       >
                         Reset
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <button
                         type="button"
                         onClick={handlePrevPage}
                         disabled={pageNumber <= 1}
-                        className="px-3 py-1 rounded bg-academic-800 disabled:opacity-50"
+                        className="icon-btn button-small"
                       >
                         Previous
                       </button>
@@ -205,7 +201,7 @@ const ReviewPaper = () => {
                         type="button"
                         onClick={handleNextPage}
                         disabled={numPages && pageNumber >= numPages}
-                        className="px-3 py-1 rounded bg-academic-800 disabled:opacity-50"
+                        className="icon-btn button-small"
                       >
                         Next
                       </button>
@@ -214,10 +210,10 @@ const ReviewPaper = () => {
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full min-h-[70vh] px-6 py-10">
-                <div className="max-w-md text-center">
-                  <h2 className="text-lg font-semibold text-white mb-3">Inline view not available</h2>
-                  <p className="text-sm text-academic-200 mb-4">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', padding: '40px 24px' }}>
+                <div style={{ maxWidth: 420, textAlign: 'center' }}>
+                  <h2 style={{ color: '#fff', fontSize: 14, margin: '0 0 10px' }}>Inline view not available</h2>
+                  <p style={{ fontSize: 10, color: '#eaf5fd', margin: 0 }}>
                     This manuscript is stored in a format the browser cannot preview directly. Please contact the editor to obtain a PDF version for easier inline review.
                   </p>
                 </div>
@@ -225,11 +221,11 @@ const ReviewPaper = () => {
             )}
           </div>
 
-          <div className="px-6 py-4 border-t border-academic-200 bg-academic-50 text-[11px] text-academic-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <p>
+          <div style={{ padding: '14px 22px', borderTop: '1px solid var(--line)', background: '#f4f9fc', fontSize: 9, color: 'var(--muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <p style={{ margin: 0 }}>
               Screenshots and copying cannot be fully prevented by a web application. To discourage leaks, this view includes a visible watermark with your reviewer identity.
             </p>
-            <p className="italic">
+            <p style={{ margin: 0, fontStyle: 'italic' }}>
               All access is logged. Do not share this content outside the review process.
             </p>
           </div>

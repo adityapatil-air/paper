@@ -978,239 +978,232 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-full flex items-center justify-center">
+      <div className="loading-state" style={{ display: 'flex', justifyContent: 'center' }}>
         <LoadingSpinner size="lg" text="Loading admin data..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">Admin Dashboard</h1>
-          <p className="text-gray-600 text-lg">
-            Welcome back, <span className="font-medium">{user.name}</span>. Manage submissions and reviewer assignments.
-          </p>
+    <div className="dash-page">
+      <div className="journal-container">
+        <div className="dash-header">
+          <div>
+            <h1>Admin Dashboard</h1>
+            <p>Welcome back, <strong>{user.name}</strong>. Manage submissions and reviewer assignments.</p>
+          </div>
         </div>
 
-        {/* Alert */}
         {alert && (
-          <div className="mb-8">
-            <Alert 
-              type={alert.type} 
-              message={alert.message} 
-              onClose={() => setAlert(null)} 
+          <div style={{ marginBottom: 18 }}>
+            <Alert
+              type={alert.type}
+              message={alert.message}
+              onClose={() => setAlert(null)}
             />
           </div>
         )}
 
         {showAdminSubmitModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Submit New Paper (Admin)</h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (adminSubmittingPaper) return;
-                      setShowAdminSubmitModal(false);
-                    }}
-                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+          <div className="modal-overlay">
+            <div className="modal-panel">
+              <div className="modal-panel-header">
+                <h2>Submit New Paper (Admin)</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (adminSubmittingPaper) return;
+                    setShowAdminSubmitModal(false);
+                  }}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <form onSubmit={handleAdminSubmitNewPaper} className="modal-panel-body">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div className="form-group">
+                    <label>Corresponding Author Name</label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={adminSubmitForm.fullName}
+                      onChange={handleAdminSubmitFormChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Corresponding Author Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={adminSubmitForm.email}
+                      onChange={handleAdminSubmitFormChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
                 </div>
 
-                <form onSubmit={handleAdminSubmitNewPaper} className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Corresponding Author Name</label>
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={adminSubmitForm.fullName}
-                        onChange={handleAdminSubmitFormChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Corresponding Author Email</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={adminSubmitForm.email}
-                        onChange={handleAdminSubmitFormChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                        required
-                      />
-                    </div>
-                  </div>
+                <div className="form-group">
+                  <label>Affiliation</label>
+                  <input
+                    type="text"
+                    name="affiliation"
+                    value={adminSubmitForm.affiliation}
+                    onChange={handleAdminSubmitFormChange}
+                    className="form-input"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Affiliation</label>
-                    <input
-                      type="text"
-                      name="affiliation"
-                      value={adminSubmitForm.affiliation}
-                      onChange={handleAdminSubmitFormChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                      required
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Paper Title</label>
+                  <input
+                    type="text"
+                    name="paperTitle"
+                    value={adminSubmitForm.paperTitle}
+                    onChange={handleAdminSubmitFormChange}
+                    className="form-input"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Paper Title</label>
-                    <input
-                      type="text"
-                      name="paperTitle"
-                      value={adminSubmitForm.paperTitle}
-                      onChange={handleAdminSubmitFormChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                      required
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Keywords (comma-separated)</label>
+                  <input
+                    type="text"
+                    name="keywords"
+                    value={adminSubmitForm.keywords}
+                    onChange={handleAdminSubmitFormChange}
+                    className="form-input"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Keywords (comma-separated)</label>
-                    <input
-                      type="text"
-                      name="keywords"
-                      value={adminSubmitForm.keywords}
-                      onChange={handleAdminSubmitFormChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Abstract / Comments</label>
+                  <textarea
+                    name="comments"
+                    value={adminSubmitForm.comments}
+                    onChange={handleAdminSubmitFormChange}
+                    className="form-textarea"
+                    rows={5}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Abstract / Comments</label>
-                    <textarea
-                      name="comments"
-                      value={adminSubmitForm.comments}
-                      onChange={handleAdminSubmitFormChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 resize-none"
-                      rows={5}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">Co-authors</label>
-                      <button
-                        type="button"
-                        onClick={addAdminCoAuthor}
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg"
-                      >
-                        Add Co-author
-                      </button>
-                    </div>
-
-                    {(adminSubmitCoAuthors || []).length === 0 ? (
-                      <div className="text-xs text-gray-500">No co-authors added.</div>
-                    ) : (
-                      <div className="space-y-3">
-                        {(adminSubmitCoAuthors || []).map((co, idx) => (
-                          <div key={idx} className="border border-gray-200 rounded-lg p-3">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              <input
-                                type="text"
-                                value={co.fullName}
-                                onChange={(e) => updateAdminCoAuthor(idx, 'fullName', e.target.value)}
-                                placeholder="Name"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                              />
-                              <input
-                                type="text"
-                                value={co.affiliation}
-                                onChange={(e) => updateAdminCoAuthor(idx, 'affiliation', e.target.value)}
-                                placeholder="Affiliation"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                              />
-                              <input
-                                type="email"
-                                value={co.email}
-                                onChange={(e) => updateAdminCoAuthor(idx, 'email', e.target.value)}
-                                placeholder="Email"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                              />
-                            </div>
-                            <div className="flex justify-end mt-2">
-                              <button
-                                type="button"
-                                onClick={() => removeAdminCoAuthor(idx)}
-                                className="text-xs font-semibold text-red-600 hover:text-red-700"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Manuscript (PDF)</label>
-                    <input
-                      type="file"
-                      name="manuscriptFile"
-                      accept="application/pdf"
-                      onChange={handleAdminSubmitFormChange}
-                      className="w-full"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="form-group">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+                    <label style={{ margin: 0 }}>Co-authors</label>
                     <button
                       type="button"
-                      onClick={() => setShowAdminSubmitModal(false)}
-                      disabled={adminSubmittingPaper}
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg disabled:opacity-50"
+                      onClick={addAdminCoAuthor}
+                      className="icon-btn"
                     >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={adminSubmittingPaper}
-                      className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg disabled:opacity-50"
-                    >
-                      {adminSubmittingPaper ? 'Submitting...' : 'Submit Paper'}
+                      Add Co-author
                     </button>
                   </div>
-                </form>
-              </div>
+
+                  {(adminSubmitCoAuthors || []).length === 0 ? (
+                    <div className="dash-empty">No co-authors added.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {(adminSubmitCoAuthors || []).map((co, idx) => (
+                        <div key={idx} style={{ border: '1px solid var(--line)', borderRadius: 4, padding: 10 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                            <input
+                              type="text"
+                              value={co.fullName}
+                              onChange={(e) => updateAdminCoAuthor(idx, 'fullName', e.target.value)}
+                              placeholder="Name"
+                              className="form-input"
+                            />
+                            <input
+                              type="text"
+                              value={co.affiliation}
+                              onChange={(e) => updateAdminCoAuthor(idx, 'affiliation', e.target.value)}
+                              placeholder="Affiliation"
+                              className="form-input"
+                            />
+                            <input
+                              type="email"
+                              value={co.email}
+                              onChange={(e) => updateAdminCoAuthor(idx, 'email', e.target.value)}
+                              placeholder="Email"
+                              className="form-input"
+                            />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => removeAdminCoAuthor(idx)}
+                              className="icon-btn"
+                              style={{ color: '#c0342c' }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label>Manuscript (PDF)</label>
+                  <input
+                    type="file"
+                    name="manuscriptFile"
+                    accept="application/pdf"
+                    onChange={handleAdminSubmitFormChange}
+                    required
+                  />
+                </div>
+
+                <div className="modal-panel-footer" style={{ padding: 0, border: 0, background: 'none' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminSubmitModal(false)}
+                    disabled={adminSubmittingPaper}
+                    className="button button-outline"
+                    style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={adminSubmittingPaper}
+                    className="button button-primary"
+                  >
+                    {adminSubmittingPaper ? 'Submitting...' : 'Submit Paper'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
 
         {showReplaceFilesModal && replaceFilesPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">Upload/Replace Paper Files</h2>
-                  <button
-                    type="button"
-                    onClick={closeReplaceFilesModal}
-                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 500 }}>
+              <div className="modal-panel-header">
+                <h2>Upload/Replace Paper Files</h2>
+                <button
+                  type="button"
+                  onClick={closeReplaceFilesModal}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <div className="text-sm text-gray-700 mb-4 font-medium line-clamp-2">{replaceFilesPaper.title}</div>
+              <div className="modal-panel-body">
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink)', marginBottom: 14 }}>{replaceFilesPaper.title}</div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">New Manuscript (optional)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>New Manuscript (optional)</label>
                     <input
                       type="file"
                       accept="application/pdf"
@@ -1218,8 +1211,8 @@ const AdminDashboard = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">New Copyright Form (optional)</label>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>New Copyright Form (optional)</label>
                     <input
                       type="file"
                       accept="application/pdf"
@@ -1227,45 +1220,46 @@ const AdminDashboard = () => {
                     />
                   </div>
                 </div>
+              </div>
 
-                <div className="flex items-center justify-end gap-2 mt-6">
-                  <button
-                    type="button"
-                    onClick={closeReplaceFilesModal}
-                    disabled={replaceFilesSubmitting}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmReplaceFiles}
-                    disabled={replaceFilesSubmitting}
-                    className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg disabled:opacity-50"
-                  >
-                    {replaceFilesSubmitting ? 'Uploading...' : 'Upload'}
-                  </button>
-                </div>
+              <div className="modal-panel-footer">
+                <button
+                  type="button"
+                  onClick={closeReplaceFilesModal}
+                  disabled={replaceFilesSubmitting}
+                  className="button button-outline"
+                  style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmReplaceFiles}
+                  disabled={replaceFilesSubmitting}
+                  className="button button-primary"
+                >
+                  {replaceFilesSubmitting ? 'Uploading...' : 'Upload'}
+                </button>
               </div>
             </div>
           </div>
         )}
 
         {showPdfViewerModal && pdfViewerPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl w-full max-w-6xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col">
-              <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 truncate">{pdfViewerPaper.title}</div>
-                  <div className="text-xs text-gray-500">Paper ID: {pdfViewerPaper.id}</div>
+          <div className="paper-modal-overlay">
+            <div className="paper-modal" style={{ maxWidth: 1100 }}>
+              <div className="paper-modal-header">
+                <div style={{ minWidth: 0 }}>
+                  <h2>{pdfViewerPaper.title}</h2>
+                  <p>Paper ID: {pdfViewerPaper.id}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {pdfViewerPaper.pdfUrl && (
                     <a
                       href={pdfViewerPaper.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold rounded-lg"
+                      className="button button-primary button-small"
                     >
                       Download
                     </a>
@@ -1273,223 +1267,152 @@ const AdminDashboard = () => {
                   <button
                     type="button"
                     onClick={closePdfViewer}
-                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
+                    className="paper-modal-close"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    &times;
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 bg-gray-900 overflow-y-auto">
-                <div className="py-6 flex flex-col items-center">
-                  {pdfViewerError ? (
-                    <div className="text-red-200 text-sm">{pdfViewerError}</div>
-                  ) : (
-                    <Document
-                      file={pdfViewerPaper.pdfUrl}
-                      onLoadSuccess={onPdfLoadSuccess}
-                      loading={<div className="text-gray-100 text-sm"><LoadingSpinner size="sm" text="Loading PDF..." /></div>}
-                      error={<div className="text-red-200 text-sm">Failed to load PDF.</div>}
-                      onLoadError={() => setPdfViewerError('Failed to load PDF.')}
-                    >
-                      <Page pageNumber={pdfPageNumber} height={700} scale={pdfZoom} />
-                    </Document>
-                  )}
+              <div className="paper-modal-body">
+                {pdfViewerError ? (
+                  <div className="pdf-unavailable">{pdfViewerError}</div>
+                ) : (
+                  <Document
+                    file={pdfViewerPaper.pdfUrl}
+                    onLoadSuccess={onPdfLoadSuccess}
+                    loading={<div className="pdf-unavailable"><LoadingSpinner size="sm" text="Loading PDF..." /></div>}
+                    error={<div className="pdf-unavailable">Failed to load PDF.</div>}
+                    onLoadError={() => setPdfViewerError('Failed to load PDF.')}
+                  >
+                    <Page pageNumber={pdfPageNumber} height={700} scale={pdfZoom} />
+                  </Document>
+                )}
 
-                  {pdfNumPages && (
-                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-100 justify-center">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handlePdfZoomOut}
-                          className="px-2 py-1 rounded bg-gray-800 disabled:opacity-50"
-                          disabled={pdfZoom <= 0.5}
-                        >
-                          -
-                        </button>
-                        <span>{Math.round(pdfZoom * 100)}%</span>
-                        <button
-                          type="button"
-                          onClick={handlePdfZoomIn}
-                          className="px-2 py-1 rounded bg-gray-800 disabled:opacity-50"
-                          disabled={pdfZoom >= 2}
-                        >
-                          +
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handlePdfResetZoom}
-                          className="px-3 py-1 rounded bg-gray-800/70 hover:bg-gray-800"
-                        >
-                          Reset
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={handlePdfPrevPage}
-                          disabled={pdfPageNumber <= 1}
-                          className="px-3 py-1 rounded bg-gray-800 disabled:opacity-50"
-                        >
-                          Previous
-                        </button>
-                        <span>
-                          Page {pdfPageNumber} of {pdfNumPages}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handlePdfNextPage}
-                          disabled={pdfNumPages && pdfPageNumber >= pdfNumPages}
-                          className="px-3 py-1 rounded bg-gray-800 disabled:opacity-50"
-                        >
-                          Next
-                        </button>
-                      </div>
+                {pdfNumPages && (
+                  <div className="viewer-controls">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={handlePdfZoomOut}
+                        className="button button-dark button-small"
+                        disabled={pdfZoom <= 0.5}
+                      >
+                        -
+                      </button>
+                      <span>{Math.round(pdfZoom * 100)}%</span>
+                      <button
+                        type="button"
+                        onClick={handlePdfZoomIn}
+                        className="button button-dark button-small"
+                        disabled={pdfZoom >= 2}
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePdfResetZoom}
+                        className="button button-dark button-small"
+                      >
+                        Reset
+                      </button>
                     </div>
-                  )}
-                </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button
+                        type="button"
+                        onClick={handlePdfPrevPage}
+                        disabled={pdfPageNumber <= 1}
+                        className="button button-dark button-small"
+                      >
+                        Previous
+                      </button>
+                      <span>
+                        Page {pdfPageNumber} of {pdfNumPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handlePdfNextPage}
+                        disabled={pdfNumPages && pdfPageNumber >= pdfNumPages}
+                        className="button button-dark button-small"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-            <div className="flex items-center">
-              <div className="p-3 bg-amber-50 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Submitted</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.submitted}</p>
-              </div>
-            </div>
+        <div className="stat-cards">
+          <div className="stat-card">
+            <p className="stat-label">Submitted</p>
+            <p className="stat-value">{stats.submitted}</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-50 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Under Review</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.under_review}</p>
-              </div>
-            </div>
+          <div className="stat-card">
+            <p className="stat-label">Under Review</p>
+            <p className="stat-value">{stats.under_review}</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-50 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Published</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.published}</p>
-              </div>
-            </div>
+          <div className="stat-card">
+            <p className="stat-label">Published</p>
+            <p className="stat-value">{stats.published}</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-            <div className="flex items-center">
-              <div className="p-3 bg-red-50 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Rejected</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.rejected}</p>
-              </div>
-            </div>
+          <div className="stat-card">
+            <p className="stat-label">Rejected</p>
+            <p className="stat-value">{stats.rejected}</p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab('submissions')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'submissions'
-                    ? 'border-amber-700 text-amber-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                All Submissions ({papers.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('pending')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'pending'
-                    ? 'border-amber-700 text-amber-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Pending Assignment ({stats.submitted})
-              </button>
-              <button
-                onClick={() => setActiveTab('issues')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'issues'
-                    ? 'border-amber-700 text-amber-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Journal Issues ({issues.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('review')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'review'
-                    ? 'border-amber-700 text-amber-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Under Review ({stats.under_review})
-              </button>
-              <button
-                onClick={() => setActiveTab('important_dates')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'important_dates'
-                    ? 'border-amber-700 text-amber-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Important Dates
-              </button>
-              <button
-                onClick={() => setActiveTab('editorial_board')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'editorial_board'
-                    ? 'border-amber-700 text-amber-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Editorial Board
-              </button>
-            </nav>
-          </div>
+        <div className="dash-tabs">
+          <button
+            onClick={() => setActiveTab('submissions')}
+            className={`dash-tab ${activeTab === 'submissions' ? 'is-active' : ''}`}
+          >
+            All Submissions ({papers.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`dash-tab ${activeTab === 'pending' ? 'is-active' : ''}`}
+          >
+            Pending Assignment ({stats.submitted})
+          </button>
+          <button
+            onClick={() => setActiveTab('issues')}
+            className={`dash-tab ${activeTab === 'issues' ? 'is-active' : ''}`}
+          >
+            Journal Issues ({issues.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('review')}
+            className={`dash-tab ${activeTab === 'review' ? 'is-active' : ''}`}
+          >
+            Under Review ({stats.under_review})
+          </button>
+          <button
+            onClick={() => setActiveTab('important_dates')}
+            className={`dash-tab ${activeTab === 'important_dates' ? 'is-active' : ''}`}
+          >
+            Important Dates
+          </button>
+          <button
+            onClick={() => setActiveTab('editorial_board')}
+            className={`dash-tab ${activeTab === 'editorial_board' ? 'is-active' : ''}`}
+          >
+            Editorial Board
+          </button>
         </div>
 
         {activeTab === 'important_dates' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="dash-panel">
+            <div className="dash-panel-head">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Important Dates</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2>Important Dates</h2>
+                <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 10 }}>
                   Update the dates shown on the Call for Papers page.
                 </p>
               </div>
@@ -1497,24 +1420,24 @@ const AdminDashboard = () => {
                 type="button"
                 onClick={handleSaveImportantDates}
                 disabled={importantDatesSaving}
-                className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg disabled:opacity-50"
+                className="button button-primary button-small"
               >
                 {importantDatesSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
 
             {importantDatesLoading ? (
-              <div className="text-sm text-gray-600">Loading...</div>
+              <div className="loading-state">Loading...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {Object.entries(importantDates).map(([label, value]) => (
-                  <div key={label} className="border border-gray-200 rounded-lg p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+                  <div key={label} className="form-group" style={{ border: '1px solid var(--line)', borderRadius: 5, padding: 14, marginBottom: 0 }}>
+                    <label>{label}</label>
                     <input
                       type="text"
                       value={value}
                       onChange={(e) => handleImportantDateChange(label, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="form-input"
                     />
                   </div>
                 ))}
@@ -1524,19 +1447,19 @@ const AdminDashboard = () => {
         )}
 
         {activeTab === 'editorial_board' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+          <div className="dash-panel">
+            <div className="dash-panel-head">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Editorial Board</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2>Editorial Board</h2>
+                <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 10 }}>
                   Search members by name/section/email. Drag to reorder (saved automatically) or click to edit.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button
                   type="button"
                   onClick={openAddEditorialModal}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg"
+                  className="icon-btn"
                 >
                   Add Member
                 </button>
@@ -1544,27 +1467,28 @@ const AdminDashboard = () => {
                   type="button"
                   onClick={handleSaveEditorialBoard}
                   disabled={editorialBoardSaving}
-                  className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg disabled:opacity-50"
+                  className="button button-primary button-small"
                 >
                   {editorialBoardSaving ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>
 
-            <div className="mb-4">
+            <div className="search-bar">
               <input
                 type="text"
                 value={editorialSearchTerm}
                 onChange={(e) => setEditorialSearchTerm(e.target.value)}
                 placeholder="Search by name, section, affiliation, email..."
-                className="w-full md:max-w-lg px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                className="form-input"
+                style={{ maxWidth: 420 }}
               />
             </div>
 
             {editorialBoardLoading ? (
-              <div className="text-sm text-gray-600">Loading...</div>
+              <div className="loading-state">Loading...</div>
             ) : (
-              <div className="border border-gray-200 rounded-lg divide-y">
+              <div style={{ border: '1px solid var(--line)', borderRadius: 5 }}>
                 {(editorialBoard || []).filter((m) => {
                   if (!editorialSearchTerm.trim()) return true;
                   const q = editorialSearchTerm.toLowerCase();
@@ -1608,26 +1532,35 @@ const AdminDashboard = () => {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') openEditEditorialModal(m);
                       }}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between gap-4 ${isDragging ? 'opacity-60' : ''}`}
+                      style={{
+                        padding: '11px 14px',
+                        borderBottom: '1px solid var(--line)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 14,
+                        cursor: 'pointer',
+                        opacity: isDragging ? 0.6 : 1,
+                      }}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-gray-400 select-none">⋮⋮</span>
-                        <div className="min-w-0">
-                          <div className="font-semibold text-gray-900 truncate">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <span style={{ color: 'var(--muted)', userSelect: 'none' }}>⋮⋮</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 11 }}>
                             {m.name || '(No name)'}
                           </div>
-                          <div className="text-xs text-gray-600 truncate">
+                          <div style={{ fontSize: 9, color: 'var(--muted)' }}>
                             {m.section || 'Editorial Board'}
                           </div>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-400">{fromIndex >= 0 ? fromIndex + 1 : '—'}</div>
+                      <div style={{ fontSize: 9, color: 'var(--muted)' }}>{fromIndex >= 0 ? fromIndex + 1 : '—'}</div>
                     </div>
                   );
                 })}
 
                 {(editorialBoard || []).length === 0 && (
-                  <div className="px-4 py-6 text-sm text-gray-600">No members found.</div>
+                  <div className="dash-empty">No members found.</div>
                 )}
               </div>
             )}
@@ -1635,114 +1568,114 @@ const AdminDashboard = () => {
         )}
 
         {showEditorialModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-2xl w-full shadow-2xl">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    {editingEditorialId ? 'Edit Member' : 'Add Member'}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={closeEditorialModal}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    &times;
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel">
+              <div className="modal-panel-header">
+                <h2>{editingEditorialId ? 'Edit Member' : 'Add Member'}</h2>
+                <button
+                  type="button"
+                  onClick={closeEditorialModal}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+              <div className="modal-panel-body">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div className="form-group">
+                    <label>Section</label>
                     <input
                       type="text"
                       value={editorialDraft.section}
                       onChange={(e) => handleEditorialDraftChange('section', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="form-input"
                       placeholder="e.g., Editor-in-Chief"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <div className="form-group">
+                    <label>Name</label>
                     <input
                       type="text"
                       value={editorialDraft.name}
                       onChange={(e) => handleEditorialDraftChange('name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="form-input"
                       placeholder="Full name"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Title / Designation</label>
+                  <div className="form-group">
+                    <label>Title / Designation</label>
                     <input
                       type="text"
                       value={editorialDraft.title}
                       onChange={(e) => handleEditorialDraftChange('title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="form-input"
                       placeholder="e.g., Professor, Dept. of ..."
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Affiliation</label>
+                  <div className="form-group">
+                    <label>Affiliation</label>
                     <input
                       type="text"
                       value={editorialDraft.affiliation}
                       onChange={(e) => handleEditorialDraftChange('affiliation', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="form-input"
                       placeholder="Institute / Organization"
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label>Email</label>
                     <input
                       type="email"
                       value={editorialDraft.email}
                       onChange={(e) => handleEditorialDraftChange('email', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="form-input"
                       placeholder="name@example.com"
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Affiliated Institutional profile URL</label>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label>Affiliated Institutional profile URL</label>
                     <input
                       type="url"
                       value={editorialDraft.profileUrl}
                       onChange={(e) => handleEditorialDraftChange('profileUrl', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="form-input"
                       placeholder="https://..."
                     />
                   </div>
                 </div>
+              </div>
 
-                <div className="mt-6 flex items-center justify-between gap-3">
-                  {editingEditorialId && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleRemoveEditorialMember(editingEditorialId);
-                        closeEditorialModal();
-                      }}
-                      className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-medium rounded-lg"
-                    >
-                      Delete
-                    </button>
-                  )}
-                  <div className="ml-auto flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={closeEditorialModal}
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveEditorialDraft}
-                      className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg"
-                    >
-                      Done
-                    </button>
-                  </div>
+              <div className="modal-panel-footer" style={{ justifyContent: 'space-between' }}>
+                {editingEditorialId ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleRemoveEditorialMember(editingEditorialId);
+                      closeEditorialModal();
+                    }}
+                    className="icon-btn"
+                    style={{ color: '#c0342c' }}
+                  >
+                    Delete
+                  </button>
+                ) : <span />}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={closeEditorialModal}
+                    className="button button-outline"
+                    style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveEditorialDraft}
+                    className="button button-primary"
+                  >
+                    Done
+                  </button>
                 </div>
               </div>
             </div>
@@ -1750,55 +1683,57 @@ const AdminDashboard = () => {
         )}
 
         {showDeletePaperModal && deleteModalPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">Delete Paper</h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (deleteSubmitting) return;
-                      setShowDeletePaperModal(false);
-                      setDeleteModalPaper(null);
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    &times;
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 480 }}>
+              <div className="modal-panel-header">
+                <h2>Delete Paper</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (deleteSubmitting) return;
+                    setShowDeletePaperModal(false);
+                    setDeleteModalPaper(null);
+                  }}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <p className="text-sm text-gray-700 mb-4">
+              <div className="modal-panel-body">
+                <p style={{ margin: '0 0 14px', color: 'var(--ink)', fontSize: 11 }}>
                   Are you sure you want to delete this paper?
                 </p>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                  <div className="text-sm font-semibold text-gray-900">{deleteModalPaper.title}</div>
-                  <div className="text-xs text-gray-600 mt-1">
+                <div style={{ background: '#f4f9fc', border: '1px solid var(--line)', borderRadius: 5, padding: 14 }}>
+                  <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 11 }}>{deleteModalPaper.title}</div>
+                  <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
                     ID: {deleteModalPaper.id}
                   </div>
                 </div>
+              </div>
 
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (deleteSubmitting) return;
-                      setShowDeletePaperModal(false);
-                      setDeleteModalPaper(null);
-                    }}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmDeletePaper}
-                    disabled={deleteSubmitting}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
-                  >
-                    {deleteSubmitting ? 'Deleting...' : 'Yes, Delete'}
-                  </button>
-                </div>
+              <div className="modal-panel-footer">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (deleteSubmitting) return;
+                    setShowDeletePaperModal(false);
+                    setDeleteModalPaper(null);
+                  }}
+                  className="button button-outline"
+                  style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeletePaper}
+                  disabled={deleteSubmitting}
+                  className="button button-primary"
+                  style={{ background: '#c0342c' }}
+                >
+                  {deleteSubmitting ? 'Deleting...' : 'Yes, Delete'}
+                </button>
               </div>
             </div>
           </div>
@@ -1807,26 +1742,28 @@ const AdminDashboard = () => {
         {/* Papers List */}
         {activeTab === 'submissions' && (
           <>
-            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="search-bar" style={{ justifyContent: 'space-between' }}>
               <input
                 type="text"
                 value={adminSearchTerm}
                 onChange={(e) => setAdminSearchTerm(e.target.value)}
                 placeholder="Search by title, author, category..."
-                className="w-full md:max-w-md px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                className="form-input"
+                style={{ maxWidth: 380 }}
               />
-              <div className="flex items-center gap-3">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <button
                   type="button"
                   onClick={() => setShowAdminSubmitModal(true)}
-                  className="px-3 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-semibold rounded-lg"
+                  className="button button-primary button-small"
                 >
                   Submit New Paper
                 </button>
                 <select
                   value={adminSortBy}
                   onChange={(e) => setAdminSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="form-select"
+                  style={{ width: 'auto' }}
                 >
                   <option value="recent">Newest first</option>
                   <option value="oldest">Oldest first</option>
@@ -1836,30 +1773,31 @@ const AdminDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setAdminShowAllPapers(prev => !prev)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="icon-btn"
                 >
                   {adminShowAllPapers ? 'Show unfinished only' : 'View all papers'}
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
               {visibleAdminPapers.map(paper => (
-                <div key={paper.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{paper.title}</h3>
-                    <div className="flex items-center gap-2">
+                <div key={paper.id} className="dash-panel" style={{ marginBottom: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 14 }}>
+                    <h3 style={{ margin: 0, color: 'var(--navy)', fontSize: 13 }}>{paper.title}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                       <button
                         type="button"
                         onClick={() => openDeletePaperModal(paper)}
-                        className="p-2 rounded-lg hover:bg-red-50 text-red-600"
+                        className="icon-btn"
+                        style={{ color: '#c0342c' }}
                         title="Delete paper"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
                           <path fillRule="evenodd" d="M8.5 3a1 1 0 00-1 1v1H5a1 1 0 000 2h.293l.853 10.24A2 2 0 008.14 19h3.72a2 2 0 001.994-1.76L14.707 7H15a1 1 0 100-2h-2.5V4a1 1 0 00-1-1h-3zM9.5 5V4h1v1h-1z" clipRule="evenodd" />
                         </svg>
                       </button>
-                      <span className={`${
+                      <span className={`badge ${
                         paper.status === 'published' ? 'badge-success' :
                         paper.status === 'under_review' ? 'badge-warning' :
                         paper.status === 'submitted' ? 'badge-info' :
@@ -1870,45 +1808,36 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        paper.paymentStatus === 'paid'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
+                  <div style={{ marginBottom: 14 }}>
+                    <span className={`badge ${paper.paymentStatus === 'paid' ? 'badge-success' : 'badge-neutral'}`}>
                       {paper.paymentStatus === 'paid' ? 'PAYMENT: PAID' : 'PAYMENT: PENDING'}
                     </span>
                   </div>
 
-                  <div className="mb-4 space-y-2 text-sm">
-                    <div><span className="font-medium text-gray-700 w-20 inline-block">Authors:</span> {paper.authors.join(', ')}</div>
-                    <div><span className="font-medium text-gray-700 w-20 inline-block">Category:</span> {paper.category}</div>
-                    <div><span className="font-medium text-gray-700 w-20 inline-block">Submitted:</span> {new Date(paper.submissionDate).toLocaleDateString()}</div>
-                    {paper.doi && <div><span className="font-medium text-gray-700 w-20 inline-block">DOI:</span> {paper.doi}</div>}
+                  <div style={{ marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10, color: 'var(--ink)' }}>
+                    <div><strong>Authors:</strong> {paper.authors.join(', ')}</div>
+                    <div><strong>Category:</strong> {paper.category}</div>
+                    <div><strong>Submitted:</strong> {new Date(paper.submissionDate).toLocaleDateString()}</div>
+                    {paper.doi && <div><strong>DOI:</strong> {paper.doi}</div>}
                   </div>
 
-                  <p className="text-gray-700 text-sm mb-5 line-clamp-3">{paper.abstract}</p>
+                  <p style={{ color: 'var(--muted)', fontSize: 10, marginBottom: 18 }}>{paper.abstract}</p>
 
-                  <div className="flex flex-wrap gap-2 mb-5">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                     {paper.pdfUrl && (
-                      <>
-                        
-                        <a
-                          href={paper.pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold rounded-lg"
-                        >
-                          Download Paper
-                        </a>
-                      </>
+                      <a
+                        href={paper.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="button button-primary button-small"
+                      >
+                        Download Paper
+                      </a>
                     )}
                     <button
                       type="button"
                       onClick={() => openReplaceFilesModal(paper)}
-                      className="px-3 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold rounded-lg"
+                      className="button button-dark button-small"
                     >
                       Upload / Replace
                     </button>
@@ -1916,27 +1845,25 @@ const AdminDashboard = () => {
                       <button
                         type="button"
                         onClick={() => handlePublishPaper(paper.id)}
-                        className="Btn"
+                        className="button button-outline button-small"
+                        style={{ color: 'var(--navy)', borderColor: 'var(--line)' }}
                       >
-                        <strong>Publish Paper</strong>
+                        Publish Paper
                       </button>
                     )}
-        
                   </div>
 
                   {paper.status === 'published' && issues.length > 0 && (
-                    <div className="pt-4 border-t border-gray-200">
+                    <div style={{ paddingTop: 14, borderTop: '1px solid var(--line)', marginBottom: 14 }}>
                       {paper.assignedIssue ? (
-                        <div className="flex items-center justify-between text-xs text-gray-600">
-                          <span className="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded-full font-medium">
-                            Assigned to Volume {paper.assignedIssue.volume}, Issue {paper.assignedIssue.issue}
-                          </span>
-                        </div>
+                        <span className="badge badge-success">
+                          Assigned to Volume {paper.assignedIssue.volume}, Issue {paper.assignedIssue.issue}
+                        </span>
                       ) : (
                         <button
                           type="button"
                           onClick={() => openAssignPaperToIssueModal(paper)}
-                          className="inline-flex items-center px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold rounded-full shadow-sm transition"
+                          className="button button-primary button-small"
                         >
                           Add to Journal Issue
                         </button>
@@ -1944,17 +1871,17 @@ const AdminDashboard = () => {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap gap-2 mb-5">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                     {paper.keywords.map((keyword, index) => (
-                      <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-medium">
+                      <span key={index} className="badge badge-neutral">
                         {keyword}
                       </span>
                     ))}
                   </div>
 
                   {paper.assignedReviewers && (
-                    <div className="pt-4 border-t border-gray-200 text-sm text-gray-600">
-                      <span className="font-medium">Assigned Reviewers:</span> {paper.assignedReviewers.length}
+                    <div style={{ paddingTop: 14, borderTop: '1px solid var(--line)', fontSize: 10, color: 'var(--muted)' }}>
+                      <strong>Assigned Reviewers:</strong> {paper.assignedReviewers.length}
                     </div>
                   )}
                 </div>
@@ -1965,26 +1892,26 @@ const AdminDashboard = () => {
 
         {/* Pending Assignment */}
         {activeTab === 'pending' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
             {papers.filter(p => p.status === 'submitted').map(paper => (
-              <div key={paper.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-start gap-2 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{paper.title}</h3>
-                    <div className="relative flex-shrink-0">
+              <div key={paper.id} className="dash-panel" style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, minWidth: 0 }}>
+                    <h3 style={{ margin: 0, color: 'var(--navy)', fontSize: 13 }}>{paper.title}</h3>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
                       <button
                         type="button"
                         onClick={() => setPendingMenuPaperId((prev) => (prev === paper.id ? null : paper.id))}
-                        className="mt-0.5 text-black hover:text-gray-700"
+                        className="icon-btn"
                         title="Actions"
                       >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" style={{ width: 12, height: 12 }}>
                           <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.16l3.71-3.93a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" />
                         </svg>
                       </button>
 
                       {pendingMenuPaperId === paper.id && (
-                        <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <div style={{ position: 'absolute', right: 0, marginTop: 8, width: 160, background: '#fff', border: '1px solid var(--line)', borderRadius: 6, boxShadow: '0 12px 24px #143b5720', zIndex: 10 }}>
                           <button
                             type="button"
                             onClick={() => {
@@ -1992,7 +1919,7 @@ const AdminDashboard = () => {
                               setQuickPublishPaper(paper);
                               setShowQuickPublishModal(true);
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-800 hover:bg-gray-50"
+                            style={{ width: '100%', textAlign: 'left', padding: '9px 12px', fontSize: 10, color: 'var(--ink)', background: 'none', border: 0, cursor: 'pointer' }}
                           >
                             Publish Paper
                           </button>
@@ -2000,61 +1927,60 @@ const AdminDashboard = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     <button
                       type="button"
                       onClick={() => openDeletePaperModal(paper)}
-                      className="p-2 rounded-lg hover:bg-red-50 text-red-600"
+                      className="icon-btn"
+                      style={{ color: '#c0342c' }}
                       title="Delete paper"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
                         <path fillRule="evenodd" d="M8.5 3a1 1 0 00-1 1v1H5a1 1 0 000 2h.293l.853 10.24A2 2 0 008.14 19h3.72a2 2 0 001.994-1.76L14.707 7H15a1 1 0 100-2h-2.5V4a1 1 0 00-1-1h-3zM9.5 5V4h1v1h-1z" clipRule="evenodd" />
                       </svg>
                     </button>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                    <span className="badge badge-warning">
                       PENDING ASSIGNMENT
                     </span>
                   </div>
                 </div>
 
-                <div className="mb-4 space-y-2 text-sm">
-                  <div><span className="font-medium text-gray-700 w-20 inline-block">Authors:</span> {paper.authors.join(', ')}</div>
-                  <div><span className="font-medium text-gray-700 w-20 inline-block">Category:</span> {paper.category}</div>
-                  <div><span className="font-medium text-gray-700 w-20 inline-block">Submitted:</span> {new Date(paper.submissionDate).toLocaleDateString()}</div>
+                <div style={{ marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10, color: 'var(--ink)' }}>
+                  <div><strong>Authors:</strong> {paper.authors.join(', ')}</div>
+                  <div><strong>Category:</strong> {paper.category}</div>
+                  <div><strong>Submitted:</strong> {new Date(paper.submissionDate).toLocaleDateString()}</div>
                 </div>
 
-                <p className="text-gray-700 text-sm mb-5 line-clamp-3">{paper.abstract}</p>
+                <p style={{ color: 'var(--muted)', fontSize: 10, marginBottom: 18 }}>{paper.abstract}</p>
 
-                <div className="flex flex-wrap gap-2 mb-5">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                   {paper.pdfUrl && (
-                    <>
-                     
-                      <a
-                        href={paper.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold rounded-lg"
-                      >
-                        Download Paper
-                      </a>
-                    </>
+                    <a
+                      href={paper.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="button button-primary button-small"
+                    >
+                      Download Paper
+                    </a>
                   )}
                   <button
                     type="button"
                     onClick={() => openReplaceFilesModal(paper)}
-                    className="px-3 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold rounded-lg"
+                    className="button button-dark button-small"
                   >
                     Upload / Replace
                   </button>
                 </div>
 
-                <div className="pt-4 border-t border-gray-200">
+                <div style={{ paddingTop: 14, borderTop: '1px solid var(--line)' }}>
                   <button
                     onClick={() => {
                       setSelectedPaper(paper);
                       setShowAssignModal(true);
                     }}
-                    className="w-full py-2 px-4 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg transition"
+                    className="button button-primary"
+                    style={{ width: '100%' }}
                   >
                     Assign Reviewer
                   </button>
@@ -2065,51 +1991,52 @@ const AdminDashboard = () => {
         )}
 
         {showQuickPublishModal && quickPublishPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-md w-full shadow-2xl">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">Publish Paper</h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowQuickPublishModal(false);
-                      setQuickPublishPaper(null);
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    &times;
-                  </button>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 460 }}>
+              <div className="modal-panel-header">
+                <h2>Publish Paper</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickPublishModal(false);
+                    setQuickPublishPaper(null);
+                  }}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="modal-panel-body">
+                <p style={{ margin: '0 0 14px', color: 'var(--ink)', fontSize: 11 }}>Are you sure you want to publish this paper?</p>
+                <div style={{ background: '#f4f9fc', border: '1px solid var(--line)', borderRadius: 5, padding: 14 }}>
+                  <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 11 }}>{quickPublishPaper.title}</div>
+                  <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>ID: {quickPublishPaper.id}</div>
                 </div>
-                <p className="text-sm text-gray-700 mb-4">Are you sure you want to publish this paper?</p>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
-                  <div className="text-sm font-semibold text-gray-900 line-clamp-2">{quickPublishPaper.title}</div>
-                  <div className="text-xs text-gray-600 mt-1">ID: {quickPublishPaper.id}</div>
-                </div>
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowQuickPublishModal(false);
-                      setQuickPublishPaper(null);
-                    }}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const paperId = quickPublishPaper.id;
-                      setShowQuickPublishModal(false);
-                      setQuickPublishPaper(null);
-                      await handlePublishPaper(paperId);
-                    }}
-                    className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-sm font-medium rounded-lg"
-                  >
-                    Yes, Publish
-                  </button>
-                </div>
+              </div>
+              <div className="modal-panel-footer">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickPublishModal(false);
+                    setQuickPublishPaper(null);
+                  }}
+                  className="button button-outline"
+                  style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const paperId = quickPublishPaper.id;
+                    setShowQuickPublishModal(false);
+                    setQuickPublishPaper(null);
+                    await handlePublishPaper(paperId);
+                  }}
+                  className="button button-primary"
+                >
+                  Yes, Publish
+                </button>
               </div>
             </div>
           </div>
@@ -2118,68 +2045,69 @@ const AdminDashboard = () => {
         {/* Under Review */}
         {activeTab === 'review' && (
           <>
-            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="search-bar" style={{ justifyContent: 'space-between' }}>
               <input
                 type="text"
                 value={adminSearchTerm}
                 onChange={(e) => setAdminSearchTerm(e.target.value)}
                 placeholder="Search by title, author, category..."
-                className="w-full md:max-w-md px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 text-sm"
+                className="form-input"
+                style={{ maxWidth: 380 }}
               />
-              <div className="flex items-center gap-3">
-                <select
-                  value={adminSortBy}
-                  onChange={(e) => setAdminSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                >
-                  <option value="recent">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  <option value="title_az">Title A-Z</option>
-                  <option value="title_za">Title Z-A</option>
-                </select>
-              </div>
+              <select
+                value={adminSortBy}
+                onChange={(e) => setAdminSortBy(e.target.value)}
+                className="form-select"
+                style={{ width: 'auto' }}
+              >
+                <option value="recent">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="title_az">Title A-Z</option>
+                <option value="title_za">Title Z-A</option>
+              </select>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
               {visibleUnderReviewPapers.map(paper => {
                 const reviews = paperReviews[paper.id] || [];
                 const latestRecommendation = reviews[0]?.recommendation || '';
 
                 return (
-                  <div key={paper.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1 mr-3 space-y-1">
-                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{paper.title}</h3>
+                  <div key={paper.id} className="dash-panel" style={{ marginBottom: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                      <div style={{ flex: 1, marginRight: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <h3 style={{ margin: 0, color: 'var(--navy)', fontSize: 13 }}>{paper.title}</h3>
                         {paper.status === 'revisions_requested' && (
-                          <span className="inline-flex items-center px-2 py-1 bg-orange-50 text-orange-700 text-xs font-medium rounded-full">
+                          <span className="badge badge-warning">
                             Revision requested / waiting for updated manuscript
                           </span>
                         )}
                         {hasRevisedManuscript(paper) && (
-                          <span className="badge-revised">
+                          <span className="badge badge-info">
                             Revised manuscript received
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={() => openDeletePaperModal(paper)}
-                          className="p-2 rounded-lg hover:bg-red-50 text-red-600"
+                          className="icon-btn"
+                          style={{ color: '#c0342c' }}
                           title="Delete paper"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
                             <path fillRule="evenodd" d="M8.5 3a1 1 0 00-1 1v1H5a1 1 0 000 2h.293l.853 10.24A2 2 0 008.14 19h3.72a2 2 0 001.994-1.76L14.707 7H15a1 1 0 100-2h-2.5V4a1 1 0 00-1-1h-3zM9.5 5V4h1v1h-1z" clipRule="evenodd" />
                           </svg>
                         </button>
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 whitespace-nowrap">
+                        <span className="badge badge-warning" style={{ whiteSpace: 'nowrap' }}>
                           UNDER REVIEW
                         </span>
                       </div>
                     </div>
 
                     {reviews.length > 0 && (
-                      <div className="mb-3">
+                      <div style={{ marginBottom: 10 }}>
                         <button
                           type="button"
                           onClick={() => {
@@ -2187,42 +2115,39 @@ const AdminDashboard = () => {
                             setReviewsModalReviews(reviews);
                             setShowReviewsModal(true);
                           }}
-                          className="mt-1 text-amber-700 hover:text-amber-900 text-xs font-medium"
+                          className="icon-btn"
                         >
                           View all reviews
                         </button>
                       </div>
                     )}
 
-                    <div className="mb-4 space-y-2 text-sm">
-                      <div><span className="font-medium">Authors:</span> {paper.authors.join(', ')}</div>
-                      <div><span className="font-medium">Category:</span> {paper.category}</div>
-                      <div><span className="font-medium">Submitted:</span> {new Date(paper.submissionDate).toLocaleDateString()}</div>
+                    <div style={{ marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10, color: 'var(--ink)' }}>
+                      <div><strong>Authors:</strong> {paper.authors.join(', ')}</div>
+                      <div><strong>Category:</strong> {paper.category}</div>
+                      <div><strong>Submitted:</strong> {new Date(paper.submissionDate).toLocaleDateString()}</div>
                       {paper.reviewDeadline && (
-                        <div><span className="font-medium">Deadline:</span> {new Date(paper.reviewDeadline).toLocaleDateString()}</div>
+                        <div><strong>Deadline:</strong> {new Date(paper.reviewDeadline).toLocaleDateString()}</div>
                       )}
                     </div>
 
-                    <p className="text-gray-700 text-sm mb-5 line-clamp-3">{paper.abstract}</p>
+                    <p style={{ color: 'var(--muted)', fontSize: 10, marginBottom: 18 }}>{paper.abstract}</p>
 
-                    <div className="flex flex-wrap gap-2 mb-5">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                       {paper.pdfUrl && (
-                        <>
-                          
-                          <a
-                            href={paper.pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold rounded-lg"
-                          >
-                            Download Paper
-                          </a>
-                        </>
+                        <a
+                          href={paper.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="button button-primary button-small"
+                        >
+                          Download Paper
+                        </a>
                       )}
                       <button
                         type="button"
                         onClick={() => openReplaceFilesModal(paper)}
-                        className="px-3 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold rounded-lg"
+                        className="button button-dark button-small"
                       >
                         Upload / Replace
                       </button>
@@ -2230,7 +2155,8 @@ const AdminDashboard = () => {
                         <button
                           type="button"
                           onClick={() => openRequestRevisionsModal(paper)}
-                          className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold rounded-lg"
+                          className="button button-outline button-small"
+                          style={{ color: '#b4700a', borderColor: '#fef3e0' }}
                         >
                           Request Revisions
                         </button>
@@ -2238,14 +2164,14 @@ const AdminDashboard = () => {
                     </div>
 
                     {paper.assignedReviewers && (
-                      <div className="mb-5 text-sm text-gray-600">
-                        <span className="font-medium">Assigned Reviewers:</span> {paper.assignedReviewers.length}
+                      <div style={{ marginBottom: 18, fontSize: 10, color: 'var(--muted)' }}>
+                        <strong>Assigned Reviewers:</strong> {paper.assignedReviewers.length}
                       </div>
                     )}
 
                     {reviews.length > 0 && (
-                      <div className="mb-5 text-sm text-gray-700">
-                        <span className="font-medium">Completed Reviews:</span> {reviews.length}
+                      <div style={{ marginBottom: 18, fontSize: 10, color: 'var(--ink)' }}>
+                        <strong>Completed Reviews:</strong> {reviews.length}
                         {latestRecommendation && (
                           <button
                             type="button"
@@ -2254,24 +2180,23 @@ const AdminDashboard = () => {
                               setReviewsModalReviews(reviews);
                               setShowReviewsModal(true);
                             }}
-                            className="ml-3 inline-flex items-center px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-200 transition"
+                            className="badge badge-info"
+                            style={{ marginLeft: 10, border: 0, cursor: 'pointer' }}
                           >
-                            Recommendation:
-                            <span className="ml-1 capitalize">
-                              {latestRecommendation.replace('_', ' ')}
-                            </span>
+                            Recommendation: {latestRecommendation.replace('_', ' ')}
                           </button>
                         )}
                       </div>
                     )}
 
-                    <div className="pt-4 border-t border-gray-200">
-                      <div className="flex space-x-3">
+                    <div style={{ paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+                      <div style={{ display: 'flex', gap: 10 }}>
                         <button
                           onClick={() => handlePublishPaper(paper.id)}
-                          className="Btn"
+                          className="button button-primary button-small"
+                          style={{ flex: 1 }}
                         >
-                          <strong>Publish Paper</strong>
+                          Publish Paper
                         </button>
 
                         <button
@@ -2279,7 +2204,8 @@ const AdminDashboard = () => {
                             setSelectedPaper(paper);
                             setShowAssignModal(true);
                           }}
-                          className="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition"
+                          className="button button-outline button-small"
+                          style={{ flex: 1, color: 'var(--ink)', borderColor: 'var(--line)' }}
                         >
                           Assign More
                         </button>
@@ -2294,158 +2220,158 @@ const AdminDashboard = () => {
 
         {/* Journal Issues Management */}
         {activeTab === 'issues' && (
-          <div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">All Issues</h3>
-                <div className="space-y-4">
-                  {issues.map(issue => (
-                    <div key={issue.id} className={`bg-white p-4 rounded-lg shadow-sm border-l-4 ${issue.isCurrent ? 'border-green-500' : 'border-gray-200'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-gray-900">
-                            Volume {issue.volume}, Issue {issue.issue} ({issue.month} {issue.year})
-                          </p>
-                          {issue.isCurrent && (
-                            <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                              Current Issue
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleIssueClick(issue)}
-                            className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 px-3 py-1 rounded-md"
-                          >
-                            {expandedIssueId === issue.id ? 'Hide Papers' : 'View Papers'}
-                          </button>
-                          {!issue.isCurrent && (
-                            <button
-                              onClick={() => handleSetCurrentIssue(issue.id)}
-                              className="text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1 rounded-md"
-                            >
-                              Set as Current
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteIssue(issue.id)}
-                            className="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 rounded-md"
-                          >
-                            Delete
-                          </button>
-                        </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+            <div>
+              <h3 style={{ color: 'var(--navy)', fontSize: 14, margin: '0 0 14px' }}>All Issues</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {issues.map(issue => (
+                  <div key={issue.id} className="dash-panel" style={{ marginBottom: 0, borderLeft: issue.isCurrent ? '3px solid #0f7b3d' : '1px solid var(--line)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                      <div>
+                        <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: 11 }}>
+                          Volume {issue.volume}, Issue {issue.issue} ({issue.month} {issue.year})
+                        </p>
+                        {issue.isCurrent && (
+                          <span className="badge badge-success" style={{ marginTop: 6 }}>
+                            Current Issue
+                          </span>
+                        )}
                       </div>
-
-                      {expandedIssueId === issue.id && (
-                        <div className="mt-3 pt-3 border-t border-gray-200 space-y-2 text-sm">
-                          {issuePapersLoadingId === issue.id ? (
-                            <p className="text-gray-500">Loading papers for this issue...</p>
-                          ) : (issuePapersByIssueId[issue.id] || []).length === 0 ? (
-                            <p className="text-gray-500">No papers have been assigned to this issue yet.</p>
-                          ) : (
-                            (issuePapersByIssueId[issue.id] || []).map((paper) => (
-                              <div key={paper.id} className="flex flex-col">
-                                <a
-                                  href={paper.pdfUrl || '#'}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-semibold text-blue-700 hover:text-blue-900 hover:underline"
-                                >
-                                  {paper.title}
-                                </a>
-                                <span className="text-xs text-gray-600">
-                                  {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}
-                                </span>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button
+                          onClick={() => handleIssueClick(issue)}
+                          className="icon-btn"
+                        >
+                          {expandedIssueId === issue.id ? 'Hide Papers' : 'View Papers'}
+                        </button>
+                        {!issue.isCurrent && (
+                          <button
+                            onClick={() => handleSetCurrentIssue(issue.id)}
+                            className="icon-btn"
+                          >
+                            Set as Current
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteIssue(issue.id)}
+                          className="icon-btn"
+                          style={{ color: '#c0342c' }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                  ))}
+
+                    {expandedIssueId === issue.id && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 10 }}>
+                        {issuePapersLoadingId === issue.id ? (
+                          <p style={{ color: 'var(--muted)', margin: 0 }}>Loading papers for this issue...</p>
+                        ) : (issuePapersByIssueId[issue.id] || []).length === 0 ? (
+                          <p style={{ color: 'var(--muted)', margin: 0 }}>No papers have been assigned to this issue yet.</p>
+                        ) : (
+                          (issuePapersByIssueId[issue.id] || []).map((paper) => (
+                            <div key={paper.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                              <a
+                                href={paper.pdfUrl || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ fontWeight: 700, color: 'var(--blue)' }}
+                              >
+                                {paper.title}
+                              </a>
+                              <span style={{ fontSize: 9, color: 'var(--muted)' }}>
+                                {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3 style={{ color: 'var(--navy)', fontSize: 14, margin: '0 0 14px' }}>Add New Issue</h3>
+              <form onSubmit={handleAddIssue} className="dash-panel">
+                <div className="form-group">
+                  <label htmlFor="volume">Volume</label>
+                  <input
+                    type="number"
+                    name="volume"
+                    id="volume"
+                    value={issueForm.volume}
+                    onChange={handleIssueFormChange}
+                    required
+                    className="form-input"
+                    placeholder="e.g., 3"
+                  />
                 </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Add New Issue</h3>
-                <form onSubmit={handleAddIssue} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
-                  <div>
-                    <label htmlFor="volume" className="block text-sm font-medium text-gray-700">Volume</label>
-                    <input
-                      type="number"
-                      name="volume"
-                      id="volume"
-                      value={issueForm.volume}
-                      onChange={handleIssueFormChange}
-                      required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-700 focus:border-amber-700 sm:text-sm"
-                      placeholder="e.g., 3"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="issue" className="block text-sm font-medium text-gray-700">Issue</label>
-                    <input
-                      type="number"
-                      name="issue"
-                      id="issue"
-                      value={issueForm.issue}
-                      onChange={handleIssueFormChange}
-                      required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-700 focus:border-amber-700 sm:text-sm"
-                      placeholder="e.g., 4"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="month" className="block text-sm font-medium text-gray-700">Month</label>
-                    <input
-                      type="text"
-                      name="month"
-                      id="month"
-                      value={issueForm.month}
-                      onChange={handleIssueFormChange}
-                      required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-700 focus:border-amber-700 sm:text-sm"
-                      placeholder="e.g., December"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="year" className="block text-sm font-medium text-gray-700">Year</label>
-                    <input
-                      type="number"
-                      name="year"
-                      id="year"
-                      value={issueForm.year}
-                      onChange={handleIssueFormChange}
-                      required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-700 focus:border-amber-700 sm:text-sm"
-                      placeholder="e.g., 2025"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-2 px-4 bg-amber-700 hover:bg-amber-800 text-white font-medium rounded-lg transition"
-                  >
-                    Add Issue
-                  </button>
-                </form>
-              </div>
+                <div className="form-group">
+                  <label htmlFor="issue">Issue</label>
+                  <input
+                    type="number"
+                    name="issue"
+                    id="issue"
+                    value={issueForm.issue}
+                    onChange={handleIssueFormChange}
+                    required
+                    className="form-input"
+                    placeholder="e.g., 4"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="month">Month</label>
+                  <input
+                    type="text"
+                    name="month"
+                    id="month"
+                    value={issueForm.month}
+                    onChange={handleIssueFormChange}
+                    required
+                    className="form-input"
+                    placeholder="e.g., December"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="year">Year</label>
+                  <input
+                    type="number"
+                    name="year"
+                    id="year"
+                    value={issueForm.year}
+                    onChange={handleIssueFormChange}
+                    required
+                    className="form-input"
+                    placeholder="e.g., 2025"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="button button-primary"
+                  style={{ width: '100%' }}
+                >
+                  Add Issue
+                </button>
+              </form>
             </div>
           </div>
         )}
 
         {/* Empty States */}
         {activeTab === 'pending' && papers.filter(p => p.status === 'submitted').length === 0 && (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">All Papers Assigned</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
+          <div className="dash-empty">
+            <h3 style={{ margin: '0 0 6px', color: 'var(--navy)', fontSize: 13 }}>All Papers Assigned</h3>
+            <p style={{ margin: 0 }}>
               All submitted papers have been assigned to reviewers. Check back later for new submissions.
             </p>
           </div>
         )}
 
         {activeTab === 'review' && papers.filter(p => p.status === 'under_review').length === 0 && (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">No Papers Under Review</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
+          <div className="dash-empty">
+            <h3 style={{ margin: '0 0 6px', color: 'var(--navy)', fontSize: 13 }}>No Papers Under Review</h3>
+            <p style={{ margin: 0 }}>
               Papers currently under review will appear here. You can assign reviewers to pending papers.
             </p>
           </div>
@@ -2453,54 +2379,48 @@ const AdminDashboard = () => {
 
         {/* Assign Reviewer Modal */}
         {showAssignModal && selectedPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-6">
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 680 }}>
+              <div className="modal-panel-header">
+                <h2>Assign Reviewer</h2>
+                <button
+                  onClick={() => setShowAssignModal(false)}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Assign Reviewer</h2>
-                  <button
-                    onClick={() => setShowAssignModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    &times;
-                  </button>
-                </div>
-
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">{selectedPaper.title}</h3>
-                  <div className="space-y-2 text-sm">
-                    <div><span className="font-medium">Authors:</span> {selectedPaper.authors.join(', ')}</div>
-                    <div><span className="font-medium">Category:</span> {selectedPaper.category}</div>
-                    <div><span className="font-medium">Submitted:</span> {new Date(selectedPaper.submissionDate).toLocaleDateString()}</div>
+              <div className="modal-panel-body">
+                <div style={{ marginBottom: 18, background: '#f4f9fc', border: '1px solid var(--line)', borderRadius: 5, padding: 14 }}>
+                  <h3 style={{ margin: '0 0 8px', color: 'var(--navy)', fontSize: 12 }}>{selectedPaper.title}</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 10, color: 'var(--ink)' }}>
+                    <div><strong>Authors:</strong> {selectedPaper.authors.join(', ')}</div>
+                    <div><strong>Category:</strong> {selectedPaper.category}</div>
+                    <div><strong>Submitted:</strong> {new Date(selectedPaper.submissionDate).toLocaleDateString()}</div>
                   </div>
                 </div>
 
-                <div className="mb-6" ref={dropdownRef}>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                    <div className="relative flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Search Reviewers</label>
+                <div style={{ marginBottom: 18 }} ref={dropdownRef}>
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+                    <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: 200 }}>
+                      <label>Search Reviewers</label>
                       <input
                         ref={inputRef}
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search by name, email, or affiliation..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 pr-10"
+                        className="form-input"
                       />
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none mt-5 sm:mt-0">
-                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </div>
                     </div>
 
-                    <div className="w-full sm:w-56">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                    <div className="form-group" style={{ marginBottom: 0, width: 200 }}>
+                      <label>Sort By</label>
                       <select
                         value={reviewerSortBy}
                         onChange={(e) => setReviewerSortBy(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
+                        className="form-select"
                       >
                         <option value="name_az">Name A-Z</option>
                         <option value="name_za">Name Z-A</option>
@@ -2509,7 +2429,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="border border-gray-200 rounded-lg max-h-72 overflow-y-auto divide-y">
+                  <div style={{ border: '1px solid var(--line)', borderRadius: 5, maxHeight: 280, overflowY: 'auto' }}>
                     {filteredReviewers.length > 0 ? (
                       filteredReviewers.map((reviewer) => (
                         <button
@@ -2519,20 +2439,29 @@ const AdminDashboard = () => {
                             setSelectedReviewer(String(reviewer.id));
                             setSearchTerm(reviewer.name || reviewer.email || '');
                           }}
-                          className={`w-full text-left px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 ${
-                            selectedReviewer === String(reviewer.id)
-                              ? 'bg-blue-50 border-l-4 border-blue-400'
-                              : 'hover:bg-gray-50'
-                          }`}
+                          style={{
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: '10px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 6,
+                            border: 0,
+                            borderBottom: '1px solid var(--line)',
+                            borderLeft: selectedReviewer === String(reviewer.id) ? '3px solid var(--blue)' : '3px solid transparent',
+                            background: selectedReviewer === String(reviewer.id) ? 'var(--sky)' : 'transparent',
+                            cursor: 'pointer',
+                          }}
                         >
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 11 }}>
                               {reviewer.name || 'Unnamed reviewer'}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div style={{ fontSize: 9, color: 'var(--muted)' }}>
                               {reviewer.email && <span>{reviewer.email}</span>}
                               {reviewer.affiliation && (
-                                <span className="ml-1">
+                                <span style={{ marginLeft: 4 }}>
                                   • {reviewer.affiliation}
                                 </span>
                               )}
@@ -2541,28 +2470,29 @@ const AdminDashboard = () => {
                         </button>
                       ))
                     ) : (
-                      <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                      <div className="dash-empty" style={{ border: 0 }}>
                         No reviewers found. Try a different search.
                       </div>
                     )}
                   </div>
                 </div>
+              </div>
 
-                <div className="flex space-x-3">
-                  <button
-                    onClick={handleAssignReviewer}
-                    disabled={assigning || !selectedReviewer}
-                    className="flex-1 py-2 px-4 bg-amber-700 hover:bg-amber-800 disabled:bg-amber-500 text-white text-sm font-medium rounded-lg transition flex items-center justify-center"
-                  >
-                    {assigning ? 'Assigning...' : 'Assign Reviewer'}
-                  </button>
-                  <button
-                    onClick={() => setShowAssignModal(false)}
-                    className="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
+              <div className="modal-panel-footer">
+                <button
+                  onClick={() => setShowAssignModal(false)}
+                  className="button button-outline"
+                  style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignReviewer}
+                  disabled={assigning || !selectedReviewer}
+                  className="button button-primary"
+                >
+                  {assigning ? 'Assigning...' : 'Assign Reviewer'}
+                </button>
               </div>
             </div>
           </div>
@@ -2570,78 +2500,80 @@ const AdminDashboard = () => {
 
         {/* Reviews Modal */}
         {showReviewsModal && reviewsModalPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Reviews for this paper</h2>
-                  <button
-                    onClick={() => setShowReviewsModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    &times;
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 680 }}>
+              <div className="modal-panel-header">
+                <h2>Reviews for this paper</h2>
+                <button
+                  onClick={() => setShowReviewsModal(false)}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{reviewsModalPaper.title}</h3>
-                  <p className="text-sm text-gray-600">Authors: {reviewsModalPaper.authors.join(', ')}</p>
+              <div className="modal-panel-body">
+                <div style={{ marginBottom: 14, background: '#f4f9fc', border: '1px solid var(--line)', borderRadius: 5, padding: 14 }}>
+                  <h3 style={{ margin: '0 0 4px', color: 'var(--navy)', fontSize: 12 }}>{reviewsModalPaper.title}</h3>
+                  <p style={{ margin: 0, color: 'var(--muted)', fontSize: 10 }}>Authors: {reviewsModalPaper.authors.join(', ')}</p>
                 </div>
 
                 {reviewsModalReviews.length === 0 ? (
-                  <p className="text-sm text-gray-600">No reviews have been submitted yet.</p>
+                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>No reviews have been submitted yet.</p>
                 ) : (
-                  <div className="space-y-4">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {reviewsModalReviews.map(review => (
-                      <div key={review.id} className="border border-gray-200 rounded-lg p-4 bg-white">
-                        <div className="flex justify-between items-center mb-2">
+                      <div key={review.id} style={{ border: '1px solid var(--line)', borderRadius: 5, padding: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                           <div>
-                            <p className="text-sm font-medium text-gray-800">
+                            <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: 11 }}>
                               Reviewer: {review.reviewerName || `#${review.reviewerId}`}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p style={{ margin: 0, fontSize: 9, color: 'var(--muted)' }}>
                               Submitted on {review.submittedDate ? new Date(review.submittedDate).toLocaleDateString() : 'N/A'}
                             </p>
                           </div>
-                          <div className="text-sm font-semibold text-gray-800">
+                          <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 11 }}>
                             Rating: {review.rating}/5
                           </div>
                         </div>
-                        <p className="text-sm text-gray-700 mb-1">
-                          <span className="font-medium">Recommendation:</span>{' '}
-                          <span className="capitalize">{review.recommendation.replace('_', ' ')}</span>
+                        <p style={{ margin: '0 0 4px', color: 'var(--ink)', fontSize: 10 }}>
+                          <strong>Recommendation:</strong> {review.recommendation.replace('_', ' ')}
                         </p>
-                        <p className="text-sm text-gray-700 whitespace-pre-line">
+                        <p style={{ margin: 0, color: 'var(--ink)', fontSize: 10, whiteSpace: 'pre-line' }}>
                           {review.comments}
                         </p>
                       </div>
                     ))}
                   </div>
                 )}
+              </div>
 
-                <div className="flex flex-wrap gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => openRequestRevisionsModal(reviewsModalPaper)}
-                    className="py-2 px-4 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-sm font-medium rounded-lg transition"
-                  >
-                    Request Revisions
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openRejectPaperModal(reviewsModalPaper)}
-                    className="py-2 px-4 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition"
-                  >
-                    Reject Paper
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowReviewsModal(false)}
-                    className="ml-auto py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition"
-                  >
-                    Close
-                  </button>
-                </div>
+              <div className="modal-panel-footer" style={{ justifyContent: 'flex-start' }}>
+                <button
+                  type="button"
+                  onClick={() => openRequestRevisionsModal(reviewsModalPaper)}
+                  className="button button-outline button-small"
+                  style={{ color: '#b4700a', borderColor: '#fef3e0' }}
+                >
+                  Request Revisions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openRejectPaperModal(reviewsModalPaper)}
+                  className="button button-outline button-small"
+                  style={{ color: '#c0342c', borderColor: '#fde8e8' }}
+                >
+                  Reject Paper
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowReviewsModal(false)}
+                  className="button button-outline button-small"
+                  style={{ marginLeft: 'auto', color: 'var(--ink)', borderColor: 'var(--line)' }}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
@@ -2649,64 +2581,63 @@ const AdminDashboard = () => {
 
         {/* Request Revisions Modal */}
         {showRevisionModal && revisionModalPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Request Revisions</h2>
-                  <button
-                    onClick={() => {
-                      setShowRevisionModal(false);
-                      setRevisionModalPaper(null);
-                      setRevisionNote('');
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    &times;
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 520 }}>
+              <div className="modal-panel-header">
+                <h2>Request Revisions</h2>
+                <button
+                  onClick={() => {
+                    setShowRevisionModal(false);
+                    setRevisionModalPaper(null);
+                    setRevisionNote('');
+                  }}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{revisionModalPaper.title}</h3>
-                  <p className="text-xs text-gray-600">
+              <div className="modal-panel-body">
+                <div style={{ marginBottom: 14, background: '#f4f9fc', border: '1px solid var(--line)', borderRadius: 5, padding: 14 }}>
+                  <h3 style={{ margin: '0 0 4px', color: 'var(--navy)', fontSize: 12 }}>{revisionModalPaper.title}</h3>
+                  <p style={{ margin: 0, color: 'var(--muted)', fontSize: 9 }}>
                     This message will be sent to the author. Please clearly describe the requested changes.
                   </p>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Message to author
-                  </label>
+                <div className="form-group">
+                  <label>Message to author</label>
                   <textarea
                     value={revisionNote}
                     onChange={(e) => setRevisionNote(e.target.value)}
                     rows={5}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 text-sm resize-none"
+                    className="form-textarea"
                     placeholder="Describe the requested revisions..."
                   />
                 </div>
+              </div>
 
-                <div className="flex space-x-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleRequestRevisions}
-                    disabled={revisionSubmitting || !revisionNote.trim()}
-                    className="flex-1 py-2 px-4 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300 text-white text-sm font-medium rounded-lg transition"
-                  >
-                    {revisionSubmitting ? 'Sending...' : 'Send Request'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowRevisionModal(false);
-                      setRevisionModalPaper(null);
-                      setRevisionNote('');
-                    }}
-                    className="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
+              <div className="modal-panel-footer">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRevisionModal(false);
+                    setRevisionModalPaper(null);
+                    setRevisionNote('');
+                  }}
+                  className="button button-outline"
+                  style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestRevisions}
+                  disabled={revisionSubmitting || !revisionNote.trim()}
+                  className="button button-primary"
+                >
+                  {revisionSubmitting ? 'Sending...' : 'Send Request'}
+                </button>
               </div>
             </div>
           </div>
@@ -2714,64 +2645,64 @@ const AdminDashboard = () => {
 
         {/* Reject Paper Modal */}
         {showRejectModal && rejectModalPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Reject Paper</h2>
-                  <button
-                    onClick={() => {
-                      setShowRejectModal(false);
-                      setRejectModalPaper(null);
-                      setRejectNote('');
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    &times;
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 520 }}>
+              <div className="modal-panel-header">
+                <h2>Reject Paper</h2>
+                <button
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setRejectModalPaper(null);
+                    setRejectNote('');
+                  }}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{rejectModalPaper.title}</h3>
-                  <p className="text-xs text-gray-600">
+              <div className="modal-panel-body">
+                <div style={{ marginBottom: 14, background: '#f4f9fc', border: '1px solid var(--line)', borderRadius: 5, padding: 14 }}>
+                  <h3 style={{ margin: '0 0 4px', color: 'var(--navy)', fontSize: 12 }}>{rejectModalPaper.title}</h3>
+                  <p style={{ margin: 0, color: 'var(--muted)', fontSize: 9 }}>
                     You can optionally include a short note explaining the reason for rejection. This will be shared with the author.
                   </p>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Optional note to author
-                  </label>
+                <div className="form-group">
+                  <label>Optional note to author</label>
                   <textarea
                     value={rejectNote}
                     onChange={(e) => setRejectNote(e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm resize-none"
+                    className="form-textarea"
                     placeholder="Explain briefly why the paper is being rejected (optional)."
                   />
                 </div>
+              </div>
 
-                <div className="flex space-x-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleRejectPaper}
-                    disabled={rejectSubmitting}
-                    className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-medium rounded-lg transition"
-                  >
-                    {rejectSubmitting ? 'Rejecting...' : 'Reject Paper'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowRejectModal(false);
-                      setRejectModalPaper(null);
-                      setRejectNote('');
-                    }}
-                    className="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
+              <div className="modal-panel-footer">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setRejectModalPaper(null);
+                    setRejectNote('');
+                  }}
+                  className="button button-outline"
+                  style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRejectPaper}
+                  disabled={rejectSubmitting}
+                  className="button button-primary"
+                  style={{ background: '#c0342c' }}
+                >
+                  {rejectSubmitting ? 'Rejecting...' : 'Reject Paper'}
+                </button>
               </div>
             </div>
           </div>
@@ -2779,38 +2710,36 @@ const AdminDashboard = () => {
 
         {/* Assign to Issue Modal */}
         {showAssignIssueModal && assignIssuePaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Assign to Journal Issue</h2>
-                  <button
-                    onClick={() => {
-                      setShowAssignIssueModal(false);
-                      setAssignIssuePaper(null);
-                      setSelectedIssueId('');
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    &times;
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 520 }}>
+              <div className="modal-panel-header">
+                <h2>Assign to Journal Issue</h2>
+                <button
+                  onClick={() => {
+                    setShowAssignIssueModal(false);
+                    setAssignIssuePaper(null);
+                    setSelectedIssueId('');
+                  }}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{assignIssuePaper.title}</h3>
-                  <p className="text-xs text-gray-600">
+              <div className="modal-panel-body">
+                <div style={{ marginBottom: 14, background: '#f4f9fc', border: '1px solid var(--line)', borderRadius: 5, padding: 14 }}>
+                  <h3 style={{ margin: '0 0 4px', color: 'var(--navy)', fontSize: 12 }}>{assignIssuePaper.title}</h3>
+                  <p style={{ margin: 0, color: 'var(--muted)', fontSize: 9 }}>
                     Choose a journal issue to which this published paper should belong.
                   </p>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select issue
-                  </label>
+                <div className="form-group">
+                  <label>Select issue</label>
                   <select
                     value={selectedIssueId}
                     onChange={(e) => setSelectedIssueId(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+                    className="form-select"
                   >
                     <option value="">Choose an issue...</option>
                     {issues.map((issue) => (
@@ -2820,28 +2749,29 @@ const AdminDashboard = () => {
                     ))}
                   </select>
                 </div>
+              </div>
 
-                <div className="flex space-x-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleAssignPaperToIssue}
-                    disabled={assignIssueSubmitting || !selectedIssueId}
-                    className="flex-1 py-2 px-4 bg-amber-700 hover:bg-amber-800 disabled:bg-amber-500 text-white text-sm font-medium rounded-lg transition"
-                  >
-                    {assignIssueSubmitting ? 'Assigning...' : 'Assign to Issue'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAssignIssueModal(false);
-                      setAssignIssuePaper(null);
-                      setSelectedIssueId('');
-                    }}
-                    className="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
+              <div className="modal-panel-footer">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAssignIssueModal(false);
+                    setAssignIssuePaper(null);
+                    setSelectedIssueId('');
+                  }}
+                  className="button button-outline"
+                  style={{ color: 'var(--ink)', borderColor: 'var(--line)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAssignPaperToIssue}
+                  disabled={assignIssueSubmitting || !selectedIssueId}
+                  className="button button-primary"
+                >
+                  {assignIssueSubmitting ? 'Assigning...' : 'Assign to Issue'}
+                </button>
               </div>
             </div>
           </div>

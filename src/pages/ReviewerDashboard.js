@@ -30,10 +30,10 @@ const ReviewerDashboard = () => {
   const loadReviewerData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Get assigned papers
       const allPapers = await mockAPI.getAllPapers();
-      const assigned = allPapers.filter(paper => 
+      const assigned = allPapers.filter(paper =>
         paper.assignedReviewers && paper.assignedReviewers.includes(user.id)
       );
       setAssignedPapers(assigned);
@@ -199,236 +199,170 @@ const ReviewerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-full flex items-center justify-center">
+      <div className="dash-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <LoadingSpinner size="lg" text="Loading your assignments..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-academic-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="dash-page">
+      <div className="journal-container">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-academic-900 mb-3 leading-tight">
-            Reviewer Dashboard
-          </h1>
-          <p className="text-academic-600 text-lg">
-            Welcome back, <span className="font-medium">{user.name}</span>. Manage your review assignments with precision.
-          </p>
+        <div className="dash-header">
+          <div>
+            <h1>Reviewer Dashboard</h1>
+            <p>Welcome back, <strong>{user.name}</strong>. Manage your review assignments with precision.</p>
+          </div>
         </div>
 
         {/* Alert */}
         {alert && (
-          <div className="mb-8">
-            <Alert 
-              type={alert.type} 
-              message={alert.message} 
-              onClose={() => setAlert(null)} 
+          <div style={{ marginBottom: 18 }}>
+            <Alert
+              type={alert.type}
+              message={alert.message}
+              onClose={() => setAlert(null)}
             />
           </div>
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center">
-              <div className="p-3 bg-amber-50 rounded-xl">
-                <svg className="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-academic-500 uppercase tracking-wide">Assigned Papers</p>
-                <p className="text-3xl font-bold text-academic-900 mt-1">{stats.assigned}</p>
-              </div>
-            </div>
+        <div className="stat-cards">
+          <div className="stat-card">
+            <p className="stat-label">Assigned Papers</p>
+            <p className="stat-value">{stats.assigned}</p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-50 rounded-xl">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-academic-500 uppercase tracking-wide">Pending Reviews</p>
-                <p className="text-3xl font-bold text-academic-900 mt-1">{stats.pending}</p>
-              </div>
-            </div>
+          <div className="stat-card">
+            <p className="stat-label">Pending Reviews</p>
+            <p className="stat-value">{stats.pending}</p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-50 rounded-xl">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-academic-500 uppercase tracking-wide">Completed Reviews</p>
-                <p className="text-3xl font-bold text-academic-900 mt-1">{stats.completed}</p>
-              </div>
-            </div>
+          <div className="stat-card">
+            <p className="stat-label">Completed Reviews</p>
+            <p className="stat-value">{stats.completed}</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-academic-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab('assigned')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                  activeTab === 'assigned'
-                    ? 'border-amber-700 text-amber-700'
-                    : 'border-transparent text-academic-500 hover:text-academic-700 hover:border-academic-300'
-                }`}
-              >
-                Assigned Papers ({stats.assigned})
-              </button>
-              <button
-                onClick={() => setActiveTab('completed')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                  activeTab === 'completed'
-                    ? 'border-amber-700 text-amber-700'
-                    : 'border-transparent text-academic-500 hover:text-academic-700 hover:border-academic-300'
-                }`}
-              >
-                Completed Reviews ({stats.completed})
-              </button>
-            </nav>
-          </div>
+        <div className="dash-tabs">
+          <button
+            onClick={() => setActiveTab('assigned')}
+            className={`dash-tab ${activeTab === 'assigned' ? 'is-active' : ''}`}
+          >
+            Assigned Papers ({stats.assigned})
+          </button>
+          <button
+            onClick={() => setActiveTab('completed')}
+            className={`dash-tab ${activeTab === 'completed' ? 'is-active' : ''}`}
+          >
+            Completed Reviews ({stats.completed})
+          </button>
         </div>
 
         {/* Assigned Papers */}
         {activeTab === 'assigned' && (
           <>
-            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="search-bar">
               <input
                 type="text"
                 value={reviewerSearchTerm}
                 onChange={(e) => setReviewerSearchTerm(e.target.value)}
                 placeholder="Search by title, author, category..."
-                className="w-full md:max-w-md px-4 py-2 border border-academic-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 text-sm"
+                className="form-input"
+                style={{ flex: 1, minWidth: 220 }}
               />
-              <div className="flex items-center gap-3">
-                <select
-                  value={reviewerSortBy}
-                  onChange={(e) => setReviewerSortBy(e.target.value)}
-                  className="px-3 py-2 border border-academic-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                >
-                  <option value="recent">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  <option value="title_az">Title A-Z</option>
-                  <option value="title_za">Title Z-A</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setShowAllReviewerPapers((prev) => !prev)}
-                  className="px-3 py-2 border border-academic-200 rounded-lg bg-white text-sm font-medium text-academic-700 hover:bg-academic-50"
-                >
-                  {showAllReviewerPapers ? 'Show unfinished only' : 'View all papers'}
-                </button>
-              </div>
+              <select
+                value={reviewerSortBy}
+                onChange={(e) => setReviewerSortBy(e.target.value)}
+                className="form-select"
+                style={{ maxWidth: 180 }}
+              >
+                <option value="recent">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="title_az">Title A-Z</option>
+                <option value="title_za">Title Z-A</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowAllReviewerPapers((prev) => !prev)}
+                className="button button-outline button-small"
+              >
+                {showAllReviewerPapers ? 'Show unfinished only' : 'View all papers'}
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {visibleAssignedWithMeta.map(({ paper, reviewsForPaper, totalRounds, reviewCount, isCompleted, isRevisionRound }) => {
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+              {visibleAssignedWithMeta.map(({ paper, reviewsForPaper, totalRounds, isCompleted, isRevisionRound }) => {
                 const review = reviewsForPaper[0] || null;
 
                 return (
-                  <div key={`${paper.id}-${totalRounds}`} className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 hover:shadow-md transition-all duration-300">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-semibold text-academic-900 line-clamp-2 leading-tight">
-                        {paper.title}
-                      </h3>
-                      <span className={`${
-                        isCompleted
-                          ? 'badge-success'
-                          : isRevisionRound
-                            ? 'badge-info'
-                            : 'badge-warning'
-                      }`}>
-                        {isCompleted
-                          ? 'REVIEWED'
-                          : isRevisionRound
-                            ? 'REVISION PENDING'
-                            : 'PENDING'}
+                  <div key={`${paper.id}-${totalRounds}`} className="dash-panel">
+                    <div className="dash-panel-head">
+                      <h2>{paper.title}</h2>
+                      <span className={`badge ${isCompleted ? 'badge-success' : isRevisionRound ? 'badge-info' : 'badge-warning'}`}>
+                        {isCompleted ? 'REVIEWED' : isRevisionRound ? 'REVISION PENDING' : 'PENDING'}
                       </span>
                     </div>
 
-                    <div className="mb-4 space-y-2">
-                      <div className="flex items-center">
-                        <span className="font-medium text-academic-700 text-sm w-20">Authors:</span>
-                        <span className="text-sm text-academic-600">{paper.authors.join(', ')}</span>
+                    <div style={{ marginBottom: 12, fontSize: 10, color: 'var(--muted)' }}>
+                      <div style={{ marginBottom: 4 }}>
+                        <strong style={{ color: 'var(--ink)' }}>Authors: </strong>{paper.authors.join(', ')}
                       </div>
-                      <div className="flex items-center">
-                        <span className="font-medium text-academic-700 text-sm w-20">Category:</span>
-                        <span className="text-sm text-academic-600">{paper.category}</span>
+                      <div style={{ marginBottom: 4 }}>
+                        <strong style={{ color: 'var(--ink)' }}>Category: </strong>{paper.category}
                       </div>
-                      <div className="flex items-center">
-                        <span className="font-medium text-academic-700 text-sm w-20">Submitted:</span>
-                        <span className="text-sm text-academic-600">{new Date(paper.submissionDate).toLocaleDateString()}</span>
+                      <div style={{ marginBottom: 4 }}>
+                        <strong style={{ color: 'var(--ink)' }}>Submitted: </strong>{new Date(paper.submissionDate).toLocaleDateString()}
                       </div>
                       {paper.reviewDeadline && (
-                        <div className="flex items-center">
-                          <span className="font-medium text-academic-700 text-sm w-20">Deadline:</span>
-                          <span className="text-sm text-academic-600">{new Date(paper.reviewDeadline).toLocaleDateString()}</span>
+                        <div>
+                          <strong style={{ color: 'var(--ink)' }}>Deadline: </strong>{new Date(paper.reviewDeadline).toLocaleDateString()}
                         </div>
                       )}
                     </div>
 
-                    <div className="mb-5">
-                      <p className="text-academic-700 text-sm leading-relaxed line-clamp-3">
-                        {paper.abstract}
-                      </p>
-                    </div>
+                    <p style={{ fontSize: 10, color: 'var(--ink)', lineHeight: 1.6, marginBottom: 12 }}>
+                      {paper.abstract}
+                    </p>
 
-                    <div className="flex flex-wrap gap-2 mb-5">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                       {paper.keywords.map((keyword, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-academic-100 text-academic-700 text-xs rounded-full font-medium"
-                        >
+                        <span key={index} className="badge badge-neutral">
                           {keyword}
                         </span>
                       ))}
                     </div>
 
                     {isCompleted && review && (
-                      <div className="pt-4 border-t border-academic-200">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-sm font-medium text-academic-600">Your Review Summary</span>
-                          <span className="text-sm text-academic-500 font-medium">
-                            Rating: {review.rating}/5
-                          </span>
+                      <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>Your Review Summary</span>
+                          <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>Rating: {review.rating}/5</span>
                         </div>
-                        <p className="text-sm text-academic-600 mb-2">
-                          <span className="font-medium">Recommendation:</span> <span className="font-semibold capitalize">
-                            {review.recommendation.replace('_', ' ')}
-                          </span>
+                        <p style={{ fontSize: 10, color: 'var(--ink)', margin: '0 0 6px' }}>
+                          <strong>Recommendation:</strong> {review.recommendation.replace('_', ' ')}
                         </p>
-                        <p className="text-sm text-academic-700 line-clamp-2 bg-academic-50 p-3 rounded-md">
+                        <div className="contact-note">
                           {review.comments}
-                        </p>
+                        </div>
                       </div>
                     )}
 
-                    <div className="pt-4 border-t border-academic-200 flex flex-col sm:flex-row gap-3">
+                    <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)', display: 'flex', gap: 10 }}>
                       <button
                         onClick={() => navigate(`/review/paper/${paper.id}`)}
-                        className="flex-1 py-3 px-4 bg-academic-200 hover:bg-academic-300 text-academic-700 font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-academic-500 focus:ring-offset-2"
+                        className="button button-outline"
+                        style={{ flex: 1 }}
                       >
                         View Manuscript
                       </button>
                       {!isCompleted && (
                         <button
                           onClick={() => handleStartReview(paper)}
-                          className="Btn"
+                          className="button button-primary"
+                          style={{ flex: 1 }}
                         >
-                          <strong>Start Review</strong>
+                          Start Review
                         </button>
                       )}
                     </div>
@@ -441,71 +375,57 @@ const ReviewerDashboard = () => {
 
         {/* Completed Reviews */}
         {activeTab === 'completed' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {completedReviews.map(review => {
               const paper = assignedPapers.find(p => p.id === review.paperId);
               if (!paper) return null;
 
               return (
-                <div key={review.id} className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 hover:shadow-md transition-all duration-300">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-academic-900 line-clamp-2 leading-tight">
-                      {paper.title}
-                    </h3>
-                    <span className="badge-success">
-                      COMPLETED
-                    </span>
+                <div key={review.id} className="dash-panel">
+                  <div className="dash-panel-head">
+                    <h2>{paper.title}</h2>
+                    <span className="badge badge-success">COMPLETED</span>
                   </div>
 
-                  <div className="mb-4 space-y-2">
-                    <div className="flex items-center">
-                      <span className="font-medium text-academic-700 text-sm w-24">Authors:</span>
-                      <span className="text-sm text-academic-600">{paper.authors.join(', ')}</span>
+                  <div style={{ marginBottom: 12, fontSize: 10, color: 'var(--muted)' }}>
+                    <div style={{ marginBottom: 4 }}>
+                      <strong style={{ color: 'var(--ink)' }}>Authors: </strong>{paper.authors.join(', ')}
                     </div>
-                    <div className="flex items-center">
-                      <span className="font-medium text-academic-700 text-sm w-24">Submitted:</span>
-                      <span className="text-sm text-academic-600">{new Date(paper.submissionDate).toLocaleDateString()}</span>
+                    <div style={{ marginBottom: 4 }}>
+                      <strong style={{ color: 'var(--ink)' }}>Submitted: </strong>{new Date(paper.submissionDate).toLocaleDateString()}
                     </div>
-                    <div className="flex items-center">
-                      <span className="font-medium text-academic-700 text-sm w-24">Reviewed On:</span>
-                      <span className="text-sm text-academic-600">{new Date(review.submittedDate).toLocaleDateString()}</span>
+                    <div>
+                      <strong style={{ color: 'var(--ink)' }}>Reviewed On: </strong>{new Date(review.submittedDate).toLocaleDateString()}
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-academic-200">
-                    <div className="mb-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-academic-600">Rating</span>
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <svg
-                              key={i}
-                              className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400' : 'text-academic-300'}`}
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ))}
-                          <span className="ml-2 text-sm text-academic-600 font-medium">({review.rating}/5)</span>
-                        </div>
+                  <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>Rating</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {[...Array(5)].map((_, i) => (
+                          <svg
+                            key={i}
+                            width="14"
+                            height="14"
+                            fill={i < review.rating ? '#eab308' : '#dce7ef'}
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                        <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--muted)', fontWeight: 600 }}>({review.rating}/5)</span>
                       </div>
-                      
-                      <div className="mb-3">
-                        <p className="text-sm text-academic-600">
-                          <span className="font-medium">Recommendation:</span> 
-                          <span className="ml-2 font-semibold capitalize">{review.recommendation.replace('_', ' ')}</span>
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-academic-600 mb-2">Review Comments</p>
-                        <div className="bg-academic-50 p-4 rounded-lg border-l-4 border-academic-200">
-                          <p className="text-sm text-academic-700 leading-relaxed">
-                            {review.comments}
-                          </p>
-                        </div>
+                    </div>
+
+                    <p style={{ fontSize: 10, color: 'var(--ink)', margin: '0 0 10px' }}>
+                      <strong>Recommendation:</strong> {review.recommendation.replace('_', ' ')}
+                    </p>
+
+                    <div>
+                      <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--ink)', margin: '0 0 6px' }}>Review Comments</p>
+                      <div className="contact-note">
+                        {review.comments}
                       </div>
                     </div>
                   </div>
@@ -517,32 +437,22 @@ const ReviewerDashboard = () => {
 
         {/* Empty States */}
         {activeTab === 'assigned' && assignedPapers.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-academic-200">
-            <div className="text-academic-300 text-6xl mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-academic-700 mb-2">
+          <div className="dash-empty">
+            <h3 style={{ color: 'var(--navy)', fontSize: 14, margin: '0 0 8px' }}>
               No Papers Assigned for Review
             </h3>
-            <p className="text-academic-500 max-w-md mx-auto">
+            <p style={{ maxWidth: 420, margin: '0 auto' }}>
               You will be notified when new papers are assigned to you. Thank you for your contribution to the academic review process.
             </p>
           </div>
         )}
 
         {activeTab === 'completed' && completedReviews.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-academic-200">
-            <div className="text-academic-300 text-6xl mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-academic-700 mb-2">
+          <div className="dash-empty">
+            <h3 style={{ color: 'var(--navy)', fontSize: 14, margin: '0 0 8px' }}>
               No Completed Reviews Yet
             </h3>
-            <p className="text-academic-500 max-w-md mx-auto">
+            <p style={{ maxWidth: 420, margin: '0 auto' }}>
               Your completed reviews will appear here once you've submitted them. Start reviewing your assigned papers to build your review history.
             </p>
           </div>
@@ -550,53 +460,47 @@ const ReviewerDashboard = () => {
 
         {/* Review Form Modal */}
         {showReviewForm && selectedPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-academic-900">Submit Review</h2>
-                  <button
-                    onClick={() => setShowReviewForm(false)}
-                    className="text-academic-400 hover:text-academic-600 hover:bg-academic-100 rounded-full p-2 transition-colors duration-200"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 720 }}>
+              <div className="modal-panel-header">
+                <h2>Submit Review</h2>
+                <button
+                  onClick={() => setShowReviewForm(false)}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <div className="mb-8 p-5 bg-academic-50 rounded-xl border border-academic-200">
-                  <h3 className="font-semibold text-academic-900 text-lg mb-3">{selectedPaper.title}</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="modal-panel-body">
+                <div className="contact-note" style={{ marginBottom: 18 }}>
+                  <strong style={{ display: 'block', color: 'var(--navy)', marginBottom: 8 }}>{selectedPaper.title}</strong>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     <div>
-                      <span className="font-medium text-academic-700">Authors:</span>
-                      <p className="text-academic-600 mt-1">{selectedPaper.authors.join(', ')}</p>
+                      <strong>Authors:</strong> {selectedPaper.authors.join(', ')}
                     </div>
                     <div>
-                      <span className="font-medium text-academic-700">Category:</span>
-                      <p className="text-academic-600 mt-1">{selectedPaper.category}</p>
+                      <strong>Category:</strong> {selectedPaper.category}
                     </div>
                     <div>
-                      <span className="font-medium text-academic-700">Submitted:</span>
-                      <p className="text-academic-600 mt-1">{new Date(selectedPaper.submissionDate).toLocaleDateString()}</p>
+                      <strong>Submitted:</strong> {new Date(selectedPaper.submissionDate).toLocaleDateString()}
                     </div>
                     {selectedPaper.reviewDeadline && (
                       <div>
-                        <span className="font-medium text-academic-700">Deadline:</span>
-                        <p className="text-academic-600 mt-1">{new Date(selectedPaper.reviewDeadline).toLocaleDateString()}</p>
+                        <strong>Deadline:</strong> {new Date(selectedPaper.reviewDeadline).toLocaleDateString()}
                       </div>
                     )}
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmitReview} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">Overall Rating (1-5)</label>
+                <form onSubmit={handleSubmitReview}>
+                  <div className="form-group">
+                    <label>Overall Rating (1-5)</label>
                     <select
                       name="rating"
                       value={reviewFormData.rating}
                       onChange={handleReviewFormChange}
-                      className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 transition-colors duration-200"
+                      className="form-select"
                       required
                     >
                       <option value="">Select a rating</option>
@@ -608,13 +512,13 @@ const ReviewerDashboard = () => {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">Recommendation</label>
+                  <div className="form-group">
+                    <label>Recommendation</label>
                     <select
                       name="recommendation"
                       value={reviewFormData.recommendation}
                       onChange={handleReviewFormChange}
-                      className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 transition-colors duration-200"
+                      className="form-select"
                       required
                     >
                       <option value="">Select a recommendation</option>
@@ -625,39 +529,41 @@ const ReviewerDashboard = () => {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">Detailed Comments</label>
+                  <div className="form-group">
+                    <label>Detailed Comments</label>
                     <textarea
                       name="comments"
                       value={reviewFormData.comments}
                       onChange={handleReviewFormChange}
-                      className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 resize-none"
+                      className="form-textarea"
                       placeholder="Provide detailed feedback on the paper's strengths, weaknesses, and suggestions for improvement..."
                       rows="6"
                       required
                     />
-                    <p className="mt-2 text-xs text-academic-500">
+                    <p className="form-hint">
                       Your comments will help authors improve their work and assist editors in making informed decisions.
                     </p>
                   </div>
 
-                  <div className="flex space-x-4 pt-6">
+                  <div style={{ display: 'flex', gap: 12 }}>
                     <button
                       type="submit"
                       disabled={submittingReview}
-                      className="Btn"
+                      className="button button-primary"
+                      style={{ flex: 1 }}
                     >
                       {submittingReview ? (
-                        <span className="flex items-center">
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <LoadingSpinner size="sm" text="" />
-                          <span className="ml-2">Submitting...</span>
+                          Submitting...
                         </span>
                       ) : 'Submit Review'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowReviewForm(false)}
-                      className="flex-1 py-3 px-4 bg-academic-200 hover:bg-academic-300 text-academic-700 font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-academic-500 focus:ring-offset-2"
+                      className="button button-outline"
+                      style={{ flex: 1 }}
                     >
                       Cancel
                     </button>

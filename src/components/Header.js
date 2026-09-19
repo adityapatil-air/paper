@@ -36,7 +36,7 @@ const Header = () => {
   return (
     <header className="site-header">
       <div className="institutional-bar">
-        <div>International Peer-Reviewed Open Access Journal</div>
+        <div>International Peer-Reviewed Open Access Journal <span className="institutional-extra">&nbsp;|&nbsp; Published by Buildsoftech Publication &nbsp;|&nbsp; ISSN: 3139-5961</span></div>
         <div className="institutional-links">
           {user ? <button onClick={handleLogout}>Logout</button> : <><Link to="/login">Login</Link><span>|</span><Link to="/register">Register</Link></>}
           <span aria-hidden="true">in</span><span aria-hidden="true">𝕏</span><span aria-hidden="true">f</span>
@@ -47,8 +47,6 @@ const Header = () => {
         <Link to="/" className="journal-brand" onClick={closeMenu}>
           <img src={logo} alt="IJEPA" />
           <span className="brand-acronym">IJEPA</span>
-          <span className="brand-divider" />
-          <span className="brand-title">International Journal of<br />Engineering Practices and Applications</span>
         </Link>
         <button className="menu-button" type="button" aria-label="Toggle navigation" aria-expanded={isMenuOpen} onClick={() => setIsMenuOpen(!isMenuOpen)}>
           {isMenuOpen ? '×' : '☰'}

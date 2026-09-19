@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Alert from '../components/Alert';
+import logo from '../assets/logo.png';
 
 const Login = () => {
-  const { login, loginWithGoogle } = useAuth(); // ✅ assuming you have Google login in AuthContext
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,36 +42,6 @@ const Login = () => {
     }
   };
 
-  // ✅ Demo login buttons
-  // eslint-disable-next-line no-unused-vars
-  const handleDemoLogin = async (role) => {
-    setError('');
-    setLoading(true);
-    try {
-      let creds;
-      if (role === 'admin') {
-        creds = { email: 'admin@example.com', password: 'password123' };
-      } else if (role === 'reviewer') {
-        creds = { email: 'reviewer@example.com', password: 'password123' };
-      } else {
-        creds = { email: 'author@example.com', password: 'password123' };
-      }
-
-      const result = await login(creds.email, creds.password);
-      if (result && result.success) {
-        const dashboardPath = getDashboardPath(result?.user?.role);
-        navigate(dashboardPath, { replace: true });
-      } else {
-        setError(result?.error || 'Demo login failed.');
-      }
-    } catch (err) {
-      setError('Demo login failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ Google login
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
@@ -83,119 +55,95 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-full bg-academic-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Logo */}
-        <div className="flex justify-center mb-2">
-           <img
-    src="/logo1 (2).png"
-    alt="Right Logo"
-    className="w-48 h-48 object-contain"
-  />
+    <div className="auth-page">
+      <div className="auth-shell">
+        <div className="auth-visual">
+          <div className="auth-visual-brand">
+            <img src={logo} alt="IJEPA" />
+            <strong>IJEPA</strong>
+          </div>
+          <div>
+            <h2>Welcome back to the world's engineering research community.</h2>
+            <ul className="auth-visual-points">
+              <li><span className="dot" /> Track every submission through peer review in real time</li>
+              <li><span className="dot" /> Collaborate with reviewers and editors on one platform</li>
+              <li><span className="dot" /> Publish open-access research trusted by 500+ researchers</li>
+            </ul>
+          </div>
+          <p className="auth-visual-foot">International Journal of Engineering Practices and Applications</p>
         </div>
 
-        <h2 className="mt-2 text-center text-3xl font-extrabold text-academic-900 leading-tight">
-          Sign in to your account
-        </h2>
-        <p className="mt-4 text-center text-base text-academic-600">
-          Access your research papers, reviews, and administrative tools
-        </p>
-        <p className="mt-2 text-center text-sm text-academic-600">
-          Or{' '}
-          <Link
-            to="/register"
-            className="font-medium text-amber-700 hover:text-amber-800 transition-colors duration-200"
-          >
-            create a new account
-          </Link>
-        </p>
-      </div>
+        <div className="auth-panel">
+          <div className="auth-card">
+            <h1>Sign in to your account</h1>
+            <p className="auth-subtitle">
+              Access your research papers, reviews, and administrative tools.<br />
+              New here? <Link to="/register">Create a free account</Link>
+            </p>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-lg rounded-lg sm:px-10">
-          {error && <Alert type="error" message={error} />}
+            {error && <Alert type="error" message={error} onClose={() => setError('')} />}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-academic-700">
-                Email address
-              </label>
-              <div className="mt-1">
+            <form onSubmit={handleSubmit} style={{ marginTop: 18 }}>
+              <div className="form-group">
+                <label htmlFor="email">Email address</label>
                 <input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="appearance-none block w-full px-3 py-2 border border-academic-300 rounded-md shadow-sm placeholder-academic-400 focus:outline-none focus:ring-amber-700 focus:border-amber-700 sm:text-sm"
+                  className="form-input"
+                  placeholder="you@institution.edu"
                 />
               </div>
-            </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-academic-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-academic-300 rounded-md shadow-sm placeholder-academic-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                />
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="form-input"
+                    placeholder="••••••••"
+                    style={{ paddingRight: 66 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'none', color: 'var(--blue)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    {showPassword ? 'HIDE' : 'SHOW'}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Submit */}
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="button w-full justify-center"
-              >
-                {loading ? (
-                  <p className="flex items-center justify-center gap-2 text-sm">
-                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                    <span>Signing In...</span>
-                  </p>
-                ) : (
-                  <p>Sign In</p>
-                )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
+                <Link to="/forgot-password" style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>Forgot your password?</Link>
+              </div>
+
+              <button type="submit" disabled={loading} className="button button-primary" style={{ width: '100%' }}>
+                {loading ? 'Signing In...' : 'Sign In →'}
               </button>
-            </div>
-          </form>
+            </form>
 
-          {/* Forgot password */}
-          <div className="mt-6 flex items-center justify-center">
-            <Link
-              to="/forgot-password"
-              className="text-sm font-medium text-amber-700 hover:text-amber-800"
-            >
-              Forgot your password?
-            </Link>
-          </div>
+            <div className="auth-divider">or continue with</div>
 
-          {/* ✅ Google Sign-in */}
-          <div className="mt-6">
-            <button
-              onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-academic-700 bg-white hover:bg-gray-50 transition-colors duration-200"
-            >
+            <button onClick={handleGoogleLogin} className="button-google" disabled={loading}>
               <img
                 src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                 alt="Google"
-                className="w-5 h-5 mr-2"
+                style={{ width: 18, height: 18 }}
               />
               Sign in with Google
             </button>
-          </div>
 
-          {/* ✅ Demo login buttons */}
-         
+            <div className="auth-footer-link">
+              Don't have an account? <Link to="/register">Sign up for free</Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

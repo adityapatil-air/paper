@@ -27,6 +27,7 @@ const Landing = () => {
       <section className="journal-hero">
         <div className="journal-container hero-grid">
           <div className="hero-copy">
+            <span className="hero-badge"><span className="dot-live" /> Trusted by 500+ Researchers Worldwide</span>
             <p className="eyebrow">INTERNATIONAL JOURNAL OF</p>
             <h1>Engineering Practices<br />and Applications</h1>
             <p className="hero-description">A peer-reviewed, open-access journal advancing research, innovation, and real-world applications across engineering disciplines.</p>
@@ -40,7 +41,7 @@ const Landing = () => {
         <div className="fact"><JournalIcon>⚙</JournalIcon><div><strong>Peer Reviewed</strong><small>Quality research, expert evaluation</small></div></div>
         <div className="fact"><JournalIcon>♙</JournalIcon><div><strong>Open Access</strong><small>Free access to global knowledge</small></div></div>
         <div className="fact"><JournalIcon>▣</JournalIcon><div><strong>Quarterly</strong><small>Four issues published each year</small></div></div>
-        <div className="fact"><JournalIcon>▤</JournalIcon><div><strong>ISSN</strong><small>3139-5961</small></div></div>
+        <div className="fact"><JournalIcon>▤</JournalIcon><div><strong>ISSN</strong><small>ISSN: 3139-5961 (Online)</small></div></div>
         <div className="fact"><JournalIcon>↗</JournalIcon><div><strong>DOI</strong><small>Digital Object Identifier</small></div></div>
       </div></section>
 

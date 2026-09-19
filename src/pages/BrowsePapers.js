@@ -217,41 +217,46 @@ const BrowsePapers = () => {
 
   if (loading) {
     return (
-      <div className="min-h-full flex items-center justify-center bg-slate-50">
-        <LoadingSpinner size="lg" text="Loading published papers..." />
+      <div className="page-body">
+        <div className="journal-container">
+          <div className="loading-state" style={{ display: 'flex', justifyContent: 'center' }}>
+            <LoadingSpinner size="lg" text="Loading published papers..." />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-slate-50 py-10">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-slate-900 mb-3">Research Library</h1>
-          <p className="text-slate-600 max-w-2xl mx-auto">
-            Tell us what you are looking for and browse matching published papers. Click a title to open the paper in a PDF viewer.
-          </p>
-        </header>
+    <div className="browse-papers-page">
+      <section className="page-banner">
+        <div className="journal-container">
+          <p className="eyebrow">RESEARCH & PUBLICATION</p>
+          <h1>Browse Papers</h1>
+          <p>Tell us what you are looking for and browse matching published papers. Click a title to open the paper in a PDF viewer.</p>
+        </div>
+      </section>
 
-        <section className="mb-8 bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">What are you looking for?</label>
+      <div className="page-body">
+        <div className="journal-container">
+          <div className="papers-toolbar">
+            <div className="form-group">
+              <label>What are you looking for?</label>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Enter keywords, topic, author name, or phrase..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="form-input"
               />
             </div>
 
-            <div className="w-full md:w-60">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Section (Category)</label>
+            <div className="form-group">
+              <label>Section (Category)</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="form-select"
               >
                 {categories.map((category) => (
                   <option key={category} value={category}>
@@ -261,205 +266,103 @@ const BrowsePapers = () => {
               </select>
             </div>
           </div>
-        </section>
 
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
           {filteredPapers.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-sm">
-              No published papers found matching your search.
-            </div>
+            <div className="empty-state">No published papers found matching your search.</div>
           ) : (
-            <div className="divide-y divide-slate-200">
-              {groupedByIssue().map((group) => {
-                const isOpen = openIssueKeys[group.key] === true;
+            groupedByIssue().map((group) => {
+              const isOpen = openIssueKeys[group.key] === true;
 
-                return (
-                  <div key={group.key} className="px-4 sm:px-6 py-4">
-                    <button
-                      type="button"
-                      onClick={() => toggleIssueOpen(group.key)}
-                      className="w-full flex items-center justify-between gap-2 mb-2 text-left"
-                    >
-                      <h2 className="text-sm font-semibold text-slate-800">
-                        {group.label}
-                      </h2>
-                      <span className="text-slate-400">
-                        <svg
-                          className={`w-4 h-4 transform transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </span>
-                    </button>
+              return (
+                <div key={group.key} className="issue-group">
+                  <button type="button" onClick={() => toggleIssueOpen(group.key)} className="issue-toggle">
+                    <h2>{group.label}</h2>
+                    <span className={`chevron${isOpen ? ' open' : ''}`}>▾</span>
+                  </button>
 
-                    {isOpen && (
-                      <ul className="space-y-2 mt-1">
-                        {group.papers.map((paper) => (
-                          <li
-                            key={paper.id}
-                            className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 rounded-lg hover:bg-slate-50 px-2 py-2"
-                          >
-                            <div>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenPaper(paper)}
-                                className="text-left text-indigo-700 hover:text-indigo-900 font-semibold leading-snug hover:underline"
-                              >
-                                {paper.title}
-                              </button>
-                              <div className="mt-1 text-xs text-slate-600">
-                                Authors: {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors || 'N/A'}
-                              </div>
-                            </div>
-
-                            <div className="text-xs text-slate-500 space-y-1 text-left sm:text-right">
-                              {paper.category && (
-                                <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
-                                  {paper.category}
-                                </div>
-                              )}
-                              {paper.publicationDate && (
-                                <div className="text-[11px]">
-                                  Published:{' '}
-                                  {new Date(paper.publicationDate).toLocaleDateString()}
-                                </div>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  {isOpen && (
+                    <div className="article-grid" style={{ marginTop: 14 }}>
+                      {group.papers.map((paper) => (
+                        <article className="article-card" key={paper.id}>
+                          {paper.category && <span className="article-tag">{paper.category}</span>}
+                          <h3 style={{ cursor: 'pointer' }} onClick={() => handleOpenPaper(paper)}>{paper.title}</h3>
+                          <p className="article-authors">
+                            Authors: {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors || 'N/A'}
+                          </p>
+                          {paper.publicationDate && (
+                            <small>Published: {new Date(paper.publicationDate).toLocaleDateString()}</small>
+                          )}
+                          <div className="article-actions">
+                            <button type="button" className="button button-small button-light" onClick={() => handleOpenPaper(paper)}>
+                              Read Paper
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
-        </section>
+        </div>
       </div>
 
       {selectedPaper && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-start justify-between gap-3">
+        <div className="paper-modal-overlay">
+          <div className="paper-modal">
+            <div className="paper-modal-header">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug line-clamp-2">
-                  {selectedPaper.title}
-                </h2>
-                <p className="mt-1 text-xs text-slate-600">
+                <h2>{selectedPaper.title}</h2>
+                <p>
                   Authors: {Array.isArray(selectedPaper.authors) ? selectedPaper.authors.join(', ') : selectedPaper.authors || 'N/A'}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {getIssueLabel(selectedPaper.assignedIssue)}
-                </p>
+                <p>{getIssueLabel(selectedPaper.assignedIssue)}</p>
               </div>
-              <button
-                type="button"
-                onClick={handleClosePaper}
-                className="text-slate-400 hover:text-slate-600 text-xl leading-none"
-              >
+              <button type="button" onClick={handleClosePaper} className="paper-modal-close" aria-label="Close">
                 &times;
               </button>
             </div>
 
-            <div className="flex-1 bg-slate-900/95" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+            <div className="paper-modal-body">
               {selectedPaper.pdfUrl && selectedPaper.pdfUrl.toLowerCase().endsWith('.pdf') ? (
-                <div className="flex flex-col items-center justify-start py-6">
+                <>
                   <Document
                     file={selectedPaper.pdfUrl}
                     onLoadSuccess={onDocumentLoadSuccess}
                     onLoadError={(err) => setPdfError('Failed to load PDF.')}
-                    loading={
-                      <div className="flex items-center justify-center text-slate-100 text-sm">
-                        <LoadingSpinner size="sm" text="Loading PDF..." />
-                      </div>
-                    }
-                    error={
-                      <div className="flex items-center justify-center text-red-200 text-sm">
-                        Failed to load PDF.
-                      </div>
-                    }
+                    loading={<LoadingSpinner size="sm" text="Loading PDF..." />}
+                    error={<div style={{ color: '#ffd9d9', fontSize: 10 }}>Failed to load PDF.</div>}
                   >
                     <Page pageNumber={pageNumber} height={650} scale={zoom} />
                   </Document>
 
                   {pdfError && (
-                    <div className="mt-3 text-xs text-red-200">{pdfError}</div>
+                    <div style={{ color: '#ffd9d9', fontSize: 9, marginTop: 10 }}>{pdfError}</div>
                   )}
 
                   {numPages && (
-                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-100 justify-center">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleZoomOut}
-                          className="px-2 py-1 rounded bg-slate-800 disabled:opacity-50"
-                          disabled={zoom <= 0.5}
-                        >
-                          -
-                        </button>
-                        <span>{Math.round(zoom * 100)}%</span>
-                        <button
-                          type="button"
-                          onClick={handleZoomIn}
-                          className="px-2 py-1 rounded bg-slate-800 disabled:opacity-50"
-                          disabled={zoom >= 2}
-                        >
-                          +
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleResetZoom}
-                          className="px-3 py-1 rounded bg-slate-800/70 hover:bg-slate-800"
-                        >
-                          Reset
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={handlePrevPage}
-                          disabled={pageNumber <= 1}
-                          className="px-3 py-1 rounded bg-slate-800 disabled:opacity-50"
-                        >
-                          Previous
-                        </button>
-                        <span>
-                          Page {pageNumber} of {numPages}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleNextPage}
-                          disabled={numPages && pageNumber >= numPages}
-                          className="px-3 py-1 rounded bg-slate-800 disabled:opacity-50"
-                        >
-                          Next
-                        </button>
-                      </div>
+                    <div className="viewer-controls" style={{ color: '#dbeefb' }}>
+                      <button type="button" onClick={handleZoomOut} className="button button-small button-outline" disabled={zoom <= 0.5}>-</button>
+                      <span>{Math.round(zoom * 100)}%</span>
+                      <button type="button" onClick={handleZoomIn} className="button button-small button-outline" disabled={zoom >= 2}>+</button>
+                      <button type="button" onClick={handleResetZoom} className="button button-small button-outline">Reset</button>
+                      <button type="button" onClick={handlePrevPage} disabled={pageNumber <= 1} className="button button-small button-outline">Previous</button>
+                      <span>Page {pageNumber} of {numPages}</span>
+                      <button type="button" onClick={handleNextPage} disabled={numPages && pageNumber >= numPages} className="button button-small button-outline">Next</button>
                     </div>
                   )}
-                </div>
+                </>
               ) : (
-                <div className="flex items-center justify-center h-full min-h-[60vh] px-6 py-10">
-                  <div className="max-w-md text-center">
-                    <h2 className="text-lg font-semibold text-white mb-3">PDF not available</h2>
-                    <p className="text-sm text-slate-200">
-                      This paper does not have a PDF file available for inline viewing.
-                    </p>
-                  </div>
+                <div className="pdf-unavailable">
+                  <h2>PDF not available</h2>
+                  <p>This paper does not have a PDF file available for inline viewing.</p>
                 </div>
               )}
             </div>
 
-            <div className="px-4 sm:px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end">
-              <button
-                type="button"
-                onClick={handleClosePaper}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-medium rounded-lg"
-              >
+            <div className="paper-modal-footer">
+              <button type="button" onClick={handleClosePaper} className="button button-small button-dark">
                 Close
               </button>
             </div>

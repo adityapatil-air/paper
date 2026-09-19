@@ -138,25 +138,18 @@ const JournalIssues = () => {
   };
 
   const PaperCard = ({ paper, serial }) => (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
-      <p className="text-sm text-slate-700 mb-1">
-        <span className="text-slate-900">Paper ID: {formatPaperId(serial, paper.issueYear)}</span>
-      </p>
-      <p className="text-sm text-slate-700">
-        <span className="font-semibold text-slate-900">Title:</span>{' '}
+    <div className="paper-mini">
+      <p style={{ margin: '0 0 4px' }}>Paper ID: {formatPaperId(serial, paper.issueYear)}</p>
+      <p style={{ margin: '0 0 4px' }}>
+        <strong>Title:</strong>{' '}
         {paper.pdfUrl ? (
-          <a
-            href={`/paper/${slugify(paper.title)}`}
-            className="text-amber-700 hover:underline"
-          >
-            {paper.title}
-          </a>
+          <a href={`/paper/${slugify(paper.title)}`}>{paper.title}</a>
         ) : (
-          <span className="text-slate-900">{paper.title}</span>
+          <span>{paper.title}</span>
         )}
       </p>
-      <p className="text-sm text-slate-700 mt-1">
-        <span className="font-semibold text-slate-900">Authors:</span> {getAuthorsText(paper.authors)}
+      <p style={{ margin: 0 }}>
+        <strong>Authors:</strong> {getAuthorsText(paper.authors)}
       </p>
     </div>
   );
@@ -184,185 +177,157 @@ const JournalIssues = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Main Content Box — identical to AuthorGuidelines */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 print:p-6">
+    <div className="journal-issues-page">
+      <section className="page-banner">
+        <div className="journal-container">
+          <p className="breadcrumb">Home / Journal Issues</p>
+          <p className="eyebrow">RESEARCH & PUBLICATION</p>
+          <h1>Journal Issues</h1>
+          <p>Explore current and archived issues of IJEPA featuring peer-reviewed research across engineering disciplines.</p>
+        </div>
+      </section>
 
-          {/* Header */}
-          <div className="text-center mb-10 pb-6 border-b border-slate-200">
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
-              Journal <span className="text-amber-700">Issues</span>
-            </h1>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Explore current and archived issues of IJEPA featuring peer-reviewed research across engineering disciplines.
-            </p>
-          </div>
+      <div className="page-body journal-container">
+        <p>
+          The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> publishes regular issues featuring high-quality research articles, reviews, and case studies across diverse engineering domains. Our issues provide a global platform for disseminating knowledge and fostering innovation in engineering practices and applications.
+        </p>
 
-          {/* Intro */}
-          <p className="text-slate-700 mb-8 leading-relaxed text-justify">
-            The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> publishes regular issues featuring high-quality research articles, reviews, and case studies across diverse engineering domains. Our issues provide a global platform for disseminating knowledge and fostering innovation in engineering practices and applications.
-          </p>
+        <h2>Current Issue</h2>
 
-          {/* Current Issue */}
-          <section className="mb-10">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
-              Current Issue
-            </h2>
+        {loading ? (
+          <p>Loading current issue...</p>
+        ) : currentIssue ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setIsCurrentIssueExpanded((prev) => !prev)}
+              className="issue-chip"
+            >
+              <span>Volume {currentIssue.volume}</span>
+              <span>&bull;</span>
+              <span>Issue {currentIssue.issue}</span>
+              <span>&bull;</span>
+              <span>{currentIssue.month}, {currentIssue.year}</span>
+              <svg
+                className={`chevron ${isCurrentIssueExpanded ? 'open' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-            {loading ? (
-              <p className="text-slate-600 text-justify">Loading current issue...</p>
-            ) : currentIssue ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsCurrentIssueExpanded((prev) => !prev)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 border border-amber-200 text-slate-800 mb-4"
-                >
-                  <span className="font-semibold">Volume {currentIssue.volume}</span>
-                  <span className="text-slate-500">•</span>
-                  <span className="font-medium">Issue {currentIssue.issue}</span>
-                  <span className="text-slate-500">•</span>
-                  <span className="text-slate-700">{currentIssue.month}, {currentIssue.year}</span>
-                  <svg
-                    className={`w-4 h-4 text-amber-700 transition-transform ${isCurrentIssueExpanded ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+            {isCurrentIssueExpanded && (
+              papersLoading ? (
+                <p>Loading papers for this issue...</p>
+              ) : currentIssuePapers.length > 0 ? (
+                <div className="article-grid" style={{ gridTemplateColumns: 'repeat(2,1fr)', marginTop: 14 }}>
+                  {currentIssuePapers.map((paper, idx) => (
+                    <PaperCard
+                      key={paper.id}
+                      serial={idx + 1}
+                      paper={mapBackendPaperToIssueCard(paper, currentIssue?.year)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p>No papers have been assigned to this issue yet.</p>
+              )
+            )}
+          </>
+        ) : (
+          <p>No current issue is available at the moment.</p>
+        )}
 
-                {isCurrentIssueExpanded && (
-                  papersLoading ? (
-                    <p className="text-slate-600 text-justify">Loading papers for this issue...</p>
-                  ) : currentIssuePapers.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {currentIssuePapers.map((paper, idx) => (
-                        <PaperCard
-                          key={paper.id}
-                          serial={idx + 1}
-                          paper={mapBackendPaperToIssueCard(paper, currentIssue?.year)}
-                        />
-                      ))}
+        <h2>Archives</h2>
+
+        <p>
+          Explore previously published volumes and issues of IJEPA. All articles are available in full text under our open-access policy.
+        </p>
+
+        {loading ? (
+          <p>Loading archives...</p>
+        ) : (
+          <div>
+            {archiveVolumeKeys.map((volume) => {
+              const issuesInVolume = archivesByVolume[volume] || [];
+              const isActiveVolume = volume === activeArchiveVolumeKey;
+              const isVolumeExpanded = isActiveVolume || expandedVolumeKey === volume;
+
+              return (
+                <div key={volume} style={{ marginBottom: 20 }}>
+                  {isActiveVolume ? (
+                    <div className="volume-toggle is-active">
+                      <span>{volume}</span>
+                      <span>Active</span>
                     </div>
                   ) : (
-                    <p className="text-slate-600 text-justify">No papers have been assigned to this issue yet.</p>
-                  )
-                )}
-              </>
-            ) : (
-              <p className="text-slate-600 text-justify">No current issue is available at the moment.</p>
-            )}
-          </section>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedVolumeKey((prev) => (prev === volume ? null : volume))}
+                      className="volume-toggle"
+                    >
+                      <span>{volume}</span>
+                      <svg
+                        className={`chevron ${isVolumeExpanded ? 'open' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  )}
 
-          {/* Archives */}
-          <section className="mb-10">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
-              Archives
-            </h2>
-
-            <p className="text-slate-700 mb-6 text-justify">
-              Explore previously published volumes and issues of IJEPA. All articles are available in full text under our open-access policy.
-            </p>
-
-            {loading ? (
-              <p className="text-slate-600 text-justify">Loading archives...</p>
-            ) : (
-              <div className="space-y-6">
-                {archiveVolumeKeys.map((volume) => {
-                  const issuesInVolume = archivesByVolume[volume] || [];
-                  const isActiveVolume = volume === activeArchiveVolumeKey;
-                  const isVolumeExpanded = isActiveVolume || expandedVolumeKey === volume;
-
-                  return (
-                    <div key={volume}>
-                      {isActiveVolume ? (
-                        <div className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-slate-800">
-                          <span className="text-lg font-bold">{volume}</span>
-                          <span className="text-xs font-semibold text-amber-700">Active</span>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setExpandedVolumeKey((prev) => (prev === volume ? null : volume))}
-                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-slate-800"
+                  {isVolumeExpanded && (
+                    <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+                      {issuesInVolume.map((issue) => (
+                        <div
+                          key={issue.id}
+                          className="issue-card"
+                          onClick={() => handleArchiveIssueClick(issue)}
                         >
-                          <span className="text-lg font-bold">{volume}</span>
-                          <svg
-                            className={`w-5 h-5 text-amber-700 transition-transform ${isVolumeExpanded ? 'rotate-180' : ''}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                      )}
+                          <div className="issue-card-head">
+                            <span><strong>Issue {issue.issue}, {issue.year}</strong></span>
+                            <span>
+                              {expandedIssueId === issue.id ? 'Hide' : 'View'}
+                              <svg className="chevron" style={{ marginLeft: 4 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </span>
+                          </div>
 
-                      {isVolumeExpanded && (
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {issuesInVolume.map((issue) => (
-                            <div
-                              key={issue.id}
-                              className="bg-white p-4 rounded-lg border border-slate-200 hover:shadow-sm transition cursor-pointer"
-                              onClick={() => handleArchiveIssueClick(issue)}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="font-medium text-slate-900">
-                                  Issue {issue.issue}, {issue.year}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-xs text-amber-700">
-                                  {expandedIssueId === issue.id ? 'Hide' : 'View'}
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </span>
-                              </div>
-
-                              {expandedIssueId === issue.id && (
-                                <div className="mt-3 pt-3 border-t border-slate-200">
-                                  {archivePapersLoadingId === issue.id ? (
-                                    <p className="text-sm text-slate-600">Loading papers...</p>
-                                  ) : (archiveIssuePapers[issue.id] || []).length === 0 ? (
-                                    <p className="text-sm text-slate-600">No papers available.</p>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      {(archiveIssuePapers[issue.id] || []).map((paper, idx) => (
-                                        <PaperCard
-                                          key={paper.id}
-                                          serial={idx + 1}
-                                          paper={mapBackendPaperToIssueCard(paper, issue?.year)}
-                                        />
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
+                          {expandedIssueId === issue.id && (
+                            <div className="issue-card-body">
+                              {archivePapersLoadingId === issue.id ? (
+                                <p style={{ margin: 0 }}>Loading papers...</p>
+                              ) : (archiveIssuePapers[issue.id] || []).length === 0 ? (
+                                <p style={{ margin: 0 }}>No papers available.</p>
+                              ) : (
+                                (archiveIssuePapers[issue.id] || []).map((paper, idx) => (
+                                  <PaperCard
+                                    key={paper.id}
+                                    serial={idx + 1}
+                                    paper={mapBackendPaperToIssueCard(paper, issue?.year)}
+                                  />
+                                ))
                               )}
                             </div>
-                          ))}
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* Call to Action */}
-          <div className="text-center pt-6 border-t border-slate-200">
-            <p className="text-slate-700 mb-4">
-              To publish in upcoming issues, please visit our Call for Papers page.
-            </p>
-            <a
-              href="/callforpapers"
-              className="inline-flex items-center px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white font-medium rounded-lg text-sm transition-colors"
-            >
-              Call for Papers
-            </a>
+                  )}
+                </div>
+              );
+            })}
           </div>
+        )}
+
+        <div style={{ textAlign: 'center', marginTop: 30, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
+          <p>To publish in upcoming issues, please visit our Call for Papers page.</p>
+          <a href="/callforpapers" className="button button-primary button-small">Call for Papers</a>
         </div>
       </div>
     </div>

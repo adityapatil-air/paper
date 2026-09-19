@@ -324,45 +324,46 @@ const AuthorDashboard = () => {
     return dateB - dateA;
   });
 
+  const statusBadgeClass = (status) => {
+    if (status === 'published') return 'badge badge-success';
+    if (status === 'under_review') return 'badge badge-warning';
+    if (status === 'submitted') return 'badge badge-info';
+    if (status === 'revisions_requested') return 'badge badge-warning';
+    return 'badge badge-danger';
+  };
+
   if (loading) {
     return (
-      <div className="min-h-full flex items-center justify-center">
+      <div className="dash-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <LoadingSpinner size="lg" text="Loading your papers..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-academic-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="dash-page">
+      <div className="journal-container">
+        <div className="dash-header">
           <div>
-            <h1 className="text-3xl font-bold text-academic-900 mb-3 leading-tight">
-              Author Dashboard
-            </h1>
-            <p className="text-academic-600 text-lg">
-              Welcome back, <span className="font-medium">{user.name}</span>. Track your research submissions and manage your academic portfolio.
-            </p>
+            <h1>Author Dashboard</h1>
+            <p>Welcome back, <strong>{user.name}</strong>. Track your research submissions and manage your academic portfolio.</p>
           </div>
           <button
             type="button"
             onClick={() => setShowNotificationsModal(true)}
-            className="inline-flex items-center px-4 py-2 bg-white border border-academic-200 rounded-lg shadow-sm text-sm font-medium text-academic-700 hover:bg-academic-50 transition-colors duration-200"
+            className="icon-btn"
           >
-            <svg className="w-5 h-5 text-academic-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
+            Notifications
             {unreadNotificationsCount > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold bg-amber-700 text-white rounded-full">
+              <span className="badge badge-danger" style={{ marginLeft: 6 }}>
                 {unreadNotificationsCount}
               </span>
             )}
           </button>
         </div>
 
-        {/* Alert */}
         {alert && (
-          <div className="mb-8">
+          <div style={{ marginBottom: 18 }}>
             <Alert
               type={alert.type}
               message={alert.message}
@@ -372,48 +373,49 @@ const AuthorDashboard = () => {
         )}
 
         {showNotificationsModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-academic-900">Notifications</h2>
-                  <button
-                    type="button"
-                    onClick={() => setShowNotificationsModal(false)}
-                    className="text-academic-400 hover:text-academic-600"
-                  >
-                    &times;
-                  </button>
-                </div>
-
+          <div className="modal-overlay">
+            <div className="modal-panel">
+              <div className="modal-panel-header">
+                <h2>Notifications</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowNotificationsModal(false)}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="modal-panel-body">
                 {notificationsLoading ? (
-                  <p className="text-sm text-academic-500">Loading notifications...</p>
+                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>Loading notifications...</p>
                 ) : notifications.length === 0 ? (
-                  <p className="text-sm text-academic-500">You have no notifications.</p>
+                  <div className="dash-empty">You have no notifications.</div>
                 ) : (
-                  <div className="space-y-3">
+                  <div>
                     {notifications.map(notification => (
                       <div
                         key={notification.id}
                         onClick={() => handleNotificationClick(notification.id)}
-                        className={`p-3 rounded-lg border text-sm cursor-pointer transition-colors duration-200 ${notification.read
-                          ? 'bg-academic-50 border-academic-100 text-academic-600'
-                          : 'bg-white border-amber-100 text-academic-700 hover:bg-amber-50'
-                          }`}
+                        className="page-card"
+                        style={{
+                          cursor: 'pointer',
+                          marginBottom: 10,
+                          background: notification.read ? '#f4f9fc' : '#fff'
+                        }}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                           <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                              <span style={{ fontWeight: 700, fontSize: 11, color: 'var(--ink)' }}>
                                 {notification.title}
                               </span>
                               {notification.timestamp && (
-                                <span className="text-xs text-academic-400">
+                                <span style={{ fontSize: 8, color: 'var(--muted)' }}>
                                   {new Date(notification.timestamp).toLocaleDateString()}
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs">
+                            <p style={{ margin: 0, fontSize: 9, color: 'var(--muted)' }}>
                               {notification.message}
                             </p>
                           </div>
@@ -423,7 +425,8 @@ const AuthorDashboard = () => {
                               e.stopPropagation();
                               handleDeleteNotification(notification.id);
                             }}
-                            className="ml-2 text-xs text-red-600 hover:text-red-800"
+                            className="icon-btn"
+                            style={{ flexShrink: 0 }}
                           >
                             Delete
                           </button>
@@ -438,155 +441,113 @@ const AuthorDashboard = () => {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-          <div className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center">
-              <div className="p-3 bg-amber-50 rounded-xl">
-                <svg className="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-academic-500 uppercase tracking-wide">Submitted</p>
-                <p className="text-3xl font-bold text-academic-900 mt-1">{stats.submitted}</p>
-              </div>
-            </div>
+        <div className="stat-cards">
+          <div className="stat-card">
+            <p className="stat-label">Submitted</p>
+            <p className="stat-value">{stats.submitted}</p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-50 rounded-xl">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-academic-500 uppercase tracking-wide">Under Review</p>
-                <p className="text-3xl font-bold text-academic-900 mt-1">{stats.under_review}</p>
-              </div>
-            </div>
+          <div className="stat-card">
+            <p className="stat-label">Under Review</p>
+            <p className="stat-value">{stats.under_review}</p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-50 rounded-xl">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-academic-500 uppercase tracking-wide">Published</p>
-                <p className="text-3xl font-bold text-academic-900 mt-1">{stats.published}</p>
-              </div>
-            </div>
+          <div className="stat-card">
+            <p className="stat-label">Published</p>
+            <p className="stat-value">{stats.published}</p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center">
-              <div className="p-3 bg-red-50 rounded-xl">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-academic-500 uppercase tracking-wide">Rejected</p>
-                <p className="text-3xl font-bold text-academic-900 mt-1">{stats.rejected}</p>
-              </div>
-            </div>
+          <div className="stat-card">
+            <p className="stat-label">Rejected</p>
+            <p className="stat-value">{stats.rejected}</p>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="mb-10">
+        <div style={{ marginBottom: 22 }}>
           <button
             onClick={() => navigate('/submitform')}
-            className="btn-glow"
+            className="button button-primary"
           >
-            <strong>Submit New Paper</strong>
+            Submit New Paper
           </button>
         </div>
 
         {/* Upload Form Modal */}
         {showUploadForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-academic-900">Submit New Paper</h2>
-                  <button
-                    onClick={() => setShowUploadForm(false)}
-                    className="text-academic-400 hover:text-academic-600 hover:bg-academic-100 rounded-full p-2 transition-colors duration-200"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
+          <div className="modal-overlay">
+            <div className="modal-panel" style={{ maxWidth: 720 }}>
+              <div className="modal-panel-header">
+                <h2>Submit New Paper</h2>
+                <button
+                  onClick={() => setShowUploadForm(false)}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
 
-                <form onSubmit={handleSubmitPaper} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">Paper Title</label>
+              <div className="modal-panel-body">
+                <form onSubmit={handleSubmitPaper}>
+                  <div className="form-group">
+                    <label>Paper Title</label>
                     <input
                       type="text"
                       name="title"
                       value={uploadFormData.title}
                       onChange={handleUploadFormChange}
-                      className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 transition-colors duration-200"
+                      className="form-input"
                       placeholder="Enter paper title"
                       required
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">Authors (comma-separated)</label>
+                  <div className="form-group">
+                    <label>Authors (comma-separated)</label>
                     <input
                       type="text"
                       name="authors"
                       value={uploadFormData.authors}
                       onChange={handleUploadFormChange}
-                      className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 transition-colors duration-200"
+                      className="form-input"
                       placeholder="Author 1, Author 2, Author 3"
                       required
                     />
-                    <p className="mt-1 text-xs text-academic-500">Include all contributing authors in order of contribution</p>
+                    <p className="form-hint">Include all contributing authors in order of contribution</p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">Abstract</label>
+                  <div className="form-group">
+                    <label>Abstract</label>
                     <textarea
                       name="abstract"
                       value={uploadFormData.abstract}
                       onChange={handleUploadFormChange}
-                      className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 transition-colors duration-200 resize-none"
+                      className="form-textarea"
                       placeholder="Enter paper abstract (150-300 words)"
                       rows="6"
                       required
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">Keywords (comma-separated)</label>
+                  <div className="form-group">
+                    <label>Keywords (comma-separated)</label>
                     <input
                       type="text"
                       name="keywords"
                       value={uploadFormData.keywords}
                       onChange={handleUploadFormChange}
-                      className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 transition-colors duration-200"
+                      className="form-input"
                       placeholder="keyword1, keyword2, keyword3"
                       required
                     />
-                    <p className="mt-1 text-xs text-academic-500">3-8 keywords that best represent your paper</p>
+                    <p className="form-hint">3-8 keywords that best represent your paper</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-academic-700 mb-2">Category</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div className="form-group">
+                      <label>Category</label>
                       <select
                         name="category"
                         value={uploadFormData.category}
                         onChange={handleUploadFormChange}
-                        className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 transition-colors duration-200"
+                        className="form-select"
                         required
                       >
                         <option value="">Select category</option>
@@ -599,90 +560,66 @@ const AuthorDashboard = () => {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-academic-700 mb-2">Word Count</label>
+                    <div className="form-group">
+                      <label>Word Count</label>
                       <input
                         type="number"
                         name="wordCount"
                         value={uploadFormData.wordCount}
                         onChange={handleUploadFormChange}
-                        className="w-full px-4 py-3 border border-academic-300 rounded-lg focus:ring-2 focus:ring-amber-700 focus:border-amber-700 transition-colors duration-200"
+                        className="form-input"
                         placeholder="e.g., 5000"
                         min="500"
                         required
                       />
-                      <p className="mt-1 text-xs text-academic-500">Minimum 500 words</p>
+                      <p className="form-hint">Minimum 500 words</p>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">PDF File</label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-academic-300 border-dashed rounded-lg hover:border-academic-400 transition-colors duration-200">
-                      <div className="space-y-1 text-center">
-                        <svg className="mx-auto h-12 w-12 text-academic-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <div className="flex text-sm text-academic-600">
-                          <label className="relative cursor-pointer rounded-md font-medium text-amber-700 hover:text-amber-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-amber-700">
-                            <span>Upload a file</span>
-                            <input
-                              type="file"
-                              name="pdfFile"
-                              accept=".pdf"
-                              onChange={handleUploadFormChange}
-                              className="sr-only"
-                              required
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-academic-500">PDF up to 20MB</p>
-                        {uploadFormData.pdfFile && (
-                          <p className="text-sm text-green-600 font-medium">
-                            <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            {uploadFormData.pdfFile.name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                  <div className="form-group">
+                    <label>PDF File</label>
+                    <label className="file-drop" style={{ display: 'block' }}>
+                      <div>Upload a file or drag and drop</div>
+                      <div style={{ marginTop: 4 }}>PDF up to 20MB</div>
+                      <input
+                        type="file"
+                        name="pdfFile"
+                        accept=".pdf"
+                        onChange={handleUploadFormChange}
+                        style={{ display: 'none' }}
+                        required
+                      />
+                      {uploadFormData.pdfFile && (
+                        <p style={{ color: '#0f7b3d', fontWeight: 600, marginTop: 8 }}>
+                          {uploadFormData.pdfFile.name}
+                        </p>
+                      )}
+                    </label>
                   </div>
 
-                  <div className="bg-academic-50 p-5 rounded-xl border border-academic-200">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <svg className="h-6 w-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                          <p>Submission fee: <strong className="text-lg text-amber-700">₹730</strong></p>
-                        </svg>
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-academic-900">Submission Information</h3>
-                        <div className="mt-2 text-sm text-academic-600">
-                          <p className="mt-1">Payment is required to initiate the review process. You can pay immediately after submission.</p>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="contact-note" style={{ marginBottom: 20 }}>
+                    Submission fee: <strong>₹730</strong>. Payment is required to initiate the review process. You can pay immediately after submission.
                   </div>
 
-                  <div className="flex space-x-4 pt-6">
+                  <div style={{ display: 'flex', gap: 12 }}>
                     <button
                       type="submit"
                       disabled={uploading}
-                      className="flex-1 py-3 px-4 bg-amber-700 hover:bg-amber-800 disabled:bg-amber-500 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-700 focus:ring-offset-2 flex items-center justify-center"
+                      className="button button-primary"
+                      style={{ flex: 1 }}
                     >
                       {uploading ? (
-                        <span className="flex items-center">
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <LoadingSpinner size="sm" text="" />
-                          <span className="ml-2">Submitting...</span>
+                          Submitting...
                         </span>
                       ) : 'Submit Paper'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowUploadForm(false)}
-                      className="flex-1 py-3 px-4 bg-academic-200 hover:bg-academic-300 text-academic-700 font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-academic-500 focus:ring-offset-2"
+                      className="button button-outline"
+                      style={{ flex: 1 }}
                     >
                       Cancel
                     </button>
@@ -694,110 +631,88 @@ const AuthorDashboard = () => {
         )}
 
         {/* Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-academic-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab('submissions')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === 'submissions'
-                  ? 'border-amber-500 text-amber-600'
-                  : 'border-transparent text-academic-500 hover:text-academic-700 hover:border-academic-300'
-                  }`}
-              >
-                All Submissions ({papers.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('pending')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === 'pending'
-                  ? 'border-amber-500 text-amber-600'
-                  : 'border-transparent text-academic-500 hover:text-academic-700 hover:border-academic-300'
-                  }`}
-              >
-                Pending Payment ({stats.submitted})
-              </button>
-            </nav>
-          </div>
+        <div className="dash-tabs">
+          <button
+            onClick={() => setActiveTab('submissions')}
+            className={`dash-tab ${activeTab === 'submissions' ? 'is-active' : ''}`}
+          >
+            All Submissions ({papers.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`dash-tab ${activeTab === 'pending' ? 'is-active' : ''}`}
+          >
+            Pending Payment ({stats.submitted})
+          </button>
         </div>
 
         {/* Papers List */}
         {activeTab === 'submissions' && (
           <>
-            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="search-bar">
               <input
                 type="text"
                 value={authorSearchTerm}
                 onChange={(e) => setAuthorSearchTerm(e.target.value)}
                 placeholder="Search by title, author, category..."
-                className="w-full md:max-w-md px-4 py-2 border border-academic-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 text-sm"
+                className="form-input"
+                style={{ flex: 1, minWidth: 220 }}
               />
-              <div className="flex items-center gap-3">
-                <select
-                  value={authorSortBy}
-                  onChange={(e) => setAuthorSortBy(e.target.value)}
-                  className="px-3 py-2 border border-academic-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700"
-                >
-                  <option value="recent">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  <option value="title_az">Title A-Z</option>
-                  <option value="title_za">Title Z-A</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setShowAllAuthorPapers(prev => !prev)}
-                  className="px-3 py-2 border border-academic-200 rounded-lg bg-white text-sm font-medium text-academic-700 hover:bg-academic-50"
-                >
-                  {showAllAuthorPapers ? 'Show unfinished only' : 'View all papers'}
-                </button>
-              </div>
+              <select
+                value={authorSortBy}
+                onChange={(e) => setAuthorSortBy(e.target.value)}
+                className="form-select"
+                style={{ maxWidth: 180 }}
+              >
+                <option value="recent">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="title_az">Title A-Z</option>
+                <option value="title_za">Title Z-A</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowAllAuthorPapers(prev => !prev)}
+                className="button button-outline button-small"
+              >
+                {showAllAuthorPapers ? 'Show unfinished only' : 'View all papers'}
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
               {visibleAuthorPapers.map(paper => (
-                <div key={paper.id} className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 hover:shadow-md transition-all duration-300">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-academic-900 line-clamp-2 leading-tight">
-                      {paper.title}
-                    </h3>
-                    <span className={`${paper.status === 'published' ? 'badge-success' :
-                      paper.status === 'under_review' ? 'badge-warning' :
-                        paper.status === 'submitted' ? 'badge-info' :
-                          'badge-danger'
-                      }`}>
+                <div key={paper.id} className="dash-panel">
+                  <div className="dash-panel-head">
+                    <h2>{paper.title}</h2>
+                    <span className={statusBadgeClass(paper.status)}>
                       {paper.status.replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="mb-4 space-y-2">
-                    <div className="flex items-center">
-                      <span className="font-medium text-academic-700 text-sm w-20">Authors:</span>
-                      <span className="text-sm text-academic-600">{paper.authors.join(', ')}</span>
+                  <div style={{ marginBottom: 12, fontSize: 10, color: 'var(--muted)' }}>
+                    <div style={{ marginBottom: 4 }}>
+                      <strong style={{ color: 'var(--ink)' }}>Authors: </strong>{paper.authors.join(', ')}
                     </div>
-
-                    <div className="flex items-center">
-                      <span className="font-medium text-academic-700 text-sm w-20">Submitted:</span>
-                      <span className="text-sm text-academic-600">{new Date(paper.submissionDate).toLocaleDateString()}</span>
+                    <div style={{ marginBottom: 4 }}>
+                      <strong style={{ color: 'var(--ink)' }}>Submitted: </strong>{new Date(paper.submissionDate).toLocaleDateString()}
                     </div>
                     {paper.publicationDate && (
-                      <div className="flex items-center">
-                        <span className="font-medium text-academic-700 text-sm w-20">Published:</span>
-                        <span className="text-sm text-academic-600">{new Date(paper.publicationDate).toLocaleDateString()}</span>
+                      <div>
+                        <strong style={{ color: 'var(--ink)' }}>Published: </strong>{new Date(paper.publicationDate).toLocaleDateString()}
                       </div>
                     )}
                   </div>
 
-                  <div className="mb-5">
-                    <p className="text-academic-700 text-sm leading-relaxed line-clamp-3">
-                      {paper.abstract}
-                    </p>
-                  </div>
+                  <p style={{ fontSize: 10, color: 'var(--ink)', lineHeight: 1.6, marginBottom: 14 }}>
+                    {paper.abstract}
+                  </p>
 
                   {paper.pdfUrl && (
-                    <div className="mb-5">
+                    <div style={{ marginBottom: 14 }}>
                       <a
                         href={paper.pdfUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1.5 bg-academic-100 hover:bg-academic-200 text-academic-700 text-xs font-medium rounded-lg border border-black transition-colors duration-200"
+                        className="icon-btn"
                       >
                         View Manuscript (latest version)
                       </a>
@@ -805,95 +720,63 @@ const AuthorDashboard = () => {
                   )}
 
                   {paper.status === 'submitted' && paper.paymentStatus === 'pending' && (
-                    <div className="pt-4 border-t border-academic-200">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-sm text-academic-600 font-medium">
-                            Submission fee: <span className="text-lg font-bold text-primary-600">₹1500</span>
-                          </span>
-                          <p className="text-xs text-academic-500 mt-1">Complete payment to initiate review</p>
-                        </div>
-                        <button
-                          onClick={() => handlePayment(paper.id)}
-                          className="Btn"
-                        >
-                          <svg className="svgIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M2 6L12 13L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                          </svg>
-                          Pay Now
-                        </button>
+                    <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                      <div>
+                        <span style={{ fontSize: 10, color: 'var(--ink)', fontWeight: 600 }}>
+                          Submission fee: <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--navy)' }}>₹1500</span>
+                        </span>
+                        <p style={{ fontSize: 9, color: 'var(--muted)', margin: '4px 0 0' }}>Complete payment to initiate review</p>
                       </div>
+                      <button
+                        onClick={() => handlePayment(paper.id)}
+                        className="button button-primary button-small"
+                      >
+                        Pay Now
+                      </button>
                     </div>
                   )}
 
                   {paper.status === 'submitted' && paper.paymentStatus === 'paid' && (
-                    <div className="pt-4 border-t border-academic-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                          </svg>
-                          <span className="text-sm text-green-600 font-medium">Payment completed</span>
-                        </div>
-                        <span className="text-sm text-academic-500">
-                          Awaiting reviewer assignment
-                        </span>
-                      </div>
+                    <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="badge badge-success">Payment completed</span>
+                      <span style={{ fontSize: 9, color: 'var(--muted)' }}>Awaiting reviewer assignment</span>
                     </div>
                   )}
 
                   {paper.status === 'under_review' && (
-                    <div className="pt-4 border-t border-academic-200">
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex items-center">
-                          <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                          </svg>
-                          <span className="text-sm text-academic-600">Currently under review</span>
-                        </div>
-                        {paper.reviewDeadline && (
-                          <p className="text-xs text-academic-500">
-                            Estimated completion: {new Date(paper.reviewDeadline).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
+                    <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                      <span style={{ fontSize: 10, color: 'var(--ink)' }}>Currently under review</span>
+                      {paper.reviewDeadline && (
+                        <p style={{ fontSize: 9, color: 'var(--muted)', margin: '4px 0 0' }}>
+                          Estimated completion: {new Date(paper.reviewDeadline).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
                   )}
 
                   {paper.status === 'revisions_requested' && (
-                    <div className="pt-4 border-t border-academic-200">
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex items-center">
-                          <svg className="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M12 18a9 9 0 110-18 9 9 0 010 18z"></path>
-                          </svg>
-                          <span className="text-sm text-academic-700 font-medium">Revisions requested - please upload a revised manuscript.</span>
-                        </div>
+                    <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                      <span style={{ fontSize: 10, color: 'var(--ink)', fontWeight: 600 }}>Revisions requested - please upload a revised manuscript.</span>
+                      <div style={{ marginTop: 8 }}>
                         <button
                           type="button"
                           onClick={() => {
                             setRevisionModalPaper(paper);
                             setRevisionFile(null);
                           }}
-                          className="btn-glow mt-1"
+                          className="button button-primary button-small"
                         >
-                          <strong>Upload Revised</strong>
+                          Upload Revised
                         </button>
                       </div>
                     </div>
                   )}
 
                   {paper.status === 'published' && (
-                    <div className="pt-4 border-t border-academic-200">
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span className="text-sm text-green-600 font-medium">Congratulations! Your paper has been published.</span>
-                      </div>
+                    <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                      <span style={{ fontSize: 10, color: '#0f7b3d', fontWeight: 600 }}>Congratulations! Your paper has been published.</span>
                       {paper.doi && (
-                        <p className="text-xs text-academic-600 mt-1">
+                        <p style={{ fontSize: 9, color: 'var(--muted)', margin: '4px 0 0' }}>
                           DOI: {paper.doi}
                         </p>
                       )}
@@ -901,14 +784,9 @@ const AuthorDashboard = () => {
                   )}
 
                   {paper.status === 'rejected' && (
-                    <div className="pt-4 border-t border-academic-200">
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span className="text-sm text-red-600">This paper was not accepted for publication.</span>
-                      </div>
-                      <p className="text-xs text-academic-500 mt-1">
+                    <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                      <span style={{ fontSize: 10, color: '#c0342c' }}>This paper was not accepted for publication.</span>
+                      <p style={{ fontSize: 9, color: 'var(--muted)', margin: '4px 0 0' }}>
                         Consider revising based on feedback and resubmitting.
                       </p>
                     </div>
@@ -920,32 +798,28 @@ const AuthorDashboard = () => {
         )}
 
         {activeTab === 'pending' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {papers.filter(paper => paper.status === 'submitted' && paper.paymentStatus === 'pending').map(paper => (
-              <div key={paper.id} className="bg-white rounded-xl shadow-sm border border-academic-200 p-6 hover:shadow-md transition-all duration-300">
-                <h3 className="text-lg font-semibold text-academic-900 mb-4 line-clamp-2">
+              <div key={paper.id} className="dash-panel">
+                <h2 style={{ color: 'var(--navy)', fontSize: 13, marginTop: 0, marginBottom: 12 }}>
                   {paper.title}
-                </h3>
-                <div className="flex items-center justify-between">
+                </h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <p className="text-sm text-academic-600 font-medium">
-                      Submission fee: <span className="text-lg font-bold text-primary-600">$150</span>
+                    <p style={{ fontSize: 10, color: 'var(--ink)', fontWeight: 600, margin: 0 }}>
+                      Submission fee: <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--navy)' }}>$150</span>
                     </p>
-                    <p className="text-xs text-academic-500 mt-1">
+                    <p style={{ fontSize: 9, color: 'var(--muted)', margin: '4px 0 0' }}>
                       Submitted on {new Date(paper.submissionDate).toLocaleDateString()}
                     </p>
-                    <p className="text-xs text-academic-500 mt-1">
+                    <p style={{ fontSize: 9, color: 'var(--muted)', margin: '4px 0 0' }}>
                       Complete payment to initiate review process
                     </p>
                   </div>
                   <button
                     onClick={() => handlePayment(paper.id)}
-                    className="Btn"
+                    className="button button-primary button-small"
                   >
-                    <svg className="svgIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                      <path d="M2 6L12 13L22 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
                     Pay Now
                   </button>
                 </div>
@@ -955,21 +829,16 @@ const AuthorDashboard = () => {
         )}
 
         {papers.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-academic-200">
-            <div className="text-academic-300 text-6xl mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-academic-700 mb-2">
+          <div className="dash-empty">
+            <h3 style={{ color: 'var(--navy)', fontSize: 14, margin: '0 0 8px' }}>
               No Papers Submitted Yet
             </h3>
-            <p className="text-academic-500 max-w-md mx-auto mb-6">
+            <p style={{ maxWidth: 420, margin: '0 auto 16px' }}>
               Start your academic journey by submitting your first research paper. We're excited to review your work!
             </p>
             <button
               onClick={() => setShowUploadForm(true)}
-              className="py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
+              className="button button-primary"
             >
               Submit Your First Paper
             </button>
@@ -978,67 +847,54 @@ const AuthorDashboard = () => {
 
         {/* Revision Upload Modal */}
         {revisionModalPaper && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-academic-900">Upload Revised Manuscript</h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRevisionModalPaper(null);
-                      setRevisionFile(null);
-                    }}
-                    className="text-academic-400 hover:text-academic-600"
-                  >
-                    &times;
-                  </button>
+          <div className="modal-overlay">
+            <div className="modal-panel">
+              <div className="modal-panel-header">
+                <h2>Upload Revised Manuscript</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRevisionModalPaper(null);
+                    setRevisionFile(null);
+                  }}
+                  className="modal-panel-close"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div className="modal-panel-body">
+                <div className="contact-note" style={{ marginBottom: 16 }}>
+                  <strong style={{ display: 'block', color: 'var(--navy)', marginBottom: 4 }}>{revisionModalPaper.title}</strong>
+                  Upload a revised version of your manuscript in response to reviewer/editor comments.
                 </div>
 
-                <div className="mb-4 p-4 bg-academic-50 rounded-lg border border-academic-200">
-                  <h3 className="font-semibold text-academic-900 mb-1 line-clamp-2">{revisionModalPaper.title}</h3>
-                  <p className="text-xs text-academic-600">
-                    Upload a revised version of your manuscript in response to reviewer/editor comments.
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmitRevision} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-academic-700 mb-2">
-                      Revised Manuscript (PDF)
+                <form onSubmit={handleSubmitRevision}>
+                  <div className="form-group">
+                    <label>Revised Manuscript (PDF)</label>
+                    <label className="file-drop" style={{ display: 'block' }}>
+                      <div>Select file or drag and drop</div>
+                      <div style={{ marginTop: 4 }}>PDF format only, up to 20MB.</div>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleRevisionFileChange}
+                        style={{ display: 'none' }}
+                      />
+                      {revisionFile && (
+                        <p style={{ color: '#0f7b3d', fontSize: 9, marginTop: 8 }}>
+                          Selected file: <strong>{revisionFile.name}</strong>
+                        </p>
+                      )}
                     </label>
-                    <div className="mt-1 flex justify-center px-4 pt-5 pb-6 border-2 border-dashed border-academic-300 rounded-lg hover:border-academic-400 transition-colors duration-200">
-                      <div className="space-y-1 text-center">
-                        <svg className="mx-auto h-10 w-10 text-academic-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <div className="flex text-sm text-academic-600 justify-center">
-                          <label className="relative cursor-pointer rounded-md font-medium text-primary-600 hover:text-primary-500">
-                            <span>Select file</span>
-                            <input
-                              type="file"
-                              accept=".pdf"
-                              onChange={handleRevisionFileChange}
-                              className="sr-only"
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-academic-500">PDF format only, up to 20MB.</p>
-                        {revisionFile && (
-                          <p className="text-xs text-green-700 mt-1">
-                            Selected file: <span className="font-medium">{revisionFile.name}</span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
                   </div>
 
-                  <div className="flex space-x-3 pt-2">
+                  <div style={{ display: 'flex', gap: 10 }}>
                     <button
                       type="submit"
                       disabled={revisionUploading || !revisionFile}
-                      className="flex-1 py-2 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center justify-center"
+                      className="button button-primary"
+                      style={{ flex: 1 }}
                     >
                       {revisionUploading ? 'Uploading...' : 'Submit Revised Manuscript'}
                     </button>
@@ -1048,7 +904,8 @@ const AuthorDashboard = () => {
                         setRevisionModalPaper(null);
                         setRevisionFile(null);
                       }}
-                      className="flex-1 py-2 px-4 bg-academic-200 hover:bg-academic-300 text-academic-700 text-sm font-medium rounded-lg transition-colors duration-200"
+                      className="button button-outline"
+                      style={{ flex: 1 }}
                     >
                       Cancel
                     </button>

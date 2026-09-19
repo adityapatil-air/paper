@@ -165,77 +165,66 @@ const EditorialBoard = () => {
     return groups;
   }, [board]);
 
+  const initialsOf = (name) => String(name || '')
+    .replace(/^Dr\.\s*/i, '')
+    .replace(/^Prof\.\s*/i, '')
+    .split(' ')
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('');
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8 text-slate-800">
-      <h1 className="text-3xl font-bold text-center mb-6 text-slate-900">
-        Editorial Board
-      </h1>
-      <p className="text-lg text-center text-slate-700 mb-8 italic">
-       
-      </p>
+    <div className="editorial-board-page">
+      <section className="page-banner">
+        <div className="journal-container">
+          <p className="breadcrumb">Home / Editorial Board</p>
+          <p className="eyebrow">SCHOLARLY LEADERSHIP</p>
+          <h1>Editorial Board</h1>
+        </div>
+      </section>
 
-      {loading ? (
-        <div className="text-center text-slate-600 py-10">Loading editorial board...</div>
-      ) : Object.keys(sections).length === 0 ? (
-        <div className="text-center text-slate-600 py-10">{error || 'No editorial board members found.'}</div>
-      ) : (
-        Object.entries(sections).map(([sectionName, members]) => (
-          <section key={sectionName} className="mb-10">
-            <h2 className="text-2xl font-semibold mb-4 text-slate-800 border-b pb-2">{sectionName}</h2>
-            <div className="space-y-4">
-              {members.map((m) => (
-                <div key={m.id || `${m.section}-${m.name}-${m.email}`} className="bg-slate-50 p-4 rounded-lg">
-                  <p className="font-medium">{m.name}</p>
-                  {m.title && <p className="text-slate-700">{m.title}</p>}
-                  {m.affiliation && <p className="text-slate-700">{m.affiliation}</p>}
-                  {m.email && (
-                    <p className="text-slate-600 text-sm">
-                      Email:{' '}
-                      <a href={`mailto:${m.email}`} className="text-amber-600 hover:underline">
-                        {m.email}
-                      </a>
-                    </p>
-                  )}
-                  {m.profileUrl && (
-                    <p className="text-slate-600 text-sm mt-1">
-                      <a
-                        href={m.profileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-amber-600 hover:underline"
-                      >
-                        Affiliated Institutional profile
-                      </a>
-                    </p>
-                  )}
-                </div>
-              ))}
+      <div className="page-body journal-container">
+        {loading ? (
+          <div className="loading-state">Loading editorial board...</div>
+        ) : Object.keys(sections).length === 0 ? (
+          <div className="empty-state">{error || 'No editorial board members found.'}</div>
+        ) : (
+          Object.entries(sections).map(([sectionName, members]) => (
+            <section key={sectionName} className="content-section board-section" style={{ marginTop: 0 }}>
+              <div className="section-heading"><h2>{sectionName}</h2></div>
+              <div className="board-grid">
+                {members.map((m) => (
+                  <article className="board-card" key={m.id || `${m.section}-${m.name}-${m.email}`}>
+                    <div className="member-avatar">{initialsOf(m.name)}</div>
+                    <strong>{m.name}</strong>
+                    {m.title && <span>{m.title}</span>}
+                    {m.affiliation && <small>{m.affiliation}</small>}
+                    {m.email && <a href={`mailto:${m.email}`}>{m.email}</a>}
+                    {m.profileUrl && <a href={m.profileUrl} target="_blank" rel="noreferrer">Profile ↗</a>}
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+
+        <div className="callout" style={{ margin: '38px 0 0' }}>
+          <div className="callout-inner journal-container" style={{ padding: '18px 0' }}>
+            <div className="callout-icon">✎</div>
+            <div>
+              <h2>Interested in Joining the Editorial Board?</h2>
+              <p>IJEPA welcomes qualified academics and industry professionals to contribute as Associate Editors or Reviewers. If you have a strong research background and a commitment to scholarly excellence, we invite you to apply.</p>
             </div>
-          </section>
-        ))
-      )}
+            <a href="/joinusedito" className="button button-outline">Apply Now</a>
+          </div>
+        </div>
 
-      {/* Join the Editorial Board */}
-      <section className="bg-amber-50 border-l-4 border-amber-500 p-5 rounded-r-lg mb-10">
-        <h2 className="text-2xl font-semibold mb-3 text-slate-800">Interested in Joining the Editorial Board?</h2>
-        <p className="mb-4">
-          IJEPA welcomes qualified academics and industry professionals to contribute as Associate Editors or Reviewers. If you have a strong research background and a commitment to scholarly excellence, we invite you to apply.
-        </p>
-        <a
-          href="/joinusedito"
-          className="inline-block bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 px-6 rounded-md transition-colors"
-        >
-          Apply Now
-        </a>
-      </section>
-
-      {/* Contact */}
-      <section className="text-center text-slate-600">
-        <p>
+        <p style={{ textAlign: 'center', marginTop: 20 }}>
           For inquiries regarding the Editorial Board, please contact the Editorial Office at{' '}
-          <a href="mailto:editorial@ijepa.org" className="text-amber-600 hover:underline">editorial@ijepa.org</a>.
+          <a href="mailto:editorial@ijepa.org">editorial@ijepa.org</a>.
         </p>
-      </section>
+      </div>
     </div>
   );
 };

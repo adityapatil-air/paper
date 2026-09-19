@@ -105,108 +105,66 @@ const PaperRedirect = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col">
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Link to="/journal-issues" className="text-sm text-amber-700 hover:underline">
+    <div className="page-body">
+      <div className="journal-container">
+        <div className="page-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Link to="/journal-issues" style={{ color: 'var(--blue)', fontSize: 10, fontWeight: 700 }}>
                 Back to Journal Issues
               </Link>
-              <span className="text-slate-400">/</span>
-              <span className="text-sm text-slate-700">
+              <span style={{ color: 'var(--muted)' }}>/</span>
+              <span style={{ fontSize: 10, color: 'var(--ink)' }}>
                 {loading ? 'Loading paper…' : `Paper #${paperId}`}
               </span>
             </div>
 
             {downloadHref && (
-              <a
-                href={downloadHref}
-                className="px-3 py-2 text-sm bg-amber-700 hover:bg-amber-800 text-white rounded-lg"
-              >
+              <a href={downloadHref} className="button button-small button-dark">
                 Download
               </a>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handlePrevPage}
-                disabled={loading || pageNumber <= 1}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
-              >
+          <div className="viewer-controls" style={{ color: 'var(--muted)', justifyContent: 'space-between', marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button type="button" onClick={handlePrevPage} disabled={loading || pageNumber <= 1} className="button button-small button-light">
                 Prev
               </button>
-              <button
-                type="button"
-                onClick={handleNextPage}
-                disabled={loading || (numPages ? pageNumber >= numPages : false)}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
-              >
+              <button type="button" onClick={handleNextPage} disabled={loading || (numPages ? pageNumber >= numPages : false)} className="button button-small button-light">
                 Next
               </button>
-              <span className="text-sm text-slate-600">
-                {numPages ? `Page ${pageNumber} of ${numPages}` : loading ? 'Loading…' : 'Page'}
-              </span>
+              <span>{numPages ? `Page ${pageNumber} of ${numPages}` : loading ? 'Loading…' : 'Page'}</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleZoomOut}
-                disabled={zoom <= 0.5}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
-              >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button type="button" onClick={handleZoomOut} disabled={zoom <= 0.5} className="button button-small button-light">
                 -
               </button>
-              <button
-                type="button"
-                onClick={handleResetZoom}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg text-slate-700"
-              >
+              <button type="button" onClick={handleResetZoom} className="button button-small button-light">
                 {Math.round(zoom * 100)}%
               </button>
-              <button
-                type="button"
-                onClick={handleZoomIn}
-                disabled={zoom >= 2.5}
-                className="px-3 py-2 text-sm border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
-              >
+              <button type="button" onClick={handleZoomIn} disabled={zoom >= 2.5} className="button button-small button-light">
                 +
               </button>
             </div>
           </div>
         </div>
 
-        <div className="mt-4 flex-1 bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="page-card" style={{ padding: 0, marginTop: 16, overflow: 'hidden' }}>
           {loading ? (
-            <div className="p-6">
-              <p className="text-slate-800 font-medium">Loading paper...</p>
-              <p className="text-slate-600 text-sm mt-1">Please wait.</p>
-            </div>
+            <div className="loading-state">Loading paper... Please wait.</div>
           ) : !file ? (
-            <div className="p-6">
-              <p className="text-slate-800 font-medium">Paper not found.</p>
-              <p className="text-slate-600 text-sm mt-1">The paper file link may be missing.</p>
-            </div>
+            <div className="empty-state">Paper not found. The paper file link may be missing.</div>
           ) : (
-            <div className="w-full h-full overflow-auto flex justify-center bg-slate-100">
-              <div className="py-6">
+            <div style={{ width: '100%', overflow: 'auto', display: 'flex', justifyContent: 'center', background: 'var(--sky)' }}>
+              <div style={{ padding: '24px 0' }}>
                 {viewerError ? (
-                  <div className="p-6 bg-white border border-slate-200 rounded-xl">
-                    <p className="text-slate-800 font-medium">Unable to render PDF</p>
-                    <p className="text-slate-600 text-sm mt-1">{viewerError}</p>
-                  </div>
+                  <div className="empty-state" style={{ background: '#fff' }}>{viewerError}</div>
                 ) : (
                   <Document
                     file={file}
-                    loading={
-                      <div className="p-6 bg-white border border-slate-200 rounded-xl">
-                        <p className="text-slate-800 font-medium">Loading PDF…</p>
-                      </div>
-                    }
+                    loading={<div className="loading-state" style={{ background: '#fff' }}>Loading PDF…</div>}
                     onLoadSuccess={onDocumentLoadSuccess}
                     onLoadError={(err) => setViewerError(err?.message || 'Failed to load PDF.')}
                   >
