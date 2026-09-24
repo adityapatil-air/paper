@@ -395,8 +395,8 @@ export const mockAPI = {
   // Reviews
   getReviewsByReviewer: async (reviewerId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/reviews/reviewer/${reviewerId}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/api/reviews/reviewer/${reviewerId}`, { headers: authHeaders() });
+      const data = await readJson(response);
 
       if (!data.success || !Array.isArray(data.reviews)) {
         return [];
@@ -411,8 +411,8 @@ export const mockAPI = {
 
   getReviewsByPaper: async (paperId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/reviews/paper/${paperId}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/api/reviews/paper/${paperId}`, { headers: authHeaders() });
+      const data = await readJson(response);
 
       if (!data.success || !Array.isArray(data.reviews)) {
         return [];
@@ -429,11 +429,11 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/reviews`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(reviewData),
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to submit review.' };

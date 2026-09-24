@@ -132,7 +132,7 @@ const ReviewerDashboard = () => {
         setSelectedPaper(null);
         loadReviewerData();
       } else {
-        toast.error('Failed to submit review. Please try again.');
+        toast.error(result.error || 'Failed to submit review. Please try again.');
       }
     } catch (error) {
       toast.error('An error occurred while submitting the review.');
@@ -158,7 +158,8 @@ const ReviewerDashboard = () => {
     const reviewsForPaper = completedReviews.filter((review) => review.paperId === paper.id);
     const totalRounds = getRevisionRounds(paper);
     const reviewCount = reviewsForPaper.length;
-    const isCompleted = reviewCount >= totalRounds;
+    // Only papers still with reviewers can need a review (not those awaiting a revision or decided).
+    const isCompleted = paper.status !== 'under_review' || reviewCount >= totalRounds;
     const isRevisionRound = !isCompleted && totalRounds > 1;
 
     return {
