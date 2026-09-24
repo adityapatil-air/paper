@@ -1,7 +1,5 @@
 const jwt = require('jsonwebtoken');
-
-// Must match the secret used to sign tokens in routes/auth.js.
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev-key-change-me';
+const { JWT_SECRET } = require('../jwtSecret');
 
 // Accepts `Authorization: Bearer <token>` issued by /api/auth/login and requires role "admin".
 const requireAdmin = (req, res, next) => {

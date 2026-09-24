@@ -6,6 +6,8 @@ backend/.env
 backend/.env.production
 .env
 .env.*
+.env copy*
+*.env.bak
 !.env.example
 # Build output
 /build

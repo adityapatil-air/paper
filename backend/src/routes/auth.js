@@ -2,10 +2,9 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { supabase } = require('../supabaseClient');
+const { JWT_SECRET } = require('../jwtSecret');
 
 const router = express.Router();
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev-key-change-me';
 
 const buildPublicUser = (row) => {
   if (!row) return null;
