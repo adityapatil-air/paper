@@ -1,50 +1,27 @@
 import React from 'react';
+import Icon from './ui/Icon';
 
-const Alert = ({ type = 'info', message, onClose }) => {
-  const getAlertStyles = (type) => {
-    switch (type) {
-      case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-      case 'info':
-      default:
-        return 'bg-blue-50 border-blue-200 text-blue-800';
-    }
-  };
+const ICONS = { success: 'checkCircle', error: 'xCircle', warning: 'alert', info: 'info' };
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'success':
-        return '✓';
-      case 'error':
-        return '✕';
-      case 'warning':
-        return '⚠';
-      case 'info':
-      default:
-        return 'ℹ';
-    }
-  };
-
-  return (
-    <div className={`border rounded-lg p-4 ${getAlertStyles(type)}`}>
-      <div className="flex items-center">
-        <span className="text-lg mr-2">{getIcon(type)}</span>
-        <span className="flex-1">{message}</span>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="ml-2 text-lg hover:opacity-70 transition-opacity"
-          >
-            ×
-          </button>
-        )}
-      </div>
+const Alert = ({ type = 'info', title, message, children, onClose, className = '', id, tabIndex }) => (
+  <div
+    id={id}
+    tabIndex={tabIndex}
+    className={`alert alert-${type} ${className}`}
+    role={type === 'error' || type === 'warning' ? 'alert' : 'status'}
+  >
+    <span className="alert-icon" aria-hidden="true"><Icon name={ICONS[type] || 'info'} size={20} /></span>
+    <div className="alert-copy">
+      {title && <strong className="alert-title">{title}</strong>}
+      {message && <p>{message}</p>}
+      {children}
     </div>
-  );
-};
+    {onClose && (
+      <button type="button" onClick={onClose} className="alert-close" aria-label="Dismiss">
+        <Icon name="x" size={16} />
+      </button>
+    )}
+  </div>
+);
 
 export default Alert;

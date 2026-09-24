@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './components/ui/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -34,6 +35,7 @@ import PaperRedirect from './pages/PaperRedirect';
 function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
       <Router>
         <div className="min-h-screen flex flex-col">
           <Header />
@@ -99,6 +101,7 @@ function App() {
           <BackToTop />
         </div>
       </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }
