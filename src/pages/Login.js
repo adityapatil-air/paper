@@ -128,7 +128,10 @@ const Login = () => {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
-                <Link to="/forgot-password" style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>Forgot your password?</Link>
+                {/* No self-service reset yet (the backend sends no email); the editorial office resets passwords. */}
+                <a href="mailto:editor@ijepa.org?subject=Password%20reset%20request" style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
+                  Forgot your password? Email editor@ijepa.org
+                </a>
               </div>
 
               <button type="submit" disabled={loading} className="button button-primary" style={{ width: '100%' }}>
