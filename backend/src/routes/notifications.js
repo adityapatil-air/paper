@@ -1,7 +1,11 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Notifications belong to the signed-in user; the token decides whose they are.
+router.use(requireAuth);
 
 const ensureSupabase = (res) => {
   if (!supabase) {
@@ -21,15 +25,12 @@ const mapNotificationRow = (row) => ({
   timestamp: row.timestamp,
 });
 
-// GET /api/notifications?userId=1
+// GET /api/notifications - the signed-in user's notifications
 router.get('/', async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
-    const userId = parseInt(req.query.userId, 10);
-    if (!userId || Number.isNaN(userId)) {
-      return res.status(400).json({ success: false, error: 'Valid userId is required.' });
-    }
+    const userId = req.user.id;
 
     const { data, error } = await supabase
       .from('notifications')
@@ -69,8 +70,9 @@ router.post('/:id/read', async (req, res) => {
       .from('notifications')
       .update({ read: true })
       .eq('id', id)
+      .eq('user_id', req.user.id)
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error marking notification read', error);
@@ -102,6 +104,7 @@ router.delete('/:id', async (req, res) => {
       .from('notifications')
       .delete()
       .eq('id', id)
+      .eq('user_id', req.user.id)
       .select('id')
       .maybeSingle();
 

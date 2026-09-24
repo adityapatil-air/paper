@@ -600,8 +600,9 @@ export const mockAPI = {
   // Notifications
   getNotifications: async (userId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/notifications?userId=${userId}`);
-      const data = await response.json();
+      // The server returns the signed-in user's notifications (the token decides, not userId).
+      const response = await fetch(`${API_BASE_URL}/api/notifications`, { headers: authHeaders() });
+      const data = await readJson(response);
 
       if (!data.success || !Array.isArray(data.notifications)) {
         return [];
@@ -617,9 +618,10 @@ export const mockAPI = {
   markNotificationRead: async (notificationId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
-        method: 'POST'
+        method: 'POST',
+        headers: authHeaders(),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!data.success) {
         return { success: false };
@@ -636,8 +638,9 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!data.success) {
         return { success: false };
@@ -722,10 +725,10 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/settings/important-dates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ dates }),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to save important dates.' };
@@ -758,10 +761,10 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/settings/editorial-board`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ board }),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to save editorial board.' };
