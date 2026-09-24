@@ -172,7 +172,86 @@ router.post('/assign-reviewer', async (req, res) => {
   }
 });
 
-// POST /api/admin/publish-paper
+// POST /api/admin/accept-paper - accept a reviewed paper; publication follows payment
+router.post('/accept-paper', async (req, res) => {
+  try {
+    if (!ensureSupabase(res)) return;
+
+    const paperId = parseInt(req.body?.paperId, 10);
+    if (Number.isNaN(paperId)) {
+      return res.status(400).json({ success: false, error: 'paperId is required.' });
+    }
+
+    const { data: paper, error: paperError } = await supabase
+      .from('papers')
+      .select('id, title, status, main_author_id')
+      .eq('id', paperId)
+      .maybeSingle();
+
+    if (paperError) {
+      console.error('Error fetching paper before acceptance', paperError);
+      return res.status(500).json({ success: false, error: 'Failed to load paper before accepting it.' });
+    }
+    if (!paper) {
+      return res.status(404).json({ success: false, error: 'Paper not found.' });
+    }
+    if (paper.status !== 'under_review') {
+      return res.status(409).json({ success: false, error: 'Only papers under review can be accepted.' });
+    }
+
+    const { count: reviewCount, error: reviewsError } = await supabase
+      .from('reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('paper_id', paperId);
+
+    if (reviewsError) {
+      console.error('Error counting reviews before acceptance', reviewsError);
+      return res.status(500).json({ success: false, error: 'Failed to check the paper\'s reviews.' });
+    }
+    if (!reviewCount) {
+      return res.status(409).json({ success: false, error: 'A paper needs at least one completed review before it can be accepted.' });
+    }
+
+    const { error } = await supabase
+      .from('papers')
+      .update({ status: 'accepted' })
+      .eq('id', paperId);
+
+    if (error) {
+      if (error.code === '22P02') {
+        return res.status(409).json({
+          success: false,
+          code: 'MIGRATION_REQUIRED',
+          error: 'The database does not support the "accepted" status yet. Run backend/accepted_status_migration.sql in the Supabase SQL editor.',
+        });
+      }
+      console.error('Error accepting paper', error);
+      return res.status(500).json({ success: false, error: 'Failed to accept paper.' });
+    }
+
+    if (paper.main_author_id) {
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: paper.main_author_id,
+          title: 'Paper accepted',
+          message: `Your paper "${paper.title}" has been accepted for publication. Please pay the article processing charge from your dashboard so it can be published.`,
+          type: 'success',
+        });
+
+      if (notifError) {
+        console.error('Error creating acceptance notification', notifError);
+      }
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Unexpected error in POST /api/admin/accept-paper', err);
+    return res.status(500).json({ success: false, error: 'Failed to accept paper.' });
+  }
+});
+
+// POST /api/admin/publish-paper - publish an accepted paper
 router.post('/publish-paper', async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
@@ -183,10 +262,10 @@ router.post('/publish-paper', async (req, res) => {
       return res.status(400).json({ success: false, error: 'paperId is required.' });
     }
 
-    // Load paper to notify the main author after publishing
+    // Load paper to check it was accepted and to notify the main author after publishing
     const { data: paper, error: paperError } = await supabase
       .from('papers')
-      .select('id, title, main_author_id')
+      .select('id, title, status, main_author_id')
       .eq('id', paperId)
       .single();
 
@@ -197,6 +276,10 @@ router.post('/publish-paper', async (req, res) => {
 
     if (!paper) {
       return res.status(404).json({ success: false, error: 'Paper not found.' });
+    }
+
+    if (paper.status !== 'accepted') {
+      return res.status(409).json({ success: false, error: 'Only accepted papers can be published. Accept the paper after peer review first.' });
     }
 
     const now = new Date();
@@ -217,14 +300,14 @@ router.post('/publish-paper', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to publish paper.' });
     }
 
-    // Notify the main author about acceptance & publication
+    // Notify the main author about publication
     if (paper.main_author_id) {
       const { error: notifError } = await supabase
         .from('notifications')
         .insert({
           user_id: paper.main_author_id,
-          title: 'Paper accepted and published',
-          message: `Your paper "${paper.title}" has been accepted and published.`,
+          title: 'Paper published',
+          message: `Your paper "${paper.title}" has been published.`,
           type: 'success',
         });
 

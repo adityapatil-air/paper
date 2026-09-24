@@ -834,6 +834,26 @@ mockAPI.assignReviewer = async (paperId, reviewerId) => {
   }
 };
 
+mockAPI.acceptPaper = async (paperId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/accept-paper`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ paperId })
+    });
+    const data = await readJson(response);
+
+    if (!data.success) {
+      return { success: false, error: data.error || 'Failed to accept paper.', code: data.code };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('acceptPaper error', error);
+    return { success: false, error: 'Failed to accept paper.' };
+  }
+};
+
 mockAPI.publishPaper = async (paperId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/publish-paper`, {

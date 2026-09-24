@@ -12,7 +12,7 @@ create extension if not exists pgcrypto;
 create type user_role as enum ('author', 'reviewer', 'admin', 'editor');
 
 -- Paper status
-create type paper_status as enum ('submitted', 'under_review', 'published', 'rejected');
+create type paper_status as enum ('submitted', 'under_review', 'accepted', 'published', 'rejected');
 
 -- Payment status
 create type payment_status as enum ('pending', 'paid');

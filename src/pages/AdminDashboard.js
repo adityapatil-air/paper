@@ -6,6 +6,7 @@ import { useToast } from '../components/ui/Toast';
 import Icon from '../components/ui/Icon';
 import Modal from '../components/ui/Modal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
+import Alert from '../components/Alert';
 import EmptyState from '../components/ui/EmptyState';
 import FilePicker from '../components/ui/FilePicker';
 import IssueEditor from '../components/admin/IssueEditor';
@@ -83,6 +84,8 @@ const AdminDashboard = () => {
 
   const [showQuickPublishModal, setShowQuickPublishModal] = useState(false);
   const [quickPublishPaper, setQuickPublishPaper] = useState(null);
+  const [acceptTargetPaper, setAcceptTargetPaper] = useState(null);
+  const [accepting, setAccepting] = useState(false);
 
   const [showPdfViewerModal, setShowPdfViewerModal] = useState(false);
   const [pdfViewerPaper, setPdfViewerPaper] = useState(null);
@@ -919,7 +922,7 @@ const AdminDashboard = () => {
     );
   };
 
-  const adminUnfinishedStatuses = ['submitted', 'under_review', 'revisions_requested'];
+  const adminUnfinishedStatuses = ['submitted', 'under_review', 'revisions_requested', 'accepted'];
 
   let visibleAdminPapers = (papers || []).filter(matchesAdminSearch);
 
@@ -947,7 +950,7 @@ const AdminDashboard = () => {
   });
 
   const underReviewPapersBase = (papers || []).filter(
-    (p) => p.status === 'under_review' || p.status === 'revisions_requested'
+    (p) => p.status === 'under_review' || p.status === 'revisions_requested' || p.status === 'accepted'
   );
 
   let visibleUnderReviewPapers = underReviewPapersBase.filter(matchesAdminSearch);
@@ -985,6 +988,34 @@ const AdminDashboard = () => {
     setManagePaper(null);
     setQuickPublishPaper(paper);
     setShowQuickPublishModal(true);
+  };
+
+  // A paper can be accepted once it has at least one review; it is published only after that.
+  const canAccept = (paper) => paper?.status === 'under_review' && (paperReviews[paper.id] || []).length > 0;
+
+  const requestAccept = (paper) => {
+    setManagePaper(null);
+    setShowReviewsModal(false);
+    setAcceptTargetPaper(paper);
+  };
+
+  const confirmAccept = async () => {
+    if (!acceptTargetPaper) return;
+    setAccepting(true);
+    try {
+      const result = await mockAPI.acceptPaper(acceptTargetPaper.id);
+      if (result.success) {
+        toast.success('Paper accepted. The author will see a payment request on their dashboard.');
+        setAcceptTargetPaper(null);
+        loadAdminData();
+      } else {
+        toast.error(result.error || 'Failed to accept paper.');
+      }
+    } catch (error) {
+      toast.error('An error occurred while accepting the paper.');
+    } finally {
+      setAccepting(false);
+    }
   };
 
   const confirmPublish = async () => {
@@ -1293,7 +1324,7 @@ const AdminDashboard = () => {
                 <div className="section-title">
                   <div>
                     <h2 id="sec-review">Under review</h2>
-                    <p>Papers with reviewers, including those waiting for a revised manuscript.</p>
+                    <p>Papers with reviewers, waiting for a revised manuscript, or accepted and waiting to be published.</p>
                   </div>
                 </div>
                 {underReviewPapersBase.length === 0 ? (
@@ -1347,9 +1378,16 @@ const AdminDashboard = () => {
                                   </td>
                                   <td className="col-actions">
                                     <div className="row-actions">
-                                      <button type="button" onClick={() => requestPublish(paper)} className="button button-primary button-small">
-                                        <Icon name="globe" size={15} /> Publish
-                                      </button>
+                                      {canAccept(paper) && (
+                                        <button type="button" onClick={() => requestAccept(paper)} className="button button-primary button-small">
+                                          <Icon name="checkCircle" size={15} /> Accept
+                                        </button>
+                                      )}
+                                      {paper.status === 'accepted' && (
+                                        <button type="button" onClick={() => requestPublish(paper)} className="button button-primary button-small">
+                                          <Icon name="globe" size={15} /> Publish
+                                        </button>
+                                      )}
                                       {manageButton(paper)}
                                     </div>
                                   </td>
@@ -1623,7 +1661,12 @@ const AdminDashboard = () => {
               <Icon name="trash" size={16} /> Delete paper
             </button>
             <button type="button" className="button button-ghost" onClick={() => setManagePaper(null)}>Close</button>
-            {managePaper.status !== 'published' && (
+            {canAccept(managePaper) && (
+              <button type="button" className="button button-primary" onClick={() => requestAccept(managePaper)}>
+                <Icon name="checkCircle" size={16} /> Accept paper
+              </button>
+            )}
+            {managePaper.status === 'accepted' && (
               <button type="button" className="button button-primary" onClick={() => requestPublish(managePaper)}>
                 <Icon name="globe" size={16} /> Publish paper
               </button>
@@ -1948,6 +1991,23 @@ const AdminDashboard = () => {
         onConfirm={confirmPublish}
       >
         {quickPublishPaper && <div className="paper-ref"><strong>{quickPublishPaper.title}</strong><span>ID: {quickPublishPaper.id}</span></div>}
+        {quickPublishPaper && quickPublishPaper.paymentStatus !== 'paid' && (
+          <Alert type="warning" message="The article processing charge for this paper has not been recorded as paid." />
+        )}
+      </ConfirmDialog>
+
+      {/* Accept */}
+      <ConfirmDialog
+        open={Boolean(acceptTargetPaper)}
+        title="Accept this paper?"
+        message="The author is asked to pay the article processing charge. You can publish the paper after that."
+        confirmLabel="Yes, accept"
+        busyLabel="Accepting…"
+        busy={accepting}
+        onCancel={() => { if (!accepting) setAcceptTargetPaper(null); }}
+        onConfirm={confirmAccept}
+      >
+        {acceptTargetPaper && <div className="paper-ref"><strong>{acceptTargetPaper.title}</strong><span>ID: {acceptTargetPaper.id}</span></div>}
       </ConfirmDialog>
 
       {/* Delete issue */}
@@ -2054,6 +2114,11 @@ const AdminDashboard = () => {
             <button type="button" onClick={() => { setShowReviewsModal(false); openRejectPaperModal(reviewsModalPaper); }} className="button button-danger-outline">
               <Icon name="xCircle" size={16} /> Reject paper
             </button>
+            {canAccept(reviewsModalPaper) && (
+              <button type="button" onClick={() => requestAccept(reviewsModalPaper)} className="button button-primary">
+                <Icon name="checkCircle" size={16} /> Accept paper
+              </button>
+            )}
           </>
         )}
       >
