@@ -27,6 +27,29 @@ const mapReviewRow = (row) => ({
   status: row.status,
 });
 
+// GET /api/reviews - every review (admins only), so the dashboard needs one request
+// instead of one per paper
+router.get('/', requireAdmin, async (req, res) => {
+  try {
+    if (!ensureSupabase(res)) return;
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('submitted_date', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all reviews', error);
+      return res.status(500).json({ success: false, error: 'Failed to fetch reviews.' });
+    }
+
+    return res.json({ success: true, reviews: (data || []).map(mapReviewRow) });
+  } catch (err) {
+    console.error('Unexpected error in GET /api/reviews', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch reviews.' });
+  }
+});
+
 // GET /api/reviews/reviewer/:reviewerId - a reviewer's own reviews (or any, for admins)
 router.get('/reviewer/:reviewerId', requireAuth, async (req, res) => {
   try {

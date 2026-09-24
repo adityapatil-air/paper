@@ -147,43 +147,31 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
 
-      const allPapers = await mockAPI.getAllPapers();
+      // Independent requests run in parallel; reviews come in one request for all papers.
+      const [allPapers, allReviews, reviewerUsers, loadedIssues, notifResult, assignments] = await Promise.all([
+        mockAPI.getAllPapers(),
+        mockAPI.getAllReviews().catch((err) => {
+          console.error('Error loading reviews in admin dashboard', err);
+          return [];
+        }),
+        mockAPI.getReviewers(),
+        mockAPI.getIssues(),
+        user && user.id ? mockAPI.getNotifications(user.id).catch(() => []) : Promise.resolve([]),
+        mockAPI.getIssueAssignments(),
+      ]);
 
-      // Load reviews for each paper so admins can see review progress
-      const reviewResults = await Promise.all(
-        allPapers.map(async (paper) => {
-          const reviews = await mockAPI.getReviewsByPaper(paper.id);
-          return { paperId: paper.id, reviews };
-        })
-      );
-
+      // Reviews grouped by paper so admins can see review progress
       const reviewsMap = {};
-      reviewResults.forEach(({ paperId, reviews }) => {
-        reviewsMap[paperId] = reviews;
+      allReviews.forEach((review) => {
+        (reviewsMap[review.paperId] = reviewsMap[review.paperId] || []).push(review);
       });
       setPaperReviews(reviewsMap);
-
-      const reviewerUsers = await mockAPI.getReviewers();
       setReviewers(reviewerUsers);
-
-      const loadedIssues = await mockAPI.getIssues();
       setIssues(loadedIssues);
+      // Admin notifications are used to detect revised manuscripts
+      setAdminNotifications(Array.isArray(notifResult) ? notifResult : []);
 
-      // Load admin notifications so we can detect revised manuscripts
-      if (user && user.id) {
-        try {
-          const notifResult = await mockAPI.getNotifications(user.id);
-          setAdminNotifications(Array.isArray(notifResult) ? notifResult : []);
-        } catch (err) {
-          console.error('Error loading admin notifications in dashboard', err);
-          setAdminNotifications([]);
-        }
-      } else {
-        setAdminNotifications([]);
-      }
-
-      // Load issue assignments so we know which issue each published paper belongs to
-      const assignments = await mockAPI.getIssueAssignments();
+      // Issue assignments tell us which issue each published paper belongs to
       const assignmentsByPaperId = {};
       assignments.forEach((assignment) => {
         if (assignment && assignment.paperId && assignment.issue) {
@@ -422,26 +410,6 @@ const AdminDashboard = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  // Load admin notifications based on the logged-in user so we can show revised-manuscript badges
-  useEffect(() => {
-    const loadNotificationsForAdmin = async () => {
-      if (!user || !user.id) {
-        setAdminNotifications([]);
-        return;
-      }
-
-      try {
-        const notifResult = await mockAPI.getNotifications(user.id);
-        setAdminNotifications(Array.isArray(notifResult) ? notifResult : []);
-      } catch (err) {
-        console.error('Error loading admin notifications in AdminDashboard', err);
-        setAdminNotifications([]);
-      }
-    };
-
-    loadNotificationsForAdmin();
-  }, [user]);
 
   const handleAssignReviewer = async () => {
     if (!selectedPaper || !selectedReviewer) return;

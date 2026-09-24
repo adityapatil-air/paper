@@ -425,6 +425,16 @@ export const mockAPI = {
     }
   },
 
+  // Every review, for the admin dashboard (admins only).
+  getAllReviews: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/reviews`, { headers: authHeaders() });
+    const data = await readJson(response);
+    if (!response.ok || !data.success || !Array.isArray(data.reviews)) {
+      throw new Error(data.error || 'Failed to load reviews.');
+    }
+    return data.reviews;
+  },
+
   // Reviewer comments on the signed-in author's own paper (no reviewer identities).
   getReviewsForAuthor: async (paperId) => {
     try {
