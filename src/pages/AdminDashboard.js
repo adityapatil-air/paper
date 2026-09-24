@@ -1827,8 +1827,8 @@ const AdminDashboard = () => {
 
           <FilePicker
             id="as-manuscript"
-            label="Manuscript (PDF)"
-            extensions={['pdf']}
+            label="Manuscript (PDF, DOC or DOCX)"
+            extensions={['pdf', 'doc', 'docx']}
             file={adminSubmitForm.manuscriptFile}
             onChange={(f) => { setAdminSubmitForm((prev) => ({ ...prev, manuscriptFile: f })); setAdminFileError(''); }}
             disabled={adminSubmittingPaper}

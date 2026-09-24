@@ -38,9 +38,23 @@ router.post(
         coAuthors,
       } = req.body || {};
 
-      // The submitting author is the signed-in user, never a client-supplied id.
-      // Admin submissions made on an author's behalf have no owner account yet.
-      const ownerId = req.user.role === 'admin' ? null : req.user.id;
+      // The submitting author is the signed-in user, never a client-supplied id. When an
+      // admin submits on an author's behalf, the paper belongs to the registered author whose
+      // email matches the corresponding author's (if any), so they can follow it.
+      let ownerId = req.user.role === 'admin' ? null : req.user.id;
+      if (req.user.role === 'admin' && email) {
+        const { data: authorAccount, error: authorLookupError } = await supabase
+          .from('users')
+          .select('id')
+          .ilike('email', String(email).trim())
+          .eq('role', 'author')
+          .maybeSingle();
+        if (authorLookupError) {
+          console.warn('Could not look up the corresponding author account', authorLookupError);
+        } else if (authorAccount) {
+          ownerId = authorAccount.id;
+        }
+      }
 
       if (!fullName || !email || !affiliation || !paperTitle) {
         return res.status(400).json({ success: false, error: 'Required fields are missing.' });
