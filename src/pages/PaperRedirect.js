@@ -8,10 +8,57 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 // Same base URL the rest of the app uses (mockData.js); empty means same-origin /api.
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
+const JOURNAL_TITLE = 'International Journal of Engineering Practices and Applications';
+
+// Per-article <title>, description and Highwire citation_* tags, which Google Scholar
+// and reference managers read. Removed again when the page is left.
+const useCitationMeta = (paper, downloadHref) => {
+  useEffect(() => {
+    if (!paper) return undefined;
+    const added = [];
+    const addMeta = (name, content) => {
+      if (!content) return;
+      const el = document.createElement('meta');
+      el.setAttribute('name', name);
+      el.setAttribute('content', String(content));
+      document.head.appendChild(el);
+      added.push(el);
+    };
+    const date = paper.publicationDate ? String(paper.publicationDate).slice(0, 10).replace(/-/g, '/') : '';
+    addMeta('citation_title', paper.title);
+    (Array.isArray(paper.authors) ? paper.authors : [paper.authors]).filter(Boolean).forEach((a) => addMeta('citation_author', a));
+    addMeta('citation_publication_date', date);
+    addMeta('citation_journal_title', JOURNAL_TITLE);
+    addMeta('citation_issn', '3139-5961');
+    addMeta('citation_doi', paper.doi);
+    (paper.keywords || []).filter(Boolean).forEach((k) => addMeta('citation_keywords', k));
+    if (downloadHref) addMeta('citation_pdf_url', new URL(downloadHref.replace('?download=1', ''), window.location.origin).toString());
+
+    const previousTitle = document.title;
+    document.title = `${paper.title} | IJEPA`;
+    const description = document.querySelector('meta[name="description"]');
+    const previousDescription = description?.getAttribute('content');
+    if (description && paper.abstract) description.setAttribute('content', paper.abstract.slice(0, 300));
+
+    return () => {
+      added.forEach((el) => el.remove());
+      document.title = previousTitle;
+      if (description && previousDescription != null) description.setAttribute('content', previousDescription);
+    };
+  }, [paper, downloadHref]);
+};
+
+const formatLongDate = (value) => {
+  if (!value) return '';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
 const PaperRedirect = () => {
   const { id, slug } = useParams();
   const [loading, setLoading] = useState(true);
   const [paperId, setPaperId] = useState(null);
+  const [paper, setPaper] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
@@ -46,6 +93,7 @@ const PaperRedirect = () => {
         if (!isMounted) return;
 
         setPaperId(resolvedPaperId || null);
+        setPaper(paper || null);
         setNumPages(null);
         setPageNumber(1);
         setZoom(1);
@@ -53,6 +101,7 @@ const PaperRedirect = () => {
       } catch (_e) {
         if (!isMounted) return;
         setPaperId(null);
+        setPaper(null);
         setViewerError('Unable to load this paper.');
       } finally {
         if (!isMounted) return;
@@ -75,6 +124,8 @@ const PaperRedirect = () => {
     if (!pdfSrc) return null;
     return { url: pdfSrc };
   }, [pdfSrc]);
+
+  useCitationMeta(paper, downloadHref);
 
   if (!hasParam) return <Navigate to="/" replace />;
   if (!loading && !paperId) return <Navigate to="/journal-issues" replace />;
@@ -110,6 +161,33 @@ const PaperRedirect = () => {
   return (
     <div className="page-body">
       <div className="journal-container">
+        {paper && (
+          <article className="page-card article-head" aria-labelledby="article-title">
+            <p className="eyebrow blue">{paper.category || 'Research Article'}</p>
+            <h1 id="article-title">{paper.title}</h1>
+            <p className="article-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
+            <dl className="meta-list">
+              {paper.publicationDate && <div><dt>Published</dt><dd>{formatLongDate(paper.publicationDate)}</dd></div>}
+              <div><dt>Journal</dt><dd>IJEPA · ISSN 3139-5961 (Online)</dd></div>
+              {paper.doi && (
+                <div className="is-wide"><dt>DOI</dt><dd><a href={`https://doi.org/${paper.doi}`} target="_blank" rel="noopener noreferrer">https://doi.org/{paper.doi}</a></dd></div>
+              )}
+            </dl>
+            {paper.abstract && (
+              <section aria-labelledby="article-abstract-heading">
+                <h2 id="article-abstract-heading">Abstract</h2>
+                <p className="article-abstract">{paper.abstract}</p>
+              </section>
+            )}
+            {Array.isArray(paper.keywords) && paper.keywords.filter(Boolean).length > 0 && (
+              <section aria-labelledby="article-keywords-heading">
+                <h2 id="article-keywords-heading">Keywords</h2>
+                <div className="chip-list">{paper.keywords.filter(Boolean).map((k, i) => <span key={`${k}-${i}`} className="chip">{k}</span>)}</div>
+              </section>
+            )}
+          </article>
+        )}
+
         <div className="page-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
