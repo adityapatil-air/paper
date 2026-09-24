@@ -1,10 +1,19 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import paperTemplateDocx from '../assets/Paper Template.docx';
 import copyrightPdf from '../assets/Copyright.pdf';
 
 const AuthorGuidelines = () => {
   const componentRef = useRef();
+  const { hash } = useLocation();
+
+  // Support deep links such as /author-guidelines#publication-ethics.
+  useEffect(() => {
+    if (!hash) return;
+    const el = document.getElementById(hash.slice(1));
+    if (el) el.scrollIntoView({ block: 'start' });
+  }, [hash]);
   // eslint-disable-next-line no-unused-vars
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
@@ -129,7 +138,7 @@ const AuthorGuidelines = () => {
           <a href={copyrightPdf} download="Copyright.pdf" className="button button-dark button-small">Download Copyright Form</a>
         </div>
 
-        <h2>9. Publication Ethics</h2>
+        <h2 id="publication-ethics" className="anchor-target">9. Publication Ethics</h2>
         <div className="page-card">
           <p>IJEPA adheres to strict ethical standards. Authors are expected to:</p>
           <ul style={{ marginBottom: 0 }}>

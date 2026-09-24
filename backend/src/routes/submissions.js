@@ -69,6 +69,7 @@ router.post(
         affiliation,
         paperTitle,
         keywords,
+        abstract,
         comments,
         coAuthors,
         userId,
@@ -125,7 +126,8 @@ router.post(
       const insertPayload = {
         title: paperTitle,
         authors: allAuthorNames,
-        abstract: comments || null,
+        // Prefer the dedicated abstract field; older clients only sent `comments`.
+        abstract: String(abstract || '').trim() || comments || null,
         keywords: keywordArray,
         category: null,
         word_count: null,
