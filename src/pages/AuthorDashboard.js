@@ -11,6 +11,7 @@ import FilePicker from '../components/ui/FilePicker';
 import PaperStepper from '../components/ui/PaperStepper';
 import Spinner from '../components/ui/Spinner';
 import StatusBadge, { Badge } from '../components/ui/StatusBadge';
+import { recommendationLabel } from '../components/ui/Stars';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
 
@@ -54,6 +55,7 @@ const AuthorDashboard = () => {
   const [showAllAuthorPapers, setShowAllAuthorPapers] = useState(false);
   const [detailPaper, setDetailPaper] = useState(null);
   const [revisionModalPaper, setRevisionModalPaper] = useState(null);
+  const [revisionFeedback, setRevisionFeedback] = useState({ loading: false, reviews: [], error: '' });
   const [revisionFile, setRevisionFile] = useState(null);
   const [revisionUploading, setRevisionUploading] = useState(false);
 
@@ -121,10 +123,27 @@ const AuthorDashboard = () => {
     window.open(HOSTED_PAYMENT_LINK, '_blank', 'noopener,noreferrer');
   };
 
-  const openRevisionModal = (paper) => {
+  const openRevisionModal = async (paper) => {
     setDetailPaper(null);
     setRevisionModalPaper(paper);
     setRevisionFile(null);
+    setRevisionFeedback({ loading: true, reviews: [], error: '' });
+    const result = await mockAPI.getReviewsForAuthor(paper.id);
+    setRevisionFeedback({
+      loading: false,
+      reviews: result.success ? result.reviews : [],
+      error: result.success ? '' : result.error,
+    });
+  };
+
+  // The editor's revision request is delivered as a notification naming the paper.
+  const editorRevisionMessage = (paper) => {
+    if (!paper) return '';
+    const match = notifications.find((n) =>
+      n && n.title === 'Revisions requested for your paper' &&
+      typeof n.message === 'string' && n.message.includes(`"${paper.title}"`)
+    );
+    return match ? match.message : '';
   };
 
   const closeRevisionModal = () => {
@@ -601,6 +620,30 @@ const AuthorDashboard = () => {
         {revisionModalPaper && (
           <form id="revision-form" onSubmit={handleSubmitRevision} noValidate>
             <div className="paper-ref"><strong>{revisionModalPaper.title}</strong></div>
+            <section className="detail-section" aria-labelledby="revision-editor-heading">
+              <h3 id="revision-editor-heading">Editor’s message</h3>
+              <p>{editorRevisionMessage(revisionModalPaper) || 'The editor did not add a message. Please address the reviewer comments below.'}</p>
+            </section>
+            <section className="detail-section" aria-labelledby="revision-reviews-heading">
+              <h3 id="revision-reviews-heading">Reviewer comments</h3>
+              {revisionFeedback.loading ? (
+                <Spinner size="sm" label="Loading reviewer comments" />
+              ) : revisionFeedback.error ? (
+                <p role="alert">{revisionFeedback.error}</p>
+              ) : revisionFeedback.reviews.length === 0 ? (
+                <p>No reviewer comments have been shared for this paper.</p>
+              ) : (
+                revisionFeedback.reviews.map((review, index) => (
+                  <article key={index} className="review-card">
+                    <div className="review-card-head">
+                      <strong>Reviewer {index + 1}</strong>
+                      {review.recommendation && <span>{recommendationLabel(review.recommendation)}</span>}
+                    </div>
+                    <p>{review.comments}</p>
+                  </article>
+                ))
+              )}
+            </section>
             <FilePicker
               id="revision-file"
               label="Revised manuscript (PDF)"

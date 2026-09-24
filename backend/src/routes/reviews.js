@@ -89,6 +89,59 @@ router.get('/paper/:paperId', requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/reviews/paper/:paperId/for-author - the reviewers' comments for the paper's own
+// author, without reviewer identities. Released once the editor has made a decision.
+const AUTHOR_VISIBLE_STATUSES = ['revisions_requested', 'accepted', 'rejected', 'published'];
+
+router.get('/paper/:paperId/for-author', requireAuth, async (req, res) => {
+  try {
+    if (!ensureSupabase(res)) return;
+
+    const paperId = parseInt(req.params.paperId, 10);
+    if (Number.isNaN(paperId)) {
+      return res.status(400).json({ success: false, error: 'Invalid paper id.' });
+    }
+
+    const { data: paper, error: paperError } = await supabase
+      .from('papers')
+      .select('id, status, main_author_id')
+      .eq('id', paperId)
+      .maybeSingle();
+
+    if (paperError) {
+      console.error('Error loading paper for author reviews', paperError);
+      return res.status(500).json({ success: false, error: 'Failed to fetch reviews.' });
+    }
+    if (!paper || paper.main_author_id !== req.user.id) {
+      return res.status(404).json({ success: false, error: 'Paper not found.' });
+    }
+    if (!AUTHOR_VISIBLE_STATUSES.includes(paper.status)) {
+      return res.json({ success: true, reviews: [] });
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('recommendation, comments, submitted_date')
+      .eq('paper_id', paperId)
+      .order('submitted_date', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching reviews for author', error);
+      return res.status(500).json({ success: false, error: 'Failed to fetch reviews.' });
+    }
+
+    const reviews = (data || []).map((row) => ({
+      recommendation: row.recommendation,
+      comments: row.comments,
+      submittedDate: row.submitted_date,
+    }));
+    return res.json({ success: true, reviews });
+  } catch (err) {
+    console.error('Unexpected error in GET /api/reviews/paper/:paperId/for-author', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch reviews.' });
+  }
+});
+
 // POST /api/reviews - the signed-in reviewer submits their review of a paper assigned to them
 router.post('/', requireRole('reviewer'), async (req, res) => {
   try {

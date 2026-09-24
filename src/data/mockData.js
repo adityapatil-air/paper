@@ -425,6 +425,21 @@ export const mockAPI = {
     }
   },
 
+  // Reviewer comments on the signed-in author's own paper (no reviewer identities).
+  getReviewsForAuthor: async (paperId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/reviews/paper/${paperId}/for-author`, { headers: authHeaders() });
+      const data = await readJson(response);
+      if (!response.ok || !data.success || !Array.isArray(data.reviews)) {
+        return { success: false, error: data.error || 'Failed to load reviewer comments.' };
+      }
+      return { success: true, reviews: data.reviews };
+    } catch (error) {
+      console.error('getReviewsForAuthor error', error);
+      return { success: false, error: 'Failed to load reviewer comments.' };
+    }
+  },
+
   submitReview: async (reviewData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/reviews`, {
