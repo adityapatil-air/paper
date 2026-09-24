@@ -7,6 +7,15 @@ const router = express.Router();
 
 const upload = makeUploader({ manuscript: 'document', copyrightForm: 'document' });
 
+// The journal's Aims & Scope areas; must match SUBJECT_AREAS in src/pages/SubmitForm.js.
+const SUBJECT_AREAS = [
+  'Civil, Mechanical, Electrical, and Electronics Engineering',
+  'Computer Science, Information Technology, and Artificial Intelligence',
+  'Industrial, Manufacturing, and Materials Engineering',
+  'Communication, Control, and Instrumentation Systems',
+  'Sustainable, Green, and Emerging Engineering Practices',
+];
+
 const ensureSupabase = (res) => {
   if (!supabase) {
     res.status(500).json({ success: false, error: 'Supabase client is not configured on the server.' });
@@ -36,7 +45,12 @@ router.post(
         abstract,
         comments,
         coAuthors,
+        category,
       } = req.body || {};
+
+      if (category && !SUBJECT_AREAS.includes(category)) {
+        return res.status(400).json({ success: false, error: 'Choose a subject area from the list.' });
+      }
 
       // The submitting author is the signed-in user, never a client-supplied id. When an
       // admin submits on an author's behalf, the paper belongs to the registered author whose
@@ -111,7 +125,7 @@ router.post(
         abstract: String(abstract || '').trim() || comments || null,
         cover_letter: String(abstract || '').trim() ? (String(comments || '').trim() || null) : null,
         keywords: keywordArray,
-        category: null,
+        category: category || null,
         word_count: null,
         submission_fee: 150,
         payment_status: 'pending',
