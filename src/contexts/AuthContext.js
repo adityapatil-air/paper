@@ -4,6 +4,16 @@ import { supabase, isSupabaseConfigured } from '../config/supabase';
 
 const AuthContext = createContext();
 
+// True when a backend JWT's `exp` claim is in the past (or the token can't be read).
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now();
+  } catch (e) {
+    return true;
+  }
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -67,7 +77,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     const init = async () => {
-      const storedUser = safeStorageGet('user');
+      let storedUser = safeStorageGet('user');
+      const storedToken = safeStorageGet('authToken');
+
+      // An expired backend session is signed out up front instead of showing a user
+      // whose every request is rejected.
+      if (storedUser && storedToken && isTokenExpired(storedToken)) {
+        safeStorageRemove('user');
+        safeStorageRemove('authToken');
+        storedUser = null;
+      }
 
       if (!isSupabaseConfigured) {
         if (storedUser && isMounted) {
@@ -79,16 +98,21 @@ export const AuthProvider = ({ children }) => {
 
       const { data, error } = await supabase.auth.getSession();
 
+      // StrictMode runs this effect twice; the first run is cleaned up before getSession
+      // resolves. Its late result must not touch state or storage, or a refresh signs the
+      // user out.
+      if (!isMounted) return;
+
       if (!error && data?.session) {
         setUserFromSession(data.session);
-      } else if (storedUser && isMounted) {
+      } else if (storedUser) {
         setUser(JSON.parse(storedUser));
       } else {
         setUser(null);
         safeStorageRemove('user');
       }
 
-      if (isMounted) setLoading(false);
+      setLoading(false);
     };
 
     init();
