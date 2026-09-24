@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
@@ -6,30 +6,33 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BackToTop from './components/BackToTop';
+import LoadingSpinner from './components/LoadingSpinner';
 
 // Pages
 
 import Landing from './pages/Landing';
-import BrowsePapers from './pages/BrowsePapers';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import AuthorDashboard from './pages/AuthorDashboard';
-import ReviewerDashboard from './pages/ReviewerDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import ReviewPaper from './pages/ReviewPaper';
 import AuthorGuidelines from './pages/AuthorGuidelines';
 import CallForPapers from './pages/CallForPapers';
 import Indexing from './pages/Indexing';
 import JournalIssues from './pages/JournalIssue';
 import JoinEditorialTeam from './pages/joinusedito';
-import SubmitForm from './pages/SubmitForm';
 import ContactUs from './pages/ContactUs';
 import AboutUs from './pages/AboutUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import EditorialBoard from './pages/EditorialBoard';
-import PaperRedirect from './pages/PaperRedirect';
 
+// Dashboards and the PDF viewers (react-pdf / pdf.js) load on demand, so public visitors
+// don't download them with the home page.
+const BrowsePapers = lazy(() => import('./pages/BrowsePapers'));
+const AuthorDashboard = lazy(() => import('./pages/AuthorDashboard'));
+const ReviewerDashboard = lazy(() => import('./pages/ReviewerDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const ReviewPaper = lazy(() => import('./pages/ReviewPaper'));
+const SubmitForm = lazy(() => import('./pages/SubmitForm'));
+const PaperRedirect = lazy(() => import('./pages/PaperRedirect'));
 
 
 function App() {
@@ -41,6 +44,7 @@ function App() {
           <a href="#main-content" className="skip-link">Skip to main content</a>
           <Header />
           <main className="flex-1" id="main-content" tabIndex={-1}>
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><LoadingSpinner size="lg" text="Loading..." /></div>}>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
@@ -97,6 +101,7 @@ function App() {
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </Suspense>
           </main>
           <Footer />
           <BackToTop />
