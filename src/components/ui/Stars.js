@@ -14,7 +14,8 @@ export const Stars = ({ rating = 0, max = 5 }) => (
 export const RECOMMENDATIONS = {
   accept: { label: 'Accept', tone: 'accepted' },
   accept_with_revisions: { label: 'Accept with minor revisions', tone: 'review' },
-  reject_with_revisions: { label: 'Reject with major revisions', tone: 'revision' },
+  // Stored value kept for existing reviews; it means "major revisions", not a rejection.
+  reject_with_revisions: { label: 'Major revisions needed', tone: 'revision' },
   reject: { label: 'Reject', tone: 'rejected' },
 };
 
