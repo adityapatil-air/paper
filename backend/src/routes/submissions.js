@@ -1,6 +1,7 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ const ensureSupabase = (res) => {
 // POST /api/submissions - handle full paper submission with file uploads
 router.post(
   '/',
+  requireAuth,
   handleUpload(upload.fields([
     { name: 'manuscript', maxCount: 1 },
     { name: 'copyrightForm', maxCount: 1 },
@@ -34,8 +36,11 @@ router.post(
         abstract,
         comments,
         coAuthors,
-        userId,
       } = req.body || {};
+
+      // The submitting author is the signed-in user, never a client-supplied id.
+      // Admin submissions made on an author's behalf have no owner account yet.
+      const ownerId = req.user.role === 'admin' ? null : req.user.id;
 
       if (!fullName || !email || !affiliation || !paperTitle) {
         return res.status(400).json({ success: false, error: 'Required fields are missing.' });
@@ -48,7 +53,7 @@ router.post(
         return res.status(400).json({ success: false, error: 'Manuscript file is required.' });
       }
 
-      const pathPrefix = userId ? `user-${userId}` : 'anonymous';
+      const pathPrefix = ownerId ? `user-${ownerId}` : 'anonymous';
 
       const manuscriptUrl = await uploadFile(manuscriptFile, `${pathPrefix}/manuscripts`);
       const copyrightUrl = copyrightFile
@@ -100,11 +105,8 @@ router.post(
         pdf_url: manuscriptUrl,
       };
 
-      if (userId) {
-        const parsedUserId = parseInt(userId, 10);
-        if (!Number.isNaN(parsedUserId)) {
-          insertPayload.main_author_id = parsedUserId;
-        }
+      if (ownerId) {
+        insertPayload.main_author_id = ownerId;
       }
 
       let { data, error } = await supabase
@@ -208,6 +210,7 @@ router.post(
 // POST /api/submissions/:paperId/revision - upload a revised manuscript for an existing paper
 router.post(
   '/:paperId/revision',
+  requireAuth,
   handleUpload(upload.single('manuscript')),
   async (req, res) => {
     try {
@@ -226,9 +229,9 @@ router.post(
       // Only allow revised uploads when revisions have been explicitly requested
       const { data: paper, error: paperError } = await supabase
         .from('papers')
-        .select('id, status')
+        .select('id, status, main_author_id')
         .eq('id', paperId)
-        .single();
+        .maybeSingle();
 
       if (paperError) {
         console.error('Error loading paper before revision upload', paperError);
@@ -239,12 +242,15 @@ router.post(
         return res.status(404).json({ success: false, error: 'Paper not found.' });
       }
 
+      if (paper.main_author_id !== req.user.id) {
+        return res.status(403).json({ success: false, error: 'Only the author who submitted this paper can upload a revision.', code: 'FORBIDDEN' });
+      }
+
       if (paper.status !== 'revisions_requested') {
         return res.status(400).json({ success: false, error: 'Revised manuscript can only be uploaded after a revision request.' });
       }
 
-      const { userId } = req.body || {};
-      const pathPrefix = userId ? `user-${userId}` : `paper-${paperId}`;
+      const pathPrefix = `user-${req.user.id}`;
 
       const manuscriptUrl = await uploadFile(
         manuscriptFile,

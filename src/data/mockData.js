@@ -294,9 +294,10 @@ export const mockAPI = {
 
       const response = await fetch(`${API_BASE_URL}/api/submissions/${paperId}/revision`, {
         method: 'POST',
+        headers: authHeaders(),
         body: formData,
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to upload revised manuscript.' };
@@ -336,6 +337,7 @@ export const mockAPI = {
 
       const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
+        headers: authHeaders(),
         body: formData,
       });
 
