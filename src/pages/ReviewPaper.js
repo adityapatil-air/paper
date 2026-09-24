@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mockAPI } from '../data/mockData';
-import LoadingSpinner from '../components/LoadingSpinner';
+import Icon from '../components/ui/Icon';
+import EmptyState from '../components/ui/EmptyState';
+import Spinner from '../components/ui/Spinner';
+import { Skeleton, SkeletonText } from '../components/ui/Skeleton';
+import { formatDate, joinAuthors } from '../components/ui/DashHeader';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -18,6 +22,8 @@ const ReviewPaper = () => {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
+
+  const backPath = user?.role === 'admin' ? '/admin-dashboard' : '/reviewer-dashboard';
 
   useEffect(() => {
     const loadPaper = async () => {
@@ -46,190 +52,154 @@ const ReviewPaper = () => {
     setPageNumber(1);
   };
 
-  const handlePrevPage = () => {
-    setPageNumber((prev) => Math.max(prev - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    setPageNumber((prev) => (numPages ? Math.min(prev + 1, numPages) : prev + 1));
-  };
-
-  const handleZoomIn = () => {
-    setZoom((prev) => Math.min(prev + 0.25, 2));
-  };
-
-  const handleZoomOut = () => {
-    setZoom((prev) => Math.max(prev - 0.25, 0.5));
-  };
-
-  const handleResetZoom = () => {
-    setZoom(1);
-  };
+  const handlePrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setPageNumber((prev) => (numPages ? Math.min(prev + 1, numPages) : prev + 1));
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.25, 2));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.5));
+  const handleResetZoom = () => setZoom(1);
 
   if (loading) {
     return (
-      <div className="dash-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LoadingSpinner size="lg" text="Loading manuscript..." />
+      <div className="dash-page" aria-busy="true">
+        <div className="journal-container">
+          <span className="sr-only" role="status">Loading manuscript…</span>
+          <div className="viewer-shell" aria-hidden="true">
+            <div className="viewer-head">
+              <div className="skeleton-stack flex-1">
+                <Skeleton width="70%" height={26} />
+                <SkeletonText lines={2} />
+              </div>
+            </div>
+            <div className="viewer-stage"><Skeleton width="min(620px, 90%)" height={560} radius={4} /></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !paper) {
     return (
-      <div className="dash-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="page-card" style={{ maxWidth: 420, textAlign: 'center' }}>
-          <h1 style={{ color: 'var(--navy)', fontSize: 16, margin: '0 0 10px' }}>Unable to open manuscript</h1>
-          <p style={{ color: 'var(--muted)', fontSize: 11, margin: '0 0 18px' }}>{error || 'Paper not found.'}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="button button-primary"
+      <div className="dash-page">
+        <div className="journal-container">
+          <EmptyState
+            variant="search"
+            title="Unable to open manuscript"
+            action={(
+              <>
+                <button type="button" onClick={() => navigate(-1)} className="button button-ghost">
+                  <Icon name="arrowLeft" size={16} /> Go back
+                </button>
+                <Link to={backPath} className="button button-primary">Go to dashboard</Link>
+              </>
+            )}
           >
-            Go Back
-          </button>
+            {error || 'Paper not found.'}
+          </EmptyState>
         </div>
       </div>
     );
   }
 
   const viewerSupported = paper.pdfUrl && paper.pdfUrl.toLowerCase().endsWith('.pdf');
+  const watermark = user ? `${user.name} · ${user.email}` : 'Confidential review copy';
 
   return (
     <div className="dash-page">
-      <div className="journal-container" style={{ maxWidth: 1000 }}>
-        <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <button
-            onClick={() => navigate('/reviewer-dashboard')}
-            className="icon-btn"
-          >
-            &larr; Back to Reviewer Dashboard
-          </button>
-          <span style={{ fontSize: 9, color: 'var(--muted)' }}>Paper ID: {paper.id}</span>
-        </div>
+      <div className="journal-container">
+        <Link to={backPath} className="back-link">
+          <Icon name="arrowLeft" size={16} /> Back to {user?.role === 'admin' ? 'admin' : 'reviewer'} dashboard
+        </Link>
 
-        <div className="dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--line)', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
+        <article className="viewer-shell" aria-labelledby="manuscript-title">
+          <header className="viewer-head">
             <div>
-              <h1 style={{ color: 'var(--navy)', fontSize: 16, margin: '0 0 8px' }}>{paper.title}</h1>
-              <p style={{ fontSize: 10, color: 'var(--muted)', margin: '0 0 4px' }}>
-                <strong style={{ color: 'var(--ink)' }}>Authors:</strong> {paper.authors?.join(', ') || 'N/A'}
-              </p>
-              <p style={{ fontSize: 10, color: 'var(--muted)', margin: '0 0 4px' }}>
-                <strong style={{ color: 'var(--ink)' }}>Category:</strong> {paper.category || 'N/A'}
-              </p>
-              <p style={{ fontSize: 10, color: 'var(--muted)', margin: 0 }}>
-                <strong style={{ color: 'var(--ink)' }}>Submitted:</strong>{' '}
-                {paper.submissionDate ? new Date(paper.submissionDate).toLocaleDateString() : 'N/A'}
-              </p>
+              <p className="dash-role"><span className="dash-role-dot" aria-hidden="true" />Manuscript · Paper ID {paper.id}</p>
+              <h1 id="manuscript-title">{paper.title}</h1>
+              <dl className="meta-list">
+                <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(paper.authors) || 'N/A'}</dd></div>
+                <div><dt>Category</dt><dd>{paper.category || 'N/A'}</dd></div>
+                <div><dt>Submitted</dt><dd>{paper.submissionDate ? formatDate(paper.submissionDate) : 'N/A'}</dd></div>
+              </dl>
             </div>
-            <div style={{ textAlign: 'right', fontSize: 9, color: 'var(--muted)' }}>
-              <p style={{ margin: '0 0 4px' }}>Confidential review copy</p>
-              {user && (
-                <p style={{ margin: 0 }}>Reviewer: {user.name} ({user.email})</p>
-              )}
+            <div className="viewer-confidential">
+              <Icon name="shield" size={18} />
+              <div>
+                <strong>Confidential review copy</strong>
+                {user && <span>Reviewer: {user.name} ({user.email})</span>}
+              </div>
             </div>
-          </div>
+          </header>
 
           {!viewerSupported && (
-            <div className="badge badge-warning" style={{ display: 'block', padding: '10px 22px', fontSize: 10, borderRadius: 0 }}>
-              This manuscript is not a PDF file, so inline viewing may be limited. You may need to request a PDF version from the editor.
+            <div className="alert alert-warning viewer-alert" role="status">
+              <span className="alert-icon" aria-hidden="true"><Icon name="alert" size={20} /></span>
+              <div className="alert-copy">
+                <p>This manuscript is not a PDF file, so inline viewing may be limited. You may need to request a PDF version from the editor.</p>
+              </div>
             </div>
           )}
 
-          <div
-            style={{ position: 'relative', background: 'var(--navy)', maxHeight: '80vh', overflowY: 'auto' }}
-          >
-            {viewerSupported ? (
-              <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '24px 0' }}>
-                <Document
-                  file={paper.pdfUrl}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  loading={
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#eaf5fd', fontSize: 11 }}>
-                      <LoadingSpinner size="sm" text="Loading PDF..." />
-                    </div>
-                  }
-                  error={
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fde8e8', fontSize: 11 }}>
-                      Failed to load PDF.
-                    </div>
-                  }
-                >
-                  <Page pageNumber={pageNumber} height={650} scale={zoom} />
-                </Document>
-                {numPages && (
-                  <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, fontSize: 9, color: '#eaf5fd', justifyContent: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button
-                        type="button"
-                        onClick={handleZoomOut}
-                        className="icon-btn button-small"
-                        disabled={zoom <= 0.5}
-                      >
-                        -
-                      </button>
-                      <span>{Math.round(zoom * 100)}%</span>
-                      <button
-                        type="button"
-                        onClick={handleZoomIn}
-                        className="icon-btn button-small"
-                        disabled={zoom >= 2}
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleResetZoom}
-                        className="icon-btn button-small"
-                      >
-                        Reset
-                      </button>
-                    </div>
+          {viewerSupported && numPages && (
+            <div className="viewer-toolbar" role="toolbar" aria-label="Document controls">
+              <div className="tool-group">
+                <button type="button" onClick={handlePrevPage} disabled={pageNumber <= 1} className="icon-btn is-square" aria-label="Previous page">
+                  <Icon name="arrowLeft" size={16} />
+                </button>
+                <span className="readout" aria-live="polite">Page {pageNumber} of {numPages}</span>
+                <button type="button" onClick={handleNextPage} disabled={numPages && pageNumber >= numPages} className="icon-btn is-square" aria-label="Next page">
+                  <Icon name="arrowRight" size={16} />
+                </button>
+              </div>
+              <div className="tool-group">
+                <button type="button" onClick={handleZoomOut} className="icon-btn is-square" disabled={zoom <= 0.5} aria-label="Zoom out">
+                  <Icon name="zoomOut" size={16} />
+                </button>
+                <span className="readout" aria-live="polite">{Math.round(zoom * 100)}%</span>
+                <button type="button" onClick={handleZoomIn} className="icon-btn is-square" disabled={zoom >= 2} aria-label="Zoom in">
+                  <Icon name="zoomIn" size={16} />
+                </button>
+                <button type="button" onClick={handleResetZoom} className="icon-btn" disabled={zoom === 1}>Reset</button>
+              </div>
+            </div>
+          )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <button
-                        type="button"
-                        onClick={handlePrevPage}
-                        disabled={pageNumber <= 1}
-                        className="icon-btn button-small"
-                      >
-                        Previous
-                      </button>
-                      <span>
-                        Page {pageNumber} of {numPages}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleNextPage}
-                        disabled={numPages && pageNumber >= numPages}
-                        className="icon-btn button-small"
-                      >
-                        Next
-                      </button>
+          <div className="viewer-stage">
+            {viewerSupported ? (
+              <Document
+                file={paper.pdfUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={<div className="viewer-message"><div><Spinner size="sm" /><p>Loading PDF…</p></div></div>}
+                error={(
+                  <div className="viewer-message">
+                    <div>
+                      <h2>Failed to load PDF</h2>
+                      <p>The file could not be displayed. Try again later or contact the editor.</p>
                     </div>
                   </div>
                 )}
-              </div>
+              >
+                <div className="viewer-page">
+                  <Page pageNumber={pageNumber} height={650} scale={zoom} />
+                  <div className="viewer-watermark" aria-hidden="true">
+                    {Array.from({ length: 8 }).map((_, i) => <span key={i}>{watermark}</span>)}
+                  </div>
+                </div>
+              </Document>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', padding: '40px 24px' }}>
-                <div style={{ maxWidth: 420, textAlign: 'center' }}>
-                  <h2 style={{ color: '#fff', fontSize: 14, margin: '0 0 10px' }}>Inline view not available</h2>
-                  <p style={{ fontSize: 10, color: '#eaf5fd', margin: 0 }}>
-                    This manuscript is stored in a format the browser cannot preview directly. Please contact the editor to obtain a PDF version for easier inline review.
-                  </p>
+              <div className="viewer-message">
+                <div>
+                  <h2>Inline view not available</h2>
+                  <p>This manuscript is stored in a format the browser cannot preview directly. Please contact the editor to obtain a PDF version for easier inline review.</p>
                 </div>
               </div>
             )}
           </div>
 
-          <div style={{ padding: '14px 22px', borderTop: '1px solid var(--line)', background: '#f4f9fc', fontSize: 9, color: 'var(--muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <p style={{ margin: 0 }}>
-              Screenshots and copying cannot be fully prevented by a web application. To discourage leaks, this view includes a visible watermark with your reviewer identity.
-            </p>
-            <p style={{ margin: 0, fontStyle: 'italic' }}>
-              All access is logged. Do not share this content outside the review process.
-            </p>
-          </div>
-        </div>
+          <footer className="viewer-foot">
+            <p>Screenshots and copying cannot be fully prevented by a web application. To discourage leaks, this view includes a visible watermark with your reviewer identity.</p>
+            <p>Do not share this content outside the review process.</p>
+          </footer>
+        </article>
       </div>
     </div>
   );
