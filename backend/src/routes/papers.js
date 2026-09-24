@@ -1,6 +1,7 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { Readable } = require('stream');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -89,15 +90,37 @@ const loadAssignmentsByPaper = async () => {
   return assignmentsByPaperId;
 };
 
-// GET /api/papers - all papers
-router.get('/', async (req, res) => {
+// GET /api/papers - the caller's papers: admins see every paper, authors only the papers
+// they submitted, reviewers only the papers assigned to them. Guests use /published.
+router.get('/', requireAuth, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
-    const { data: paperRows, error } = await supabase
+    const { id: userId, role } = req.user;
+    if (!['admin', 'author', 'reviewer'].includes(role)) {
+      return res.json({ success: true, papers: [] });
+    }
+
+    const assignmentsByPaperId = await loadAssignmentsByPaper();
+
+    let query = supabase
       .from('papers')
       .select('*')
       .order('submission_date', { ascending: false });
+
+    if (role === 'author') {
+      query = query.eq('main_author_id', userId);
+    } else if (role === 'reviewer') {
+      const assignedIds = Object.keys(assignmentsByPaperId)
+        .filter((paperId) => assignmentsByPaperId[paperId].includes(userId))
+        .map(Number);
+      if (assignedIds.length === 0) {
+        return res.json({ success: true, papers: [] });
+      }
+      query = query.in('id', assignedIds);
+    }
+
+    const { data: paperRows, error } = await query;
 
     if (error) {
       console.error('Error fetching papers', error, {
@@ -109,7 +132,6 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch papers.' });
     }
 
-    const assignmentsByPaperId = await loadAssignmentsByPaper();
     const papers = (paperRows || []).map((row) => mapPaperRow(row, assignmentsByPaperId));
 
     return res.json({ success: true, papers });

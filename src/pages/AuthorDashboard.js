@@ -64,10 +64,8 @@ const AuthorDashboard = () => {
   const loadAuthorPapers = async () => {
     try {
       setLoading(true);
-      const allPapers = await mockAPI.getAllPapers();
-      const authorPapers = allPapers.filter(paper =>
-        paper.authors.some(author => author.includes(user.name.split(' ')[0]))
-      );
+      // The server returns only the papers this author submitted.
+      const authorPapers = await mockAPI.getAllPapers();
       setPapers(authorPapers);
     } catch (error) {
       console.error('Error loading papers:', error);

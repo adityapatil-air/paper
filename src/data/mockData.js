@@ -235,20 +235,17 @@ export const mockAPI = {
     }
   },
 
+  // Papers visible to the signed-in user (admin: all, author: own, reviewer: assigned).
+  // Throws on failure so dashboards can show an error instead of an empty list.
   getAllPapers: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/papers`);
-      const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/api/papers`, { headers: authHeaders() });
+    const data = await readJson(response);
 
-      if (!data.success || !Array.isArray(data.papers)) {
-        return [];
-      }
-
-      return data.papers;
-    } catch (error) {
-      console.error('getAllPapers error', error);
-      return [];
+    if (!response.ok || !data.success || !Array.isArray(data.papers)) {
+      throw new Error(data.error || 'Failed to load papers.');
     }
+
+    return data.papers;
   },
 
   getPaperById: async (id) => {
