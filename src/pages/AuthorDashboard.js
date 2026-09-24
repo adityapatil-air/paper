@@ -15,13 +15,15 @@ import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
 
 const HOSTED_PAYMENT_LINK = 'https://rzp.io/rzp/dOBF1Tdq';
-const UNFINISHED_STATUSES = ['submitted', 'under_review', 'revisions_requested'];
+const UNFINISHED_STATUSES = ['submitted', 'under_review', 'revisions_requested', 'accepted'];
 
-const needsPayment = (paper) => paper.status === 'submitted' && paper.paymentStatus === 'pending';
+// The article processing charge is due only after acceptance (see Author Guidelines §6).
+const needsPayment = (paper) => paper.status === 'accepted' && paper.paymentStatus !== 'paid';
 
 // Short, status-driven hint shown in the table's "Next step" column.
 const nextStep = (paper) => {
   if (needsPayment(paper)) return { text: 'Payment pending', tone: 'warning' };
+  if (paper.status === 'accepted') return { text: 'Awaiting publication' };
   if (paper.status === 'submitted') return { text: 'Awaiting reviewer assignment' };
   if (paper.status === 'under_review') {
     return { text: paper.reviewDeadline ? `Est. completion ${formatDate(paper.reviewDeadline)}` : 'With reviewers' };
@@ -239,8 +241,8 @@ const AuthorDashboard = () => {
         <div className="callout-box is-warning">
           <Icon name="credit" size={20} />
           <div>
-            <strong>Submission fee: ₹1500</strong>
-            <p>Complete payment to initiate the review.</p>
+            <strong>Accepted: article processing charge due</strong>
+            <p>INR 1500 for Indian authors or USD 50 for international authors. Your paper ID is #{paper.id}.</p>
           </div>
           <div className="callout-actions">
             <button type="button" onClick={() => handlePayment(paper.id)} className="button button-primary button-small">Pay now</button>
@@ -248,11 +250,11 @@ const AuthorDashboard = () => {
         </div>
       );
     }
-    if (paper.status === 'submitted' && paper.paymentStatus === 'paid') {
+    if (paper.status === 'accepted' && paper.paymentStatus === 'paid') {
       return (
         <div className="callout-box is-success">
           <Icon name="checkCircle" size={20} />
-          <div><strong>Payment completed</strong><p>Awaiting reviewer assignment.</p></div>
+          <div><strong>Payment received</strong><p>Your paper is accepted and waiting to be published.</p></div>
         </div>
       );
     }
@@ -455,10 +457,10 @@ const AuthorDashboard = () => {
                           <tr key={paper.id}>
                             <td className="cell-primary">
                               <button type="button" className="cell-title-btn" onClick={() => setDetailPaper(paper)}>{paper.title}</button>
-                              <span className="cell-sub">Complete payment to initiate the review process</span>
+                              <span className="cell-sub">Accepted. Pay the article processing charge so the paper can be published (paper ID #{paper.id}).</span>
                             </td>
                             <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
-                            <td data-label="Fee" className="nowrap"><strong>₹1500</strong></td>
+                            <td data-label="Fee" className="nowrap"><strong>INR 1500</strong> / USD 50</td>
                             <td className="col-actions">
                               <div className="row-actions">
                                 <button type="button" onClick={() => handlePayment(paper.id)} className="button button-primary button-small">

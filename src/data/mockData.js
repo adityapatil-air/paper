@@ -854,6 +854,26 @@ mockAPI.acceptPaper = async (paperId) => {
   }
 };
 
+mockAPI.markPaymentReceived = async (paperId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/mark-paid`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ paperId })
+    });
+    const data = await readJson(response);
+
+    if (!data.success) {
+      return { success: false, error: data.error || 'Failed to record the payment.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('markPaymentReceived error', error);
+    return { success: false, error: 'Failed to record the payment.' };
+  }
+};
+
 mockAPI.publishPaper = async (paperId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/publish-paper`, {

@@ -251,6 +251,69 @@ router.post('/accept-paper', async (req, res) => {
   }
 });
 
+// POST /api/admin/mark-paid - record an article processing charge received outside the site
+// (e.g. through the hosted Razorpay payment page, which does not identify the paper)
+router.post('/mark-paid', async (req, res) => {
+  try {
+    if (!ensureSupabase(res)) return;
+
+    const paperId = parseInt(req.body?.paperId, 10);
+    if (Number.isNaN(paperId)) {
+      return res.status(400).json({ success: false, error: 'paperId is required.' });
+    }
+
+    const { data: paper, error: paperError } = await supabase
+      .from('papers')
+      .select('id, title, status, payment_status, main_author_id')
+      .eq('id', paperId)
+      .maybeSingle();
+
+    if (paperError) {
+      console.error('Error fetching paper before marking paid', paperError);
+      return res.status(500).json({ success: false, error: 'Failed to load paper.' });
+    }
+    if (!paper) {
+      return res.status(404).json({ success: false, error: 'Paper not found.' });
+    }
+    if (paper.status !== 'accepted' && paper.status !== 'published') {
+      return res.status(409).json({ success: false, error: 'Only accepted or published papers can be marked as paid.' });
+    }
+    if (paper.payment_status === 'paid') {
+      return res.status(409).json({ success: false, error: 'This paper is already marked as paid.' });
+    }
+
+    const { error } = await supabase
+      .from('papers')
+      .update({ payment_status: 'paid' })
+      .eq('id', paperId);
+
+    if (error) {
+      console.error('Error marking paper paid', error);
+      return res.status(500).json({ success: false, error: 'Failed to record the payment.' });
+    }
+
+    if (paper.main_author_id) {
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: paper.main_author_id,
+          title: 'Payment received',
+          message: `The article processing charge for "${paper.title}" has been received.`,
+          type: 'success',
+        });
+
+      if (notifError) {
+        console.error('Error creating payment notification', notifError);
+      }
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Unexpected error in POST /api/admin/mark-paid', err);
+    return res.status(500).json({ success: false, error: 'Failed to record the payment.' });
+  }
+});
+
 // POST /api/admin/publish-paper - publish an accepted paper
 router.post('/publish-paper', async (req, res) => {
   try {

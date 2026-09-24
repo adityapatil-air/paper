@@ -86,6 +86,8 @@ const AdminDashboard = () => {
   const [quickPublishPaper, setQuickPublishPaper] = useState(null);
   const [acceptTargetPaper, setAcceptTargetPaper] = useState(null);
   const [accepting, setAccepting] = useState(false);
+  const [markPaidPaper, setMarkPaidPaper] = useState(null);
+  const [markingPaid, setMarkingPaid] = useState(false);
 
   const [showPdfViewerModal, setShowPdfViewerModal] = useState(false);
   const [pdfViewerPaper, setPdfViewerPaper] = useState(null);
@@ -999,6 +1001,27 @@ const AdminDashboard = () => {
     setAcceptTargetPaper(paper);
   };
 
+  const canMarkPaid = (paper) => (paper?.status === 'accepted' || paper?.status === 'published') && paper.paymentStatus !== 'paid';
+
+  const confirmMarkPaid = async () => {
+    if (!markPaidPaper) return;
+    setMarkingPaid(true);
+    try {
+      const result = await mockAPI.markPaymentReceived(markPaidPaper.id);
+      if (result.success) {
+        toast.success('Payment recorded.');
+        setMarkPaidPaper(null);
+        loadAdminData();
+      } else {
+        toast.error(result.error || 'Failed to record the payment.');
+      }
+    } catch (error) {
+      toast.error('An error occurred while recording the payment.');
+    } finally {
+      setMarkingPaid(false);
+    }
+  };
+
   const confirmAccept = async () => {
     if (!acceptTargetPaper) return;
     setAccepting(true);
@@ -1719,6 +1742,11 @@ const AdminDashboard = () => {
                     <Icon name="edit" size={15} /> Request revisions
                   </button>
                 )}
+                {canMarkPaid(managePaper) && (
+                  <button type="button" className="icon-btn" onClick={() => { const p = managePaper; setManagePaper(null); setMarkPaidPaper(p); }}>
+                    <Icon name="credit" size={15} /> Mark fee as paid
+                  </button>
+                )}
                 {managePaper.status === 'published' && issues.length > 0 && !managePaper.assignedIssue && (
                   <button type="button" className="icon-btn" onClick={() => { const p = managePaper; setManagePaper(null); openAssignPaperToIssueModal(p); }}>
                     <Icon name="book" size={15} /> Add to journal issue
@@ -1994,6 +2022,20 @@ const AdminDashboard = () => {
         {quickPublishPaper && quickPublishPaper.paymentStatus !== 'paid' && (
           <Alert type="warning" message="The article processing charge for this paper has not been recorded as paid." />
         )}
+      </ConfirmDialog>
+
+      {/* Mark fee as paid */}
+      <ConfirmDialog
+        open={Boolean(markPaidPaper)}
+        title="Mark the fee as paid?"
+        message="Only do this after confirming the payment in the Razorpay dashboard. The author is notified."
+        confirmLabel="Yes, mark as paid"
+        busyLabel="Saving…"
+        busy={markingPaid}
+        onCancel={() => { if (!markingPaid) setMarkPaidPaper(null); }}
+        onConfirm={confirmMarkPaid}
+      >
+        {markPaidPaper && <div className="paper-ref"><strong>{markPaidPaper.title}</strong><span>ID: {markPaidPaper.id}</span></div>}
       </ConfirmDialog>
 
       {/* Accept */}
