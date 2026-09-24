@@ -990,3 +990,4 @@ ol.content-list.is-ordered>li::before{content:counter(content-list);left:0;top:.
 .article-head .article-authors{font-size:14px;margin:0 0 18px}
 .article-head h2{margin:22px 0 8px;color:var(--navy);font-size:16px;font-weight:700}
 .article-head .article-abstract{margin:0;color:var(--ink);font-size:14.5px;line-height:1.75}
+.issue-card-toggle{width:100%;background:none;border:0;padding:0;font-family:inherit;text-align:left;cursor:pointer}
