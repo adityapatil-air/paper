@@ -6,6 +6,7 @@ import { useToast } from '../components/ui/Toast';
 import Icon from '../components/ui/Icon';
 import Modal from '../components/ui/Modal';
 import EmptyState from '../components/ui/EmptyState';
+import Alert from '../components/Alert';
 import Spinner from '../components/ui/Spinner';
 import { Badge } from '../components/ui/StatusBadge';
 import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
@@ -30,6 +31,7 @@ const ReviewerDashboard = () => {
   const [assignedPapers, setAssignedPapers] = useState([]);
   const [completedReviews, setCompletedReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   // Only the first load shows the skeleton; later refreshes keep the current content on screen.
   const hasLoadedOnce = useRef(false);
   useEffect(() => { if (!loading) hasLoadedOnce.current = true; }, [loading]);
@@ -48,6 +50,7 @@ const ReviewerDashboard = () => {
   const loadReviewerData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError('');
 
       // Get assigned papers
       const allPapers = await mockAPI.getAllPapers();
@@ -65,6 +68,7 @@ const ReviewerDashboard = () => {
       setReviewerNotifications(Array.isArray(notifResult) ? notifResult : []);
     } catch (error) {
       console.error('Error loading reviewer data:', error);
+      setLoadError(error?.message || 'We couldn’t load your review assignments.');
     } finally {
       setLoading(false);
     }
@@ -246,6 +250,15 @@ const ReviewerDashboard = () => {
           )}
         />
 
+        {loadError && (
+          <Alert type="error" title="We couldn’t load your review assignments" message={loadError}>
+            <button type="button" className="button button-small button-primary" onClick={loadReviewerData} disabled={loading}>
+              {loading ? 'Retrying…' : 'Try again'}
+            </button>
+          </Alert>
+        )}
+
+        {!loadError && (<>
         <div className="stat-cards stat-cards-3">
           <StatCard label="Assigned papers" value={stats.assigned} icon="inbox" />
           <StatCard label="Pending reviews" value={stats.pending} icon="clock" tone="amber" />
@@ -407,6 +420,7 @@ const ReviewerDashboard = () => {
             )}
           </TabPanel>
         )}
+        </>)}
       </div>
 
       {/* Assigned paper details */}
