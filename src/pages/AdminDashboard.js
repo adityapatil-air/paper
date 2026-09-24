@@ -833,7 +833,11 @@ const AdminDashboard = () => {
 
   const reviewerSearch = searchTerm.trim().toLowerCase();
 
-  let filteredReviewers = reviewers.filter((reviewer) => {
+  // Reviewers already on the selected paper are not offered again.
+  const alreadyAssignedIds = Array.isArray(selectedPaper?.assignedReviewers) ? selectedPaper.assignedReviewers : [];
+  const assignableReviewers = reviewers.filter((reviewer) => !alreadyAssignedIds.includes(reviewer.id));
+
+  let filteredReviewers = assignableReviewers.filter((reviewer) => {
     const name = (reviewer.name || '').toLowerCase();
     const email = (reviewer.email || '').toLowerCase();
     const affiliation = (reviewer.affiliation || '').toLowerCase();
@@ -2118,6 +2122,10 @@ const AdminDashboard = () => {
                     </li>
                   ))}
                 </ul>
+              ) : assignableReviewers.length === 0 ? (
+                <EmptyState compact variant="review" title="No other reviewers available">
+                  {reviewers.length === 0 ? 'There are no reviewer accounts yet.' : 'Every reviewer is already assigned to this paper.'}
+                </EmptyState>
               ) : (
                 <EmptyState compact variant="search" title="No reviewers found">Try a different search.</EmptyState>
               )}

@@ -146,11 +146,11 @@ router.post('/assign-reviewer', async (req, res) => {
       });
 
     if (insertError) {
-      // Unique violation (already assigned) is treated as success
-      if (insertError.code !== '23505') {
-        console.error('Error assigning reviewer', insertError);
-        return res.status(500).json({ success: false, error: 'Failed to assign reviewer.' });
+      if (insertError.code === '23505') {
+        return res.status(409).json({ success: false, error: 'This reviewer is already assigned to the paper.' });
       }
+      console.error('Error assigning reviewer', insertError);
+      return res.status(500).json({ success: false, error: 'Failed to assign reviewer.' });
     }
 
     // Ensure paper status is at least under_review
