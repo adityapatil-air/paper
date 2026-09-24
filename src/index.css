@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root{
-  --navy:#062f50;--navy-2:#073d65;--blue:#087de5;--blue-light:#3ba0f2;--sky:#eaf5fd;--sky-2:#f5fafe;
+  --navy:#062f50;--navy-2:#073d65;--blue:#086cc8;--blue-light:#3ba0f2;--sky:#eaf5fd;--sky-2:#f5fafe;
   --ink:#101f2e;--muted:#425265;--line:#e2eaf1;--white:#fff;
   --success:#0f7b3d;--success-bg:#e5f7ec;--warning:#b4700a;--warning-bg:#fef3e0;--danger:#c0342c;--danger-bg:#fde9e8;
   --r-sm:8px;--r-md:12px;--r-lg:18px;--r-pill:999px;
