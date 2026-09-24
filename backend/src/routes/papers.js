@@ -1,7 +1,7 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { Readable } = require('stream');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/requireAdmin');
 
 const router = express.Router();
@@ -91,6 +91,16 @@ const loadAssignmentsByPaper = async () => {
   return assignmentsByPaperId;
 };
 
+// Published papers are public. Anything else is visible only to admins, the paper's
+// author and its assigned reviewers.
+const canViewPaper = (user, row, assignmentsByPaperId) => {
+  if (row.status === 'published') return true;
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  if (row.main_author_id === user.id) return true;
+  return (assignmentsByPaperId[row.id] || []).includes(user.id);
+};
+
 // GET /api/papers - the caller's papers: admins see every paper, authors only the papers
 // they submitted, reviewers only the papers assigned to them. Guests use /published.
 router.get('/', requireAuth, async (req, res) => {
@@ -174,7 +184,7 @@ router.get('/published', async (req, res) => {
 });
 
 // GET /api/papers/:id/download - stream a paper PDF through this server
-router.get('/:id/download', async (req, res) => {
+router.get('/:id/download', optionalAuth, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -185,7 +195,7 @@ router.get('/:id/download', async (req, res) => {
 
     const { data: row, error } = await supabase
       .from('papers')
-      .select('id, title, pdf_url')
+      .select('id, title, pdf_url, status, main_author_id')
       .eq('id', id)
       .maybeSingle();
 
@@ -199,7 +209,8 @@ router.get('/:id/download', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch paper.' });
     }
 
-    if (!row) {
+    const downloadAssignments = row && row.status !== 'published' ? await loadAssignmentsByPaper() : {};
+    if (!row || !canViewPaper(req.user, row, downloadAssignments)) {
       return res.status(404).json({ success: false, error: 'Paper not found.' });
     }
 
@@ -236,8 +247,8 @@ router.get('/:id/download', async (req, res) => {
   }
 });
 
-// GET /api/papers/:id - single paper by id
-router.get('/:id', async (req, res) => {
+// GET /api/papers/:id - single paper by id (see canViewPaper)
+router.get('/:id', optionalAuth, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -262,11 +273,11 @@ router.get('/:id', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch paper.' });
     }
 
-    if (!row) {
+    const assignmentsByPaperId = await loadAssignmentsByPaper();
+    if (!row || !canViewPaper(req.user, row, assignmentsByPaperId)) {
       return res.status(404).json({ success: false, error: 'Paper not found.' });
     }
 
-    const assignmentsByPaperId = await loadAssignmentsByPaper();
     const paper = mapPaperRow(row, assignmentsByPaperId);
 
     return res.json({ success: true, paper });

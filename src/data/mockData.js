@@ -250,8 +250,8 @@ export const mockAPI = {
 
   getPaperById: async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/papers/${id}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/api/papers/${id}`, { headers: authHeaders() });
+      const data = await readJson(response);
 
       if (!data.success) {
         return null;
