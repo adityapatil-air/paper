@@ -7,3 +7,5 @@ backend/.env.production
 .env
 .env.*
 !.env.example
+# Build output
+/build

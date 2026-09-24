@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://ijepa.org/sitemap.xml
