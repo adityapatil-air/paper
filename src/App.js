@@ -7,6 +7,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import BackToTop from './components/BackToTop';
 import LoadingSpinner from './components/LoadingSpinner';
+import RouteTitle from './components/RouteTitle';
 
 // Pages
 
@@ -41,6 +42,7 @@ function App() {
     <AuthProvider>
       <ToastProvider>
       <Router>
+        <RouteTitle />
         <div className="min-h-screen flex flex-col">
           <a href="#main-content" className="skip-link">Skip to main content</a>
           <Header />
