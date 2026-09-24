@@ -191,11 +191,11 @@ const PaperRedirect = () => {
         <div className="page-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Link to="/journal-issues" style={{ color: 'var(--blue)', fontSize: 10, fontWeight: 700 }}>
+              <Link to="/journal-issues" style={{ color: 'var(--blue)', fontSize: 12, fontWeight: 700 }}>
                 Back to Journal Issues
               </Link>
               <span style={{ color: 'var(--muted)' }}>/</span>
-              <span style={{ fontSize: 10, color: 'var(--ink)' }}>
+              <span style={{ fontSize: 12, color: 'var(--ink)' }}>
                 {loading ? 'Loading paper…' : `Paper #${paperId}`}
               </span>
             </div>

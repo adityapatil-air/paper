@@ -120,7 +120,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'none', color: 'var(--blue)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'none', color: 'var(--blue)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                   >
                     {showPassword ? 'HIDE' : 'SHOW'}
                   </button>

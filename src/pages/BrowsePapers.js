@@ -332,13 +332,13 @@ const BrowsePapers = () => {
                     onLoadSuccess={onDocumentLoadSuccess}
                     onLoadError={(err) => setPdfError('Failed to load PDF.')}
                     loading={<LoadingSpinner size="sm" text="Loading PDF..." />}
-                    error={<div style={{ color: '#ffd9d9', fontSize: 10 }}>Failed to load PDF.</div>}
+                    error={<div style={{ color: '#ffd9d9', fontSize: 13 }}>Failed to load PDF.</div>}
                   >
                     <Page pageNumber={pageNumber} height={650} scale={zoom} />
                   </Document>
 
                   {pdfError && (
-                    <div style={{ color: '#ffd9d9', fontSize: 9, marginTop: 10 }}>{pdfError}</div>
+                    <div style={{ color: '#ffd9d9', fontSize: 13, marginTop: 10 }}>{pdfError}</div>
                   )}
 
                   {numPages && (
