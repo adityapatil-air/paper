@@ -1100,11 +1100,14 @@ const AdminDashboard = () => {
     ] },
   ];
 
+  // "Revised manuscript received" only matters while that revision is back with reviewers.
+  const showRevisedFlag = (paper) => paper.status === 'under_review' && hasRevisedManuscript(paper);
+
   const paperFlags = (paper) => (
-    (paper.status === 'revisions_requested' || hasRevisedManuscript(paper)) && (
+    (paper.status === 'revisions_requested' || showRevisedFlag(paper)) && (
       <span className="cell-flags">
         {paper.status === 'revisions_requested' && <Badge tone="revision" icon="edit">Waiting for revised manuscript</Badge>}
-        {hasRevisedManuscript(paper) && <Badge tone="review" icon="refresh">Revised manuscript received</Badge>}
+        {showRevisedFlag(paper) && <Badge tone="review" icon="refresh">Revised manuscript received</Badge>}
       </span>
     )
   );
