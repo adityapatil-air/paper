@@ -7,6 +7,9 @@ const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
+// Must match MIN_PASSWORD_LENGTH in src/pages/Register.js.
+const MIN_PASSWORD_LENGTH = 8;
+
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 const TOO_MANY_LOGINS = 'Too many sign-in attempts. Please wait 15 minutes and try again.';
 
@@ -42,6 +45,10 @@ router.post('/register', registerPerIp, async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, error: 'Name, email and password are required.' });
+    }
+
+    if (String(password).length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ success: false, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.` });
     }
 
     const { data: existing, error: existingError } = await supabase
