@@ -53,7 +53,7 @@ const AboutUs = () => {
         <h2>Our Scope</h2>
         <div className="page-card">
           <p>The journal covers (but is not limited to):</p>
-          <ul>
+          <ul className="content-list">
             <li>Mechanical Engineering</li>
             <li>Civil Engineering</li>
             <li>Electrical &amp; Electronics Engineering</li>

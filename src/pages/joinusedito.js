@@ -23,7 +23,7 @@ const JoinEditorialTeam = () => {
 
         <h2>Eligibility Criteria</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>A Ph.D. or Master's degree in a relevant engineering or technology discipline.</li>
             <li>Proven research record with publications in peer-reviewed journals or conferences.</li>
             <li>Commitment to maintaining high ethical standards in research and publication.</li>
@@ -34,14 +34,14 @@ const JoinEditorialTeam = () => {
         <h2>Roles &amp; Responsibilities</h2>
         <div className="page-card">
           <h3 style={{ margin: '0 0 8px', color: 'var(--navy)', fontSize: 11 }}>Associate Editors</h3>
-          <ul>
+          <ul className="content-list">
             <li>Assist in managing the peer-review process.</li>
             <li>Provide editorial decisions and recommendations.</li>
             <li>Contribute to the strategic development of the journal.</li>
           </ul>
 
           <h3 style={{ margin: '0 0 8px', color: 'var(--navy)', fontSize: 11 }}>Reviewers</h3>
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>Provide constructive, detailed, and timely reviews of assigned manuscripts.</li>
             <li>Help uphold the quality and integrity of published research.</li>
           </ul>

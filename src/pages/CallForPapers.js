@@ -51,7 +51,7 @@ const CallForPapers = () => {
         <h2>Scope of the Journal</h2>
         <div className="page-card">
           <p>Topics of interest include (but are not limited to):</p>
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>Civil, Mechanical, Electrical, and Electronics Engineering</li>
             <li>Computer Science, Artificial Intelligence, and Information Technology</li>
             <li>Industrial and Manufacturing Engineering</li>
@@ -77,7 +77,7 @@ const CallForPapers = () => {
 
         <h2>Submission Guidelines</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>
               Authors are requested to submit their manuscripts in accordance with the journal's formatting guidelines, available on the{' '}
               <Link to="/author-guidelines">Author Guidelines</Link>{' '}

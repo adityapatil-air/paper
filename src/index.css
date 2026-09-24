@@ -185,6 +185,16 @@ button{font:inherit}
 .page-body .callout p{color:#d7ecf8}
 .page-body ul{color:var(--muted);font-size:14px;line-height:1.9;margin:0 0 16px;padding-left:20px}
 .page-body li{margin:5px 0}
+/* ---- content lists (Tailwind's preflight removes native bullets) ---- */
+:is(ul,ol).content-list{list-style:none;margin:0 0 16px;padding:0}
+:is(ul,ol).content-list>li{position:relative;padding-left:26px;margin:9px 0;line-height:1.75}
+:is(ul,ol).content-list>li::before{content:'';position:absolute;left:5px;top:.68em;width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 3px rgba(8,125,229,.14)}
+:is(ul,ol).content-list.is-flush{margin-bottom:0}
+:is(ul,ol).content-list.is-nested{margin:8px 0 4px}
+:is(ul,ol).content-list.is-nested>li::before{background:#fff;border:1.5px solid var(--blue);box-shadow:none}
+ol.content-list.is-ordered{counter-reset:content-list}
+ol.content-list.is-ordered>li{counter-increment:content-list;padding-left:34px}
+ol.content-list.is-ordered>li::before{content:counter(content-list);left:0;top:.2em;width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:50%;background:var(--sky);color:#0864b8;font-size:12px;font-weight:700;line-height:1;box-shadow:none}
 .page-card{border:1px solid var(--line);border-radius:var(--r-md);padding:26px 28px;background:#fff;box-shadow:var(--sh-sm);margin-bottom:20px;transition:box-shadow .2s}
 .page-card:hover{box-shadow:var(--sh-md)}
 

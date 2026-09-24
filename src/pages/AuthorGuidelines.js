@@ -48,13 +48,13 @@ const AuthorGuidelines = () => {
 
         <h2>1. Manuscript Preparation</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li><strong>Language:</strong> All manuscripts must be written in clear, concise, and grammatically correct English.</li>
             <li><strong>Format:</strong> Manuscripts should be submitted in MS Word (DOC/DOCX) format. PDF files will not be accepted for initial submission.</li>
             <li><strong>Length:</strong> Research papers should typically range between 6–12 pages. Review articles may be longer, subject to editorial approval.</li>
             <li>
               <strong>Structure:</strong> The manuscript should be organized as follows:
-              <ol style={{ marginTop: 8 }}>
+              <ol className="content-list is-ordered is-nested">
                 <li>Title Page (with author details)</li>
                 <li>Abstract (150–250 words) and Keywords (3–6)</li>
                 <li>Introduction</li>
@@ -71,7 +71,7 @@ const AuthorGuidelines = () => {
 
         <h2>2. Formatting Requirements</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li><strong>Font:</strong> Times New Roman, size 12, single-column, 1.5 line spacing.</li>
             <li><strong>Headings:</strong> Use a clear hierarchy (e.g., 1. Introduction, 1.1 Subheading).</li>
             <li><strong>Figures &amp; Tables:</strong> Must be numbered consecutively, with descriptive captions. Ensure high resolution and clarity.</li>
@@ -82,7 +82,7 @@ const AuthorGuidelines = () => {
 
         <h2>3. Originality &amp; Plagiarism Policy</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>Submissions must be original and not under review or published elsewhere.</li>
             <li>All manuscripts will be checked for plagiarism. Papers exceeding the acceptable similarity index will be rejected.</li>
           </ul>
@@ -90,7 +90,7 @@ const AuthorGuidelines = () => {
 
         <h2>4. Peer Review Process</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>All submissions undergo a double-blind peer-review process.</li>
             <li>Authors may be asked to revise their manuscripts based on reviewer feedback.</li>
             <li>Final acceptance is subject to editorial approval.</li>
@@ -99,10 +99,10 @@ const AuthorGuidelines = () => {
 
         <h2>5. Submission Process</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>Manuscripts should be submitted via the <a href="/SubmitForm">Online Submission System</a> or emailed directly to <span style={{ fontFamily: 'monospace' }}>editor@ijepa.org</span>.</li>
             <li>Along with the manuscript, authors must provide:
-              <ul style={{ marginTop: 8, marginBottom: 0 }}>
+              <ul className="content-list is-nested is-flush">
                 <li>A cover letter highlighting the contribution of the paper.</li>
                 <li>A signed copyright form (see below).</li>
               </ul>
@@ -113,7 +113,7 @@ const AuthorGuidelines = () => {
         <h2>6. Publication Charges</h2>
         <div className="page-card">
           <p>To support the open-access policy and editorial process, the following Article Processing Charges (APC) apply:</p>
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>Indian Authors: <strong>INR 1500/- per accepted paper</strong></li>
             <li>International Authors: <strong>USD 50 per accepted paper</strong></li>
           </ul>
@@ -131,7 +131,7 @@ const AuthorGuidelines = () => {
         <h2>8. Copyright Form</h2>
         <div className="page-card">
           <p>Upon acceptance, authors must complete and submit the IJEPA Copyright Transfer Form. This form ensures that:</p>
-          <ul>
+          <ul className="content-list">
             <li>The work is original and not published elsewhere.</li>
             <li>Authors transfer publication rights to IJEPA while retaining intellectual property rights.</li>
           </ul>
@@ -141,7 +141,7 @@ const AuthorGuidelines = () => {
         <h2 id="publication-ethics" className="anchor-target">9. Publication Ethics</h2>
         <div className="page-card">
           <p>IJEPA adheres to strict ethical standards. Authors are expected to:</p>
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>Properly cite all sources of information.</li>
             <li>Acknowledge contributions and funding support.</li>
             <li>Disclose any potential conflicts of interest.</li>
@@ -151,7 +151,7 @@ const AuthorGuidelines = () => {
 
         <h2>10. Copyright &amp; Open Access Policy</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>By submitting to IJEPA, authors agree to transfer copyright of the accepted article to the journal.</li>
             <li>All published papers are made freely accessible under the journal's open-access policy, ensuring maximum visibility.</li>
           </ul>

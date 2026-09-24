@@ -72,7 +72,7 @@ const Indexing = () => {
         <h2>Indexing in Progress</h2>
         <div className="page-card">
           <p>The editorial team is in the process of applying for inclusion in:</p>
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>Scopus</li>
             <li>Web of Science (ESCI)</li>
             <li>DOAJ (Directory of Open Access Journals)</li>
@@ -84,7 +84,7 @@ const Indexing = () => {
 
         <h2>Why Indexing Matters</h2>
         <div className="page-card">
-          <ul style={{ marginBottom: 0 }}>
+          <ul className="content-list is-flush">
             <li>Greater visibility and global readership for published papers</li>
             <li>Increased citations and academic recognition for authors</li>
             <li>Long-term preservation and accessibility of research</li>
