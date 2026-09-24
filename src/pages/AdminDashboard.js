@@ -86,6 +86,7 @@ const AdminDashboard = () => {
   const [quickPublishPaper, setQuickPublishPaper] = useState(null);
   const [acceptTargetPaper, setAcceptTargetPaper] = useState(null);
   const [accepting, setAccepting] = useState(false);
+  const [publishDoi, setPublishDoi] = useState('');
   const [markPaidPaper, setMarkPaidPaper] = useState(null);
   const [markingPaid, setMarkingPaid] = useState(false);
 
@@ -635,9 +636,9 @@ const AdminDashboard = () => {
     }
   };
 
-  const handlePublishPaper = async (paperId) => {
+  const handlePublishPaper = async (paperId, doi) => {
     try {
-      const result = await mockAPI.publishPaper(paperId);
+      const result = await mockAPI.publishPaper(paperId, doi);
       if (result.success) {
         toast.success('Paper published successfully.');
         loadAdminData();
@@ -989,6 +990,7 @@ const AdminDashboard = () => {
   const requestPublish = (paper) => {
     setManagePaper(null);
     setQuickPublishPaper(paper);
+    setPublishDoi(paper?.doi || '');
     setShowQuickPublishModal(true);
   };
 
@@ -1044,7 +1046,7 @@ const AdminDashboard = () => {
   const confirmPublish = async () => {
     if (!quickPublishPaper) return;
     setPublishing(true);
-    await handlePublishPaper(quickPublishPaper.id);
+    await handlePublishPaper(quickPublishPaper.id, publishDoi.trim());
     setPublishing(false);
     setShowQuickPublishModal(false);
     setQuickPublishPaper(null);
@@ -2019,6 +2021,22 @@ const AdminDashboard = () => {
         onConfirm={confirmPublish}
       >
         {quickPublishPaper && <div className="paper-ref"><strong>{quickPublishPaper.title}</strong><span>ID: {quickPublishPaper.id}</span></div>}
+        {quickPublishPaper && (
+          <div className="form-group">
+            <label htmlFor="publish-doi">DOI (optional)</label>
+            <input
+              id="publish-doi"
+              type="text"
+              className="form-input"
+              value={publishDoi}
+              onChange={(e) => setPublishDoi(e.target.value)}
+              placeholder="10.xxxx/ijepa.2026.001"
+              aria-describedby="publish-doi-hint"
+              disabled={publishing}
+            />
+            <p id="publish-doi-hint" className="form-hint">Enter the DOI registered with CrossRef for this paper. Leave it empty if none has been registered yet.</p>
+          </div>
+        )}
         {quickPublishPaper && quickPublishPaper.paymentStatus !== 'paid' && (
           <Alert type="warning" message="The article processing charge for this paper has not been recorded as paid." />
         )}

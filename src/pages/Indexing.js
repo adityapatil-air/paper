@@ -12,16 +12,7 @@ const Indexing = () => {
       description: 'DOI registration agency',
       imageUrl: 'https://www.crossref.org/favicon.ico'
     },
-    {
-      name: 'ResearchGate',
-      description: 'Research networking platform',
-      imageUrl: 'https://www.researchgate.net/favicon.ico'
-    },
-    {
-      name: 'Academia.edu',
-      description: 'Academic sharing platform',
-      imageUrl: 'https://www.academia.edu/favicon.ico'
-    },
+    // ResearchGate and Academia.edu are self-upload sharing sites, not indexes, so they are not listed.
     {
       name: 'Semantic Scholar',
       description: 'AI-powered research discovery',

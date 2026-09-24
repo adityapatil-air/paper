@@ -345,17 +345,23 @@ router.post('/publish-paper', async (req, res) => {
       return res.status(409).json({ success: false, error: 'Only accepted papers can be published. Accept the paper after peer review first.' });
     }
 
+    // DOIs must be registered with CrossRef by the journal; never generate one here.
+    // The admin may enter the registered DOI when publishing, or add it later.
+    const doi = typeof req.body?.doi === 'string' ? req.body.doi.trim() : '';
+    if (doi && !/^10\.\d{4,9}\/\S+$/.test(doi)) {
+      return res.status(400).json({ success: false, error: 'Enter a DOI in the form 10.xxxx/suffix, or leave it empty.' });
+    }
+
     const now = new Date();
-    const year = now.getFullYear();
-    const doi = `10.1000/example.${year}.${String(paperId).padStart(3, '0')}`;
+    const update = {
+      status: 'published',
+      publication_date: now.toISOString().split('T')[0],
+    };
+    if (doi) update.doi = doi;
 
     const { error } = await supabase
       .from('papers')
-      .update({
-        status: 'published',
-        publication_date: now.toISOString().split('T')[0],
-        doi,
-      })
+      .update(update)
       .eq('id', paperId);
 
     if (error) {

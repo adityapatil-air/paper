@@ -874,12 +874,13 @@ mockAPI.markPaymentReceived = async (paperId) => {
   }
 };
 
-mockAPI.publishPaper = async (paperId) => {
+// doi: optional DOI registered with CrossRef for this paper.
+mockAPI.publishPaper = async (paperId, doi) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/publish-paper`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ paperId })
+      body: JSON.stringify({ paperId, doi: doi || undefined })
     });
     const data = await readJson(response);
 
