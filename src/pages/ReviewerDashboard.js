@@ -1,13 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import LoadingSpinner from '../components/LoadingSpinner';
-import Alert from '../components/Alert';
 import { mockAPI } from '../data/mockData';
+import { useToast } from '../components/ui/Toast';
+import Icon from '../components/ui/Icon';
+import Modal from '../components/ui/Modal';
+import EmptyState from '../components/ui/EmptyState';
+import Spinner from '../components/ui/Spinner';
+import { Badge } from '../components/ui/StatusBadge';
+import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
+import { DashboardSkeleton } from '../components/ui/Skeleton';
+import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
+
+const RATING_LABELS = { 1: 'Poor', 2: 'Below average', 3: 'Average', 4: 'Good', 5: 'Excellent' };
+const EMPTY_REVIEW = { rating: '', recommendation: '', comments: '' };
+
+const assignmentBadge = ({ isCompleted, isRevisionRound }) => {
+  if (isCompleted) return <Badge tone="accepted" icon="check">Reviewed</Badge>;
+  if (isRevisionRound) return <Badge tone="review" icon="refresh">Revision to review</Badge>;
+  return <Badge tone="revision" icon="clock">Review pending</Badge>;
+};
 
 const ReviewerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [activeTab, setActiveTab] = useState('assigned');
   const [assignedPapers, setAssignedPapers] = useState([]);
@@ -15,17 +32,15 @@ const ReviewerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState(null);
-  const [reviewFormData, setReviewFormData] = useState({
-    rating: '',
-    recommendation: '',
-    comments: ''
-  });
+  const [reviewFormData, setReviewFormData] = useState(EMPTY_REVIEW);
+  const [reviewErrors, setReviewErrors] = useState({});
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [alert, setAlert] = useState(null);
   const [reviewerNotifications, setReviewerNotifications] = useState([]);
   const [reviewerSearchTerm, setReviewerSearchTerm] = useState('');
   const [reviewerSortBy, setReviewerSortBy] = useState('title_az');
   const [showAllReviewerPapers, setShowAllReviewerPapers] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);
+  const [viewReview, setViewReview] = useState(null);
 
   const loadReviewerData = useCallback(async () => {
     try {
@@ -57,24 +72,44 @@ const ReviewerDashboard = () => {
   }, [loadReviewerData]);
 
   const handleStartReview = (paper) => {
+    setDetailItem(null);
     setSelectedPaper(paper);
-    setReviewFormData({
-      rating: '',
-      recommendation: '',
-      comments: '',
-    });
+    setReviewFormData(EMPTY_REVIEW);
+    setReviewErrors({});
     setShowReviewForm(true);
   };
 
-  const handleReviewFormChange = (e) => {
-    setReviewFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+  const closeReviewForm = () => {
+    if (submittingReview) return;
+    setShowReviewForm(false);
+  };
+
+  const setReviewField = (name, value) => {
+    setReviewFormData((prev) => ({ ...prev, [name]: value }));
+    if (reviewErrors[name]) setReviewErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const validateReview = () => {
+    const next = {};
+    if (!reviewFormData.rating) next.rating = 'Choose an overall rating.';
+    if (!reviewFormData.recommendation) next.recommendation = 'Choose a recommendation.';
+    if (!reviewFormData.comments.trim()) next.comments = 'Add your detailed comments for the author and editor.';
+    setReviewErrors(next);
+    const first = ['rating', 'recommendation', 'comments'].find((k) => next[k]);
+    if (first) {
+      setTimeout(() => {
+        const el = first === 'comments'
+          ? document.getElementById('review-comments')
+          : document.querySelector(`input[name="${first}"]`);
+        el?.focus();
+      }, 0);
+    }
+    return !first;
   };
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
+    if (submittingReview || !validateReview()) return;
     setSubmittingReview(true);
 
     try {
@@ -89,15 +124,15 @@ const ReviewerDashboard = () => {
 
       const result = await mockAPI.submitReview(reviewData);
       if (result.success) {
-        setAlert({ type: 'success', message: 'Review submitted successfully!' });
+        toast.success('Review submitted successfully.');
         setShowReviewForm(false);
         setSelectedPaper(null);
         loadReviewerData();
       } else {
-        setAlert({ type: 'error', message: 'Failed to submit review. Please try again.' });
+        toast.error('Failed to submit review. Please try again.');
       }
     } catch (error) {
-      setAlert({ type: 'error', message: 'An error occurred while submitting the review.' });
+      toast.error('An error occurred while submitting the review.');
     } finally {
       setSubmittingReview(false);
     }
@@ -116,23 +151,28 @@ const ReviewerDashboard = () => {
     return 1 + revisionNotifs.length;
   };
 
-  const getReviewStats = () => {
-    const pendingCount = assignedPapers.filter((paper) => {
-      const reviewsForPaper = completedReviews.filter((review) => review.paperId === paper.id);
-      const reviewCount = reviewsForPaper.length;
-      const totalRounds = getRevisionRounds(paper);
-      return reviewCount < totalRounds;
-    }).length;
+  const assignedPapersWithMeta = (assignedPapers || []).map((paper) => {
+    const reviewsForPaper = completedReviews.filter((review) => review.paperId === paper.id);
+    const totalRounds = getRevisionRounds(paper);
+    const reviewCount = reviewsForPaper.length;
+    const isCompleted = reviewCount >= totalRounds;
+    const isRevisionRound = !isCompleted && totalRounds > 1;
 
-    const stats = {
-      assigned: assignedPapers.length,
-      completed: completedReviews.length,
-      pending: pendingCount,
+    return {
+      paper,
+      reviewsForPaper,
+      totalRounds,
+      reviewCount,
+      isCompleted,
+      isRevisionRound,
     };
-    return stats;
-  };
+  });
 
-  const stats = getReviewStats();
+  const stats = {
+    assigned: assignedPapers.length,
+    completed: completedReviews.length,
+    pending: assignedPapersWithMeta.filter((item) => !item.isCompleted).length,
+  };
 
   const reviewerSearch = reviewerSearchTerm.trim().toLowerCase();
 
@@ -151,23 +191,6 @@ const ReviewerDashboard = () => {
       authorsText.includes(reviewerSearch)
     );
   };
-
-  const assignedPapersWithMeta = (assignedPapers || []).map((paper) => {
-    const reviewsForPaper = completedReviews.filter((review) => review.paperId === paper.id);
-    const totalRounds = getRevisionRounds(paper);
-    const reviewCount = reviewsForPaper.length;
-    const isCompleted = reviewCount >= totalRounds;
-    const isRevisionRound = !isCompleted && totalRounds > 1;
-
-    return {
-      paper,
-      reviewsForPaper,
-      totalRounds,
-      reviewCount,
-      isCompleted,
-      isRevisionRound,
-    };
-  });
 
   let visibleAssignedWithMeta = assignedPapersWithMeta.filter(({ paper }) => matchesReviewerSearch(paper));
 
@@ -197,383 +220,364 @@ const ReviewerDashboard = () => {
     return dateB - dateA;
   });
 
+  const completedWithPaper = completedReviews
+    .map((review) => ({ review, paper: assignedPapers.find((p) => p.id === review.paperId) }))
+    .filter((row) => row.paper);
+
   if (loading) {
-    return (
-      <div className="dash-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LoadingSpinner size="lg" text="Loading your assignments..." />
-      </div>
-    );
+    return <DashboardSkeleton stats={3} label="Loading your assignments" />;
   }
 
   return (
     <div className="dash-page">
       <div className="journal-container">
-        {/* Header */}
-        <div className="dash-header">
-          <div>
-            <h1>Reviewer Dashboard</h1>
-            <p>Welcome back, <strong>{user.name}</strong>. Manage your review assignments with precision.</p>
-          </div>
+        <DashHeader
+          role="Reviewer"
+          user={user}
+          subtitle="Manage your review assignments and keep track of the reviews you have submitted."
+          actions={stats.pending > 0 && (
+            <button type="button" className="button button-primary" onClick={() => { setActiveTab('assigned'); setShowAllReviewerPapers(false); }}>
+              <Icon name="clock" size={17} /> {stats.pending} review{stats.pending === 1 ? '' : 's'} pending
+            </button>
+          )}
+        />
+
+        <div className="stat-cards stat-cards-3">
+          <StatCard label="Assigned papers" value={stats.assigned} icon="inbox" />
+          <StatCard label="Pending reviews" value={stats.pending} icon="clock" tone="amber" />
+          <StatCard label="Completed reviews" value={stats.completed} icon="checkCircle" tone="green" />
         </div>
 
-        {/* Alert */}
-        {alert && (
-          <div style={{ marginBottom: 18 }}>
-            <Alert
-              type={alert.type}
-              message={alert.message}
-              onClose={() => setAlert(null)}
-            />
-          </div>
+        <TabList
+          label="Your reviews"
+          active={activeTab}
+          onChange={setActiveTab}
+          tabs={[
+            { id: 'assigned', label: 'Assigned papers', count: stats.assigned },
+            { id: 'completed', label: 'Completed reviews', count: stats.completed },
+          ]}
+        />
+
+        {activeTab === 'assigned' && (
+          <TabPanel id="assigned">
+            {assignedPapers.length === 0 ? (
+              <EmptyState title="No papers assigned for review" variant="review">
+                You’ll see papers here as soon as the editor assigns them to you. Thank you for contributing to the review process.
+              </EmptyState>
+            ) : (
+              <>
+                <FilterBar
+                  search={reviewerSearchTerm}
+                  onSearch={setReviewerSearchTerm}
+                  placeholder="Search by title, author, category…"
+                  label="Search assigned papers"
+                  sort={reviewerSortBy}
+                  onSort={setReviewerSortBy}
+                  sortOptions={SORT_OPTIONS}
+                >
+                  <Segmented
+                    label="Which assignments to show"
+                    value={showAllReviewerPapers ? 'all' : 'open'}
+                    onChange={(v) => setShowAllReviewerPapers(v === 'all')}
+                    options={[{ value: 'open', label: 'To review' }, { value: 'all', label: 'All papers' }]}
+                  />
+                </FilterBar>
+
+                {visibleAssignedWithMeta.length === 0 ? (
+                  <EmptyState
+                    compact
+                    variant={reviewerSearch ? 'search' : 'review'}
+                    title={reviewerSearch ? 'No papers match your search' : 'You’re all caught up'}
+                    action={reviewerSearch ? (
+                      <button type="button" className="button button-ghost button-small" onClick={() => setReviewerSearchTerm('')}>Clear search</button>
+                    ) : (
+                      <button type="button" className="button button-ghost button-small" onClick={() => setShowAllReviewerPapers(true)}>Show all papers</button>
+                    )}
+                  >
+                    {reviewerSearch ? 'Try a different title, author or category.' : 'Every assigned paper has a submitted review.'}
+                  </EmptyState>
+                ) : (
+                  <div className="table-scroll">
+                    <table className="data-table">
+                      <caption className="sr-only">Papers assigned to you</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Paper</th>
+                          <th scope="col">Category</th>
+                          <th scope="col">Submitted</th>
+                          <th scope="col">Deadline</th>
+                          <th scope="col">Status</th>
+                          <th scope="col" className="col-actions"><span className="sr-only">Actions</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleAssignedWithMeta.map((item) => {
+                          const { paper, totalRounds, isCompleted } = item;
+                          return (
+                            <tr key={`${paper.id}-${totalRounds}`}>
+                              <td className="cell-primary">
+                                <button type="button" className="cell-title-btn" onClick={() => setDetailItem(item)}>{paper.title}</button>
+                                <span className="cell-sub">{joinAuthors(paper.authors)}</span>
+                              </td>
+                              <td data-label="Category">{paper.category || '—'}</td>
+                              <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
+                              <td data-label="Deadline" className="nowrap">{paper.reviewDeadline ? formatDate(paper.reviewDeadline) : '—'}</td>
+                              <td data-label="Status">{assignmentBadge(item)}</td>
+                              <td className="col-actions">
+                                <div className="row-actions">
+                                  <button type="button" onClick={() => navigate(`/review/paper/${paper.id}`)} className="icon-btn">
+                                    <Icon name="fileText" size={15} /> Manuscript
+                                  </button>
+                                  {isCompleted ? (
+                                    <button type="button" onClick={() => setDetailItem(item)} className="icon-btn">
+                                      <Icon name="eye" size={15} /> Your review
+                                    </button>
+                                  ) : (
+                                    <button type="button" onClick={() => handleStartReview(paper)} className="button button-primary button-small">
+                                      <Icon name="edit" size={15} /> Start review
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </TabPanel>
         )}
 
-        {/* Stats Cards */}
-        <div className="stat-cards">
-          <div className="stat-card">
-            <p className="stat-label">Assigned Papers</p>
-            <p className="stat-value">{stats.assigned}</p>
-          </div>
-          <div className="stat-card">
-            <p className="stat-label">Pending Reviews</p>
-            <p className="stat-value">{stats.pending}</p>
-          </div>
-          <div className="stat-card">
-            <p className="stat-label">Completed Reviews</p>
-            <p className="stat-value">{stats.completed}</p>
-          </div>
-        </div>
+        {activeTab === 'completed' && (
+          <TabPanel id="completed">
+            {completedWithPaper.length === 0 ? (
+              <EmptyState
+                title="No completed reviews yet"
+                variant="review"
+                action={stats.pending > 0 && (
+                  <button type="button" className="button button-primary" onClick={() => setActiveTab('assigned')}>Go to assigned papers</button>
+                )}
+              >
+                Your completed reviews will appear here once you’ve submitted them.
+              </EmptyState>
+            ) : (
+              <div className="table-scroll">
+                <table className="data-table">
+                  <caption className="sr-only">Reviews you have submitted</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Paper</th>
+                      <th scope="col">Reviewed on</th>
+                      <th scope="col">Rating</th>
+                      <th scope="col">Recommendation</th>
+                      <th scope="col" className="col-actions"><span className="sr-only">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completedWithPaper.map(({ review, paper }) => (
+                      <tr key={review.id}>
+                        <td className="cell-primary">
+                          <button type="button" className="cell-title-btn" onClick={() => setViewReview({ review, paper })}>{paper.title}</button>
+                          <span className="cell-sub">{joinAuthors(paper.authors)}</span>
+                        </td>
+                        <td data-label="Reviewed on" className="nowrap">{formatDate(review.submittedDate)}</td>
+                        <td data-label="Rating"><Stars rating={review.rating} /></td>
+                        <td data-label="Recommendation">
+                          <Badge tone={RECOMMENDATIONS[review.recommendation]?.tone || 'neutral'}>{recommendationLabel(review.recommendation)}</Badge>
+                        </td>
+                        <td className="col-actions">
+                          <div className="row-actions">
+                            <button type="button" className="icon-btn" onClick={() => setViewReview({ review, paper })}>
+                              <Icon name="eye" size={15} /> View
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </TabPanel>
+        )}
+      </div>
 
-        {/* Tabs */}
-        <div className="dash-tabs">
-          <button
-            onClick={() => setActiveTab('assigned')}
-            className={`dash-tab ${activeTab === 'assigned' ? 'is-active' : ''}`}
-          >
-            Assigned Papers ({stats.assigned})
-          </button>
-          <button
-            onClick={() => setActiveTab('completed')}
-            className={`dash-tab ${activeTab === 'completed' ? 'is-active' : ''}`}
-          >
-            Completed Reviews ({stats.completed})
-          </button>
-        </div>
-
-        {/* Assigned Papers */}
-        {activeTab === 'assigned' && (
+      {/* Assigned paper details */}
+      <Modal
+        open={Boolean(detailItem)}
+        onClose={() => setDetailItem(null)}
+        size="lg"
+        title={detailItem?.paper.title || ''}
+        footer={detailItem && (
           <>
-            <div className="search-bar">
-              <input
-                type="text"
-                value={reviewerSearchTerm}
-                onChange={(e) => setReviewerSearchTerm(e.target.value)}
-                placeholder="Search by title, author, category..."
-                className="form-input"
-                style={{ flex: 1, minWidth: 220 }}
-              />
-              <select
-                value={reviewerSortBy}
-                onChange={(e) => setReviewerSortBy(e.target.value)}
-                className="form-select"
-                style={{ maxWidth: 180 }}
-              >
-                <option value="recent">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="title_az">Title A-Z</option>
-                <option value="title_za">Title Z-A</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => setShowAllReviewerPapers((prev) => !prev)}
-                className="button button-outline button-small"
-              >
-                {showAllReviewerPapers ? 'Show unfinished only' : 'View all papers'}
+            <button type="button" className="button button-ghost footer-start" onClick={() => navigate(`/review/paper/${detailItem.paper.id}`)}>
+              <Icon name="fileText" size={16} /> Open manuscript
+            </button>
+            <button type="button" className="button button-ghost" onClick={() => setDetailItem(null)}>Close</button>
+            {!detailItem.isCompleted && (
+              <button type="button" className="button button-primary" onClick={() => handleStartReview(detailItem.paper)}>
+                <Icon name="edit" size={16} /> Start review
               </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-              {visibleAssignedWithMeta.map(({ paper, reviewsForPaper, totalRounds, isCompleted, isRevisionRound }) => {
-                const review = reviewsForPaper[0] || null;
-
-                return (
-                  <div key={`${paper.id}-${totalRounds}`} className="dash-panel">
-                    <div className="dash-panel-head">
-                      <h2>{paper.title}</h2>
-                      <span className={`badge ${isCompleted ? 'badge-success' : isRevisionRound ? 'badge-info' : 'badge-warning'}`}>
-                        {isCompleted ? 'REVIEWED' : isRevisionRound ? 'REVISION PENDING' : 'PENDING'}
-                      </span>
-                    </div>
-
-                    <div style={{ marginBottom: 12, fontSize: 10, color: 'var(--muted)' }}>
-                      <div style={{ marginBottom: 4 }}>
-                        <strong style={{ color: 'var(--ink)' }}>Authors: </strong>{paper.authors.join(', ')}
-                      </div>
-                      <div style={{ marginBottom: 4 }}>
-                        <strong style={{ color: 'var(--ink)' }}>Category: </strong>{paper.category}
-                      </div>
-                      <div style={{ marginBottom: 4 }}>
-                        <strong style={{ color: 'var(--ink)' }}>Submitted: </strong>{new Date(paper.submissionDate).toLocaleDateString()}
-                      </div>
-                      {paper.reviewDeadline && (
-                        <div>
-                          <strong style={{ color: 'var(--ink)' }}>Deadline: </strong>{new Date(paper.reviewDeadline).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
-
-                    <p style={{ fontSize: 10, color: 'var(--ink)', lineHeight: 1.6, marginBottom: 12 }}>
-                      {paper.abstract}
-                    </p>
-
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                      {paper.keywords.map((keyword, index) => (
-                        <span key={index} className="badge badge-neutral">
-                          {keyword}
-                        </span>
-                      ))}
-                    </div>
-
-                    {isCompleted && review && (
-                      <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)', marginBottom: 12 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>Your Review Summary</span>
-                          <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>Rating: {review.rating}/5</span>
-                        </div>
-                        <p style={{ fontSize: 10, color: 'var(--ink)', margin: '0 0 6px' }}>
-                          <strong>Recommendation:</strong> {review.recommendation.replace('_', ' ')}
-                        </p>
-                        <div className="contact-note">
-                          {review.comments}
-                        </div>
-                      </div>
-                    )}
-
-                    <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)', display: 'flex', gap: 10 }}>
-                      <button
-                        onClick={() => navigate(`/review/paper/${paper.id}`)}
-                        className="button button-outline"
-                        style={{ flex: 1 }}
-                      >
-                        View Manuscript
-                      </button>
-                      {!isCompleted && (
-                        <button
-                          onClick={() => handleStartReview(paper)}
-                          className="button button-primary"
-                          style={{ flex: 1 }}
-                        >
-                          Start Review
-                        </button>
-                      )}
-                    </div>
+            )}
+          </>
+        )}
+      >
+        {detailItem && (
+          <>
+            <div className="dash-panel-head">{assignmentBadge(detailItem)}</div>
+            <dl className="meta-list">
+              <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(detailItem.paper.authors) || '—'}</dd></div>
+              <div><dt>Category</dt><dd>{detailItem.paper.category || '—'}</dd></div>
+              <div><dt>Submitted</dt><dd>{formatDate(detailItem.paper.submissionDate)}</dd></div>
+              {detailItem.paper.reviewDeadline && <div><dt>Deadline</dt><dd>{formatDate(detailItem.paper.reviewDeadline)}</dd></div>}
+            </dl>
+            {detailItem.paper.abstract && (
+              <div className="detail-section">
+                <h3>Abstract</h3>
+                <p>{detailItem.paper.abstract}</p>
+              </div>
+            )}
+            {Array.isArray(detailItem.paper.keywords) && detailItem.paper.keywords.length > 0 && (
+              <div className="detail-section">
+                <h3>Keywords</h3>
+                <div className="chip-list">{detailItem.paper.keywords.map((k, i) => <span key={`${k}-${i}`} className="chip">{k}</span>)}</div>
+              </div>
+            )}
+            {detailItem.isCompleted && detailItem.reviewsForPaper[0] && (
+              <div className="detail-section">
+                <h3>Your review summary</h3>
+                <div className="review-card">
+                  <div className="review-card-head">
+                    <Stars rating={detailItem.reviewsForPaper[0].rating} />
+                    <Badge tone={RECOMMENDATIONS[detailItem.reviewsForPaper[0].recommendation]?.tone || 'neutral'}>
+                      {recommendationLabel(detailItem.reviewsForPaper[0].recommendation)}
+                    </Badge>
                   </div>
-                );
-              })}
+                  <p>{detailItem.reviewsForPaper[0].comments}</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </Modal>
+
+      {/* Completed review */}
+      <Modal
+        open={Boolean(viewReview)}
+        onClose={() => setViewReview(null)}
+        title={viewReview?.paper.title || ''}
+        description={viewReview ? `Reviewed on ${formatDate(viewReview.review.submittedDate)}` : undefined}
+        footer={<button type="button" className="button button-ghost" onClick={() => setViewReview(null)}>Close</button>}
+      >
+        {viewReview && (
+          <>
+            <dl className="meta-list">
+              <div><dt>Rating</dt><dd><Stars rating={viewReview.review.rating} /></dd></div>
+              <div>
+                <dt>Recommendation</dt>
+                <dd><Badge tone={RECOMMENDATIONS[viewReview.review.recommendation]?.tone || 'neutral'}>{recommendationLabel(viewReview.review.recommendation)}</Badge></dd>
+              </div>
+              <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(viewReview.paper.authors)}</dd></div>
+            </dl>
+            <div className="detail-section">
+              <h3>Review comments</h3>
+              <p>{viewReview.review.comments}</p>
             </div>
           </>
         )}
+      </Modal>
 
-        {/* Completed Reviews */}
-        {activeTab === 'completed' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-            {completedReviews.map(review => {
-              const paper = assignedPapers.find(p => p.id === review.paperId);
-              if (!paper) return null;
-
-              return (
-                <div key={review.id} className="dash-panel">
-                  <div className="dash-panel-head">
-                    <h2>{paper.title}</h2>
-                    <span className="badge badge-success">COMPLETED</span>
-                  </div>
-
-                  <div style={{ marginBottom: 12, fontSize: 10, color: 'var(--muted)' }}>
-                    <div style={{ marginBottom: 4 }}>
-                      <strong style={{ color: 'var(--ink)' }}>Authors: </strong>{paper.authors.join(', ')}
-                    </div>
-                    <div style={{ marginBottom: 4 }}>
-                      <strong style={{ color: 'var(--ink)' }}>Submitted: </strong>{new Date(paper.submissionDate).toLocaleDateString()}
-                    </div>
-                    <div>
-                      <strong style={{ color: 'var(--ink)' }}>Reviewed On: </strong>{new Date(review.submittedDate).toLocaleDateString()}
-                    </div>
-                  </div>
-
-                  <div style={{ paddingTop: 12, borderTop: '1px solid var(--line)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>Rating</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        {[...Array(5)].map((_, i) => (
-                          <svg
-                            key={i}
-                            width="14"
-                            height="14"
-                            fill={i < review.rating ? '#eab308' : '#dce7ef'}
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                        <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--muted)', fontWeight: 600 }}>({review.rating}/5)</span>
-                      </div>
-                    </div>
-
-                    <p style={{ fontSize: 10, color: 'var(--ink)', margin: '0 0 10px' }}>
-                      <strong>Recommendation:</strong> {review.recommendation.replace('_', ' ')}
-                    </p>
-
-                    <div>
-                      <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--ink)', margin: '0 0 6px' }}>Review Comments</p>
-                      <div className="contact-note">
-                        {review.comments}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* Review form */}
+      <Modal
+        open={showReviewForm && Boolean(selectedPaper)}
+        onClose={closeReviewForm}
+        closeDisabled={submittingReview}
+        size="lg"
+        title="Submit review"
+        description={selectedPaper?.title}
+        footer={(
+          <>
+            <button type="button" onClick={closeReviewForm} className="button button-ghost" disabled={submittingReview}>Cancel</button>
+            <button type="submit" form="review-form" disabled={submittingReview} className="button button-primary" aria-busy={submittingReview || undefined}>
+              {submittingReview ? <><Spinner size="sm" /> Submitting…</> : <><Icon name="send" size={16} /> Submit review</>}
+            </button>
+          </>
         )}
-
-        {/* Empty States */}
-        {activeTab === 'assigned' && assignedPapers.length === 0 && (
-          <div className="dash-empty">
-            <h3 style={{ color: 'var(--navy)', fontSize: 14, margin: '0 0 8px' }}>
-              No Papers Assigned for Review
-            </h3>
-            <p style={{ maxWidth: 420, margin: '0 auto' }}>
-              You will be notified when new papers are assigned to you. Thank you for your contribution to the academic review process.
-            </p>
-          </div>
-        )}
-
-        {activeTab === 'completed' && completedReviews.length === 0 && (
-          <div className="dash-empty">
-            <h3 style={{ color: 'var(--navy)', fontSize: 14, margin: '0 0 8px' }}>
-              No Completed Reviews Yet
-            </h3>
-            <p style={{ maxWidth: 420, margin: '0 auto' }}>
-              Your completed reviews will appear here once you've submitted them. Start reviewing your assigned papers to build your review history.
-            </p>
-          </div>
-        )}
-
-        {/* Review Form Modal */}
-        {showReviewForm && selectedPaper && (
-          <div className="modal-overlay">
-            <div className="modal-panel" style={{ maxWidth: 720 }}>
-              <div className="modal-panel-header">
-                <h2>Submit Review</h2>
-                <button
-                  onClick={() => setShowReviewForm(false)}
-                  className="modal-panel-close"
-                >
-                  &times;
-                </button>
-              </div>
-
-              <div className="modal-panel-body">
-                <div className="contact-note" style={{ marginBottom: 18 }}>
-                  <strong style={{ display: 'block', color: 'var(--navy)', marginBottom: 8 }}>{selectedPaper.title}</strong>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <div>
-                      <strong>Authors:</strong> {selectedPaper.authors.join(', ')}
-                    </div>
-                    <div>
-                      <strong>Category:</strong> {selectedPaper.category}
-                    </div>
-                    <div>
-                      <strong>Submitted:</strong> {new Date(selectedPaper.submissionDate).toLocaleDateString()}
-                    </div>
-                    {selectedPaper.reviewDeadline && (
-                      <div>
-                        <strong>Deadline:</strong> {new Date(selectedPaper.reviewDeadline).toLocaleDateString()}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <form onSubmit={handleSubmitReview}>
-                  <div className="form-group">
-                    <label>Overall Rating (1-5)</label>
-                    <select
-                      name="rating"
-                      value={reviewFormData.rating}
-                      onChange={handleReviewFormChange}
-                      className="form-select"
-                      required
-                    >
-                      <option value="">Select a rating</option>
-                      <option value="1">1 - Poor</option>
-                      <option value="2">2 - Below Average</option>
-                      <option value="3">3 - Average</option>
-                      <option value="4">4 - Good</option>
-                      <option value="5">5 - Excellent</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Recommendation</label>
-                    <select
-                      name="recommendation"
-                      value={reviewFormData.recommendation}
-                      onChange={handleReviewFormChange}
-                      className="form-select"
-                      required
-                    >
-                      <option value="">Select a recommendation</option>
-                      <option value="accept">Accept</option>
-                      <option value="accept_with_revisions">Accept with Minor Revisions</option>
-                      <option value="reject_with_revisions">Reject with Major Revisions</option>
-                      <option value="reject">Reject</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Detailed Comments</label>
-                    <textarea
-                      name="comments"
-                      value={reviewFormData.comments}
-                      onChange={handleReviewFormChange}
-                      className="form-textarea"
-                      placeholder="Provide detailed feedback on the paper's strengths, weaknesses, and suggestions for improvement..."
-                      rows="6"
-                      required
-                    />
-                    <p className="form-hint">
-                      Your comments will help authors improve their work and assist editors in making informed decisions.
-                    </p>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button
-                      type="submit"
-                      disabled={submittingReview}
-                      className="button button-primary"
-                      style={{ flex: 1 }}
-                    >
-                      {submittingReview ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <LoadingSpinner size="sm" text="" />
-                          Submitting...
-                        </span>
-                      ) : 'Submit Review'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowReviewForm(false)}
-                      className="button button-outline"
-                      style={{ flex: 1 }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
+      >
+        {selectedPaper && (
+          <form id="review-form" onSubmit={handleSubmitReview} noValidate>
+            <div className="paper-ref">
+              <dl className="meta-list">
+                <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(selectedPaper.authors)}</dd></div>
+                <div><dt>Category</dt><dd>{selectedPaper.category || '—'}</dd></div>
+                <div><dt>Submitted</dt><dd>{formatDate(selectedPaper.submissionDate)}</dd></div>
+                {selectedPaper.reviewDeadline && <div><dt>Deadline</dt><dd>{formatDate(selectedPaper.reviewDeadline)}</dd></div>}
+              </dl>
             </div>
-          </div>
+
+            <fieldset className="field choice-fieldset" aria-describedby={reviewErrors.rating ? 'rating-error' : undefined}>
+              <legend className="label-text">Overall rating<span className="req" aria-hidden="true">*</span></legend>
+              <div className="rating-group">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <label key={n} className={`rating-choice${String(reviewFormData.rating) === String(n) ? ' is-selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="rating"
+                      value={n}
+                      checked={String(reviewFormData.rating) === String(n)}
+                      onChange={() => setReviewField('rating', String(n))}
+                    />
+                    <strong>{n}</strong>
+                    <span>{RATING_LABELS[n]}</span>
+                  </label>
+                ))}
+              </div>
+              {reviewErrors.rating && <p className="field-error" id="rating-error"><Icon name="alert" size={15} />{reviewErrors.rating}</p>}
+            </fieldset>
+
+            <fieldset className="field choice-fieldset" aria-describedby={reviewErrors.recommendation ? 'recommendation-error' : undefined}>
+              <legend className="label-text">Recommendation<span className="req" aria-hidden="true">*</span></legend>
+              <div className="choice-list">
+                {Object.entries(RECOMMENDATIONS).map(([value, meta]) => (
+                  <label key={value} className={`choice-card${reviewFormData.recommendation === value ? ' is-selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="recommendation"
+                      value={value}
+                      checked={reviewFormData.recommendation === value}
+                      onChange={() => setReviewField('recommendation', value)}
+                    />
+                    <span>{meta.label}</span>
+                  </label>
+                ))}
+              </div>
+              {reviewErrors.recommendation && <p className="field-error" id="recommendation-error"><Icon name="alert" size={15} />{reviewErrors.recommendation}</p>}
+            </fieldset>
+
+            <div className="field">
+              <div className="field-label">
+                <label htmlFor="review-comments">Detailed comments<span className="req" aria-hidden="true">*</span></label>
+              </div>
+              <textarea
+                id="review-comments"
+                name="comments"
+                value={reviewFormData.comments}
+                onChange={(e) => setReviewField('comments', e.target.value)}
+                className={`form-textarea${reviewErrors.comments ? ' is-invalid' : ''}`}
+                placeholder="Strengths, weaknesses and specific suggestions for improvement…"
+                rows={7}
+                aria-invalid={reviewErrors.comments ? true : undefined}
+                aria-describedby={[reviewErrors.comments ? 'comments-error' : null, 'comments-hint'].filter(Boolean).join(' ')}
+              />
+              {reviewErrors.comments && <p className="field-error" id="comments-error"><Icon name="alert" size={15} />{reviewErrors.comments}</p>}
+              <p className="field-hint" id="comments-hint">Your comments help authors improve their work and help editors make informed decisions.</p>
+            </div>
+          </form>
         )}
-      </div>
+      </Modal>
     </div>
   );
 };
