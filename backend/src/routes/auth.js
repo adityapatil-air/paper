@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Supabase client is not configured on the server.' });
     }
 
-    const { name, email, password, affiliation, department, role } = req.body || {};
+    const { name, email, password, affiliation, department } = req.body || {};
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, error: 'Name, email and password are required.' });
@@ -43,9 +43,9 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const allowedRoles = ['author', 'reviewer', 'editor', 'admin'];
-    const requestedRole = (role || 'author').toLowerCase();
-    const finalRole = allowedRoles.includes(requestedRole) ? requestedRole : 'author';
+    // Self-registration always creates an author. Reviewer, editor and admin roles
+    // are granted by the editorial team, never taken from the request body.
+    const finalRole = 'author';
 
     const { data, error } = await supabase
       .from('users')
