@@ -3,8 +3,27 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { supabase } = require('../supabaseClient');
 const { JWT_SECRET } = require('../jwtSecret');
+const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
+
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+const TOO_MANY_LOGINS = 'Too many sign-in attempts. Please wait 15 minutes and try again.';
+
+// Password guessing: 10 attempts per account per IP, and 50 per IP overall, every 15 minutes.
+const loginPerAccount = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  max: 10,
+  key: (req) => `${req.ip}|${String(req.body?.email || '').trim().toLowerCase()}`,
+  message: TOO_MANY_LOGINS,
+});
+const loginPerIp = rateLimit({ windowMs: FIFTEEN_MINUTES, max: 50, key: (req) => req.ip, message: TOO_MANY_LOGINS });
+const registerPerIp = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  key: (req) => req.ip,
+  message: 'Too many accounts created from this network. Please try again in an hour.',
+});
 
 const buildPublicUser = (row) => {
   if (!row) return null;
@@ -13,7 +32,7 @@ const buildPublicUser = (row) => {
 };
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', registerPerIp, async (req, res) => {
   try {
     if (!supabase) {
       return res.status(500).json({ success: false, error: 'Supabase client is not configured on the server.' });
@@ -75,7 +94,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', loginPerIp, loginPerAccount, async (req, res) => {
   try {
     if (!supabase) {
       return res.status(500).json({ success: false, error: 'Supabase client is not configured on the server.' });
