@@ -2,10 +2,12 @@ import React, { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Icon from './Icon';
 
-const FOCUSABLE = [
+const FOCUSABLE_PARTS = [
   'a[href]', 'area[href]', 'button:not([disabled])', 'input:not([disabled]):not([type="hidden"])',
   'select:not([disabled])', 'textarea:not([disabled])', '[tabindex]:not([tabindex="-1"])',
-].join(',');
+];
+const FOCUSABLE = FOCUSABLE_PARTS.join(',');
+const BODY_FOCUSABLE = FOCUSABLE_PARTS.map((sel) => `.modal-panel-body ${sel}`).join(',');
 
 // Modals can stack (e.g. a confirm dialog over a details dialog); only the top one handles Esc/Tab.
 const stack = [];
@@ -46,12 +48,12 @@ const Modal = ({
       if (!panel) return;
       const target = initialFocusRef?.current
         || panel.querySelector('[data-autofocus]')
-        || panel.querySelector('.modal-panel-body ' + FOCUSABLE)
+        || panel.querySelector(BODY_FOCUSABLE)
         || panel.querySelector(FOCUSABLE)
         || panel;
       target.focus();
     };
-    const raf = requestAnimationFrame(focusFirst);
+    const focusTimer = setTimeout(focusFirst, 0);
 
     const onKeyDown = (e) => {
       if (stack[stack.length - 1] !== token) return;
@@ -82,13 +84,17 @@ const Modal = ({
     document.addEventListener('keydown', onKeyDown, true);
 
     return () => {
-      cancelAnimationFrame(raf);
+      clearTimeout(focusTimer);
       document.removeEventListener('keydown', onKeyDown, true);
       const idx = stack.indexOf(token);
       if (idx >= 0) stack.splice(idx, 1);
       if (stack.length === 0) document.body.style.overflow = overflow;
       if (previouslyFocused && typeof previouslyFocused.focus === 'function' && document.contains(previouslyFocused)) {
         previouslyFocused.focus();
+      } else {
+        // The trigger was removed (e.g. a deleted row): fall back to the dialog underneath, if any.
+        const dialogs = document.querySelectorAll('[role="dialog"]');
+        dialogs[dialogs.length - 1]?.focus();
       }
     };
   }, [open, initialFocusRef]);

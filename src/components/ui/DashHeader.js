@@ -76,6 +76,48 @@ export const Segmented = ({ value, onChange, options, label }) => (
   </div>
 );
 
+// ARIA tabs with roving tabindex: ←/→/Home/End move between tabs. Panels use id `panel-${id}`.
+export const TabList = ({ tabs, active, onChange, label }) => {
+  const onKeyDown = (e) => {
+    const idx = tabs.findIndex((t) => t.id === active);
+    let next = null;
+    if (e.key === 'ArrowRight') next = (idx + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tabs.length - 1;
+    if (next === null) return;
+    e.preventDefault();
+    onChange(tabs[next].id);
+    setTimeout(() => document.getElementById(`tab-${tabs[next].id}`)?.focus(), 0);
+  };
+  return (
+    <div className="dash-tabs" role="tablist" aria-label={label} onKeyDown={onKeyDown}>
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          id={`tab-${t.id}`}
+          aria-selected={active === t.id}
+          aria-controls={`panel-${t.id}`}
+          tabIndex={active === t.id ? 0 : -1}
+          onClick={() => onChange(t.id)}
+          className={`dash-tab ${active === t.id ? 'is-active' : ''}`}
+        >
+          {t.label}
+          {typeof t.count === 'number' && <span className="tab-count">{t.count}</span>}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+export const TabPanel = ({ id, children }) => (
+  <section id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} tabIndex={0} className="tab-panel">
+    {children}
+  </section>
+);
+
 export const formatDate = (value) => {
   if (!value) return '—';
   const d = new Date(value);

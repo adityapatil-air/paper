@@ -446,10 +446,10 @@ const SubmitForm = () => {
 
   const unlockField = (name) => {
     setLocked((prev) => ({ ...prev, [name]: false }));
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       const el = document.getElementById(name);
       if (el) { el.focus(); el.select?.(); }
-    });
+    }, 0);
   };
 
   const relockField = (name) => {
@@ -461,28 +461,28 @@ const SubmitForm = () => {
     if ((key === 'fullName' || key === 'email') && locked[key]) {
       setLocked((prev) => ({ ...prev, [key]: false }));
     }
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       const el = document.getElementById(domIdFor(key));
       if (!el) return;
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.focus({ preventScroll: true });
-    });
+    }, 0);
   }, [locked]);
 
   const focusSection = (id) => {
     setReviewOpen(false);
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       const section = document.getElementById(`section-${id}`);
       section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       headingRefs.current[id]?.focus({ preventScroll: true });
-    });
+    }, 0);
   };
 
   // co-authors
   const addCoAuthor = () => {
     const row = newCoAuthor();
     setCoAuthors((prev) => [...prev, row]);
-    requestAnimationFrame(() => document.getElementById(`coauthor-${row.id}-fullName`)?.focus());
+    setTimeout(() => document.getElementById(`coauthor-${row.id}-fullName`)?.focus(), 0);
   };
 
   const removeCoAuthor = (id) => {
@@ -492,7 +492,7 @@ const SubmitForm = () => {
       COAUTHOR_FIELDS.forEach((f) => { delete next[coKey(id, f)]; });
       return next;
     });
-    requestAnimationFrame(() => document.getElementById('add-coauthor')?.focus());
+    setTimeout(() => document.getElementById('add-coauthor')?.focus(), 0);
   };
 
   const updateCoAuthor = (id, field, value) => {
@@ -518,7 +518,7 @@ const SubmitForm = () => {
   const removeKeyword = (keyword) => {
     setKeywords((prev) => prev.filter((k) => k !== keyword));
     setKeywordAnnouncement(`Removed keyword ${keyword}.`);
-    requestAnimationFrame(() => document.getElementById('keywords-input')?.focus());
+    setTimeout(() => document.getElementById('keywords-input')?.focus(), 0);
   };
 
   const handleKeywordChange = (e) => {
@@ -575,7 +575,7 @@ const SubmitForm = () => {
     setManuscript(null);
     setFileError('');
     markTouched('manuscript');
-    requestAnimationFrame(() => document.getElementById('manuscript-browse')?.focus());
+    setTimeout(() => document.getElementById('manuscript-browse')?.focus(), 0);
   };
 
   const onDragEnter = (e) => {
@@ -689,10 +689,10 @@ const SubmitForm = () => {
 
     setServerError(failure);
     setReviewOpen(false);
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       topAlertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       topAlertRef.current?.focus({ preventScroll: true });
-    });
+    }, 0);
   };
 
   const resetForAnother = () => {
