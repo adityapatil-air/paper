@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Icon from './ui/Icon';
 import logo from '../assets/logo.png';
 
 const Header = () => {
@@ -8,6 +9,19 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = useRef(null);
+
+  // Escape closes the mobile menu and returns focus to its button.
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      setIsMenuOpen(false);
+      menuButtonRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isMenuOpen]);
 
   const navLinks = [
     { to: '/about-us', label: 'About Us' },
@@ -50,10 +64,18 @@ const Header = () => {
           <img src={logo} alt="IJEPA" />
           <span className="brand-acronym">IJEPA</span>
         </Link>
-        <button className="menu-button" type="button" aria-label="Toggle navigation" aria-expanded={isMenuOpen} onClick={() => setIsMenuOpen(!isMenuOpen)}>
-          {isMenuOpen ? '×' : '☰'}
+        <button
+          ref={menuButtonRef}
+          className="menu-button"
+          type="button"
+          aria-label={isMenuOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={isMenuOpen}
+          aria-controls="primary-nav"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          <Icon name={isMenuOpen ? 'x' : 'menu'} size={26} />
         </button>
-        <nav className={`primary-nav ${isMenuOpen ? 'is-open' : ''}`} aria-label="Primary navigation">
+        <nav id="primary-nav" className={`primary-nav ${isMenuOpen ? 'is-open' : ''}`} aria-label="Primary navigation">
           <Link to="/" className={location.pathname === '/' ? 'active' : ''} onClick={closeMenu}>Home</Link>
           {navLinks.map((link) => <Link key={link.to} to={link.to} className={location.pathname === link.to ? 'active' : ''} onClick={closeMenu}>{link.label}</Link>)}
           <Link to="/submitform" className="nav-submit" onClick={closeMenu}>Submit Manuscript</Link>
