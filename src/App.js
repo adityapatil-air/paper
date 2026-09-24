@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -23,6 +23,7 @@ import AboutUs from './pages/AboutUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import EditorialBoard from './pages/EditorialBoard';
+import NotFound from './pages/NotFound';
 
 // Dashboards and the PDF viewers (react-pdf / pdf.js) load on demand, so public visitors
 // don't download them with the home page.
@@ -98,8 +99,8 @@ function App() {
                 }
               />
 
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Unknown URLs */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
           </main>

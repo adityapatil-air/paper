@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { mockAPI } from '../data/mockData';
+import NotFound from './NotFound';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -128,7 +129,9 @@ const PaperRedirect = () => {
   useCitationMeta(paper, downloadHref);
 
   if (!hasParam) return <Navigate to="/" replace />;
-  if (!loading && !paperId) return <Navigate to="/journal-issues" replace />;
+  if (!loading && !paperId) {
+    return <NotFound title="Paper not found" message="This paper does not exist or is not published. Browse the published papers to find what you are looking for." />;
+  }
 
   const onDocumentLoadSuccess = ({ numPages: nextNumPages }) => {
     setNumPages(nextNumPages);
