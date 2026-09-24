@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { mockAPI } from '../data/mockData';
+import CurrentIssue from '../components/CurrentIssue';
 
 const JournalIcon = ({ children }) => <span className="fact-icon" aria-hidden="true">{children}</span>;
 
@@ -8,6 +9,10 @@ const Landing = () => {
   const [papers, setPapers] = useState([]);
   const [board, setBoard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentIssue, setCurrentIssue] = useState(null);
+  const [issueCount, setIssueCount] = useState(0);
+  const [issuePapers, setIssuePapers] = useState([]);
+  const [issueLoading, setIssueLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -18,6 +23,23 @@ const Landing = () => {
       setLoading(false);
     };
     load();
+  }, []);
+
+  useEffect(() => {
+    const loadIssue = async () => {
+      try {
+        const issues = await mockAPI.getIssues();
+        const current = (issues || []).find((i) => i.isCurrent) || null;
+        setIssueCount((issues || []).length);
+        setCurrentIssue(current);
+        if (current) setIssuePapers((await mockAPI.getIssuePapers(current.id)) || []);
+      } catch (error) {
+        console.error('Error loading current issue', error);
+      } finally {
+        setIssueLoading(false);
+      }
+    };
+    loadIssue();
   }, []);
 
   const formatDate = (value) => value ? new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : 'Publication date pending';
@@ -49,6 +71,11 @@ const Landing = () => {
         <section className="content-section articles-section">
           <div className="section-heading"><div><p className="eyebrow blue">RESEARCH & PUBLICATION</p><h2>Latest Articles</h2></div><Link to="/papers" className="section-link">View All Articles →</Link></div>
           {loading ? <div className="loading-state">Loading published papers...</div> : papers.length === 0 ? <div className="empty-state">No published papers are available at this time.</div> : <div className="article-grid">{papers.slice(0, 3).map((paper) => <article className="article-card" key={paper.id}><span className="article-tag">{paper.category || 'Research Article'}</span><h3>{paper.title}</h3><p className="article-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p><small>Published: {formatDate(paper.publicationDate)}</small>{paper.doi && <small>DOI: {paper.doi}</small>}<div className="article-actions"><Link to={`/paper/${paper.id}`} className="button button-small button-light">Read Abstract</Link>{paper.pdfUrl && <a href={paper.pdfUrl} className="button button-small button-dark" target="_blank" rel="noreferrer">↓&nbsp; Download PDF</a>}</div></article>)}</div>}
+        </section>
+
+        <section className="content-section current-issue-section" aria-labelledby="home-current-issue">
+          <div className="section-heading"><div><p className="eyebrow blue">LATEST RELEASE</p><h2 id="home-current-issue">Current Issue</h2></div><Link to="/journal-issues" className="section-link">View All Issues →</Link></div>
+          {issueLoading ? <div className="loading-state">Loading current issue...</div> : <CurrentIssue issue={currentIssue} papers={issuePapers} maxPapers={3} showIssuesLink hasIssues={issueCount > 0} />}
         </section>
 
         <section className="content-section about-scope"><div className="about-copy"><p className="eyebrow blue">ABOUT THE JOURNAL</p><h2>About IJEPA</h2><p>The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> is an international, peer-reviewed, open-access journal dedicated to publishing high-quality research, innovative methodologies, and practical applications in engineering, computing, information technology, and interdisciplinary technology domains.</p><Link to="/about-us" className="button button-primary button-small">Learn More&nbsp; →</Link></div><div className="scope-panel"><p className="eyebrow blue">OUR FOCUS</p><h2>Aims &amp; Scope</h2><ul><li>Civil, Mechanical, Electrical, and Electronics Engineering</li><li>Computer Science, Information Technology, and Artificial Intelligence</li><li>Industrial, Manufacturing, and Materials Engineering</li><li>Communication, Control, and Instrumentation Systems</li><li>Sustainable, Green, and Emerging Engineering Practices</li></ul><Link to="/about-us" className="button button-dark button-small">View Full Scope&nbsp; →</Link></div></section>

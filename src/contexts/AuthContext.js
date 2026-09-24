@@ -122,7 +122,8 @@ export const AuthProvider = ({ children }) => {
       if (response.success) {
         setUser(response.user);
         safeStorageSet('user', JSON.stringify(response.user));
-        return { success: true };
+        if (response.token) safeStorageSet('authToken', response.token);
+        return { success: true, user: response.user };
       } else {
         return { success: false, error: response.error };
       }
@@ -138,7 +139,8 @@ export const AuthProvider = ({ children }) => {
       if (response.success) {
         setUser(response.user);
         safeStorageSet('user', JSON.stringify(response.user));
-        return { success: true };
+        if (response.token) safeStorageSet('authToken', response.token);
+        return { success: true, user: response.user };
       } else {
         return { success: false, error: response.error };
       }
@@ -150,6 +152,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     safeStorageRemove('user');
+    safeStorageRemove('authToken');
     if (isSupabaseConfigured) {
       supabase.auth.signOut();
     }

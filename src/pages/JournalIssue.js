@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { mockAPI } from '../data/mockData';
+import CurrentIssue from '../components/CurrentIssue';
 
 const JournalIssues = () => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIssuePapers, setCurrentIssuePapers] = useState([]);
   const [papersLoading, setPapersLoading] = useState(false);
-  const [isCurrentIssueExpanded, setIsCurrentIssueExpanded] = useState(true);
   const [expandedIssueId, setExpandedIssueId] = useState(null);
   const [archiveIssuePapers, setArchiveIssuePapers] = useState({});
   const [archivePapersLoadingId, setArchivePapersLoadingId] = useState(null);
@@ -139,8 +139,8 @@ const JournalIssues = () => {
 
   const PaperCard = ({ paper, serial }) => (
     <div className="paper-mini">
-      <p style={{ margin: '0 0 4px' }}>Paper ID: {formatPaperId(serial, paper.issueYear)}</p>
-      <p style={{ margin: '0 0 4px' }}>
+      <p className="paper-mini-line">Paper ID: {formatPaperId(serial, paper.issueYear)}</p>
+      <p className="paper-mini-line">
         <strong>Title:</strong>{' '}
         {paper.pdfUrl ? (
           <a href={`/paper/${slugify(paper.title)}`}>{paper.title}</a>
@@ -148,7 +148,7 @@ const JournalIssues = () => {
           <span>{paper.title}</span>
         )}
       </p>
-      <p style={{ margin: 0 }}>
+      <p className="flush">
         <strong>Authors:</strong> {getAuthorsText(paper.authors)}
       </p>
     </div>
@@ -195,49 +195,9 @@ const JournalIssues = () => {
         <h2>Current Issue</h2>
 
         {loading ? (
-          <p>Loading current issue...</p>
-        ) : currentIssue ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsCurrentIssueExpanded((prev) => !prev)}
-              className="issue-chip"
-            >
-              <span>Volume {currentIssue.volume}</span>
-              <span>&bull;</span>
-              <span>Issue {currentIssue.issue}</span>
-              <span>&bull;</span>
-              <span>{currentIssue.month}, {currentIssue.year}</span>
-              <svg
-                className={`chevron ${isCurrentIssueExpanded ? 'open' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {isCurrentIssueExpanded && (
-              papersLoading ? (
-                <p>Loading papers for this issue...</p>
-              ) : currentIssuePapers.length > 0 ? (
-                <div className="article-grid" style={{ gridTemplateColumns: 'repeat(2,1fr)', marginTop: 14 }}>
-                  {currentIssuePapers.map((paper, idx) => (
-                    <PaperCard
-                      key={paper.id}
-                      serial={idx + 1}
-                      paper={mapBackendPaperToIssueCard(paper, currentIssue?.year)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p>No papers have been assigned to this issue yet.</p>
-              )
-            )}
-          </>
+          <div className="loading-state">Loading current issue…</div>
         ) : (
-          <p>No current issue is available at the moment.</p>
+          <CurrentIssue issue={currentIssue} papers={currentIssuePapers} papersLoading={papersLoading} hasIssues={issues.length > 0} />
         )}
 
         <h2>Archives</h2>
@@ -247,7 +207,9 @@ const JournalIssues = () => {
         </p>
 
         {loading ? (
-          <p>Loading archives...</p>
+          <div className="loading-state">Loading archives…</div>
+        ) : archiveVolumeKeys.length === 0 ? (
+          <div className="empty-state">No archived issues yet. Earlier issues will be listed here once a newer issue becomes current.</div>
         ) : (
           <div>
             {archiveVolumeKeys.map((volume) => {
@@ -256,7 +218,7 @@ const JournalIssues = () => {
               const isVolumeExpanded = isActiveVolume || expandedVolumeKey === volume;
 
               return (
-                <div key={volume} style={{ marginBottom: 20 }}>
+                <div key={volume} className="volume-block">
                   {isActiveVolume ? (
                     <div className="volume-toggle is-active">
                       <span>{volume}</span>
@@ -281,7 +243,7 @@ const JournalIssues = () => {
                   )}
 
                   {isVolumeExpanded && (
-                    <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+                    <div className="archive-issue-grid">
                       {issuesInVolume.map((issue) => (
                         <div
                           key={issue.id}
@@ -289,10 +251,13 @@ const JournalIssues = () => {
                           onClick={() => handleArchiveIssueClick(issue)}
                         >
                           <div className="issue-card-head">
-                            <span><strong>Issue {issue.issue}, {issue.year}</strong></span>
+                            <span>
+                              <strong>Issue {issue.issue}, {[issue.month, issue.year].filter(Boolean).join(' ')}</strong>
+                              {issue.title && <span className="archive-issue-title">{issue.title}</span>}
+                            </span>
                             <span>
                               {expandedIssueId === issue.id ? 'Hide' : 'View'}
-                              <svg className="chevron" style={{ marginLeft: 4 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="chevron chevron-inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                               </svg>
                             </span>
@@ -300,10 +265,16 @@ const JournalIssues = () => {
 
                           {expandedIssueId === issue.id && (
                             <div className="issue-card-body">
+                              {issue.description && <p className="ci-desc">{issue.description}</p>}
+                              {issue.fileUrl && (
+                                <a href={issue.fileUrl} target="_blank" rel="noopener noreferrer" className="archive-file-link" onClick={(e) => e.stopPropagation()}>
+                                  ↓ Download / View issue PDF
+                                </a>
+                              )}
                               {archivePapersLoadingId === issue.id ? (
-                                <p style={{ margin: 0 }}>Loading papers...</p>
+                                <p className="flush">Loading papers…</p>
                               ) : (archiveIssuePapers[issue.id] || []).length === 0 ? (
-                                <p style={{ margin: 0 }}>No papers available.</p>
+                                <p className="flush">No papers available.</p>
                               ) : (
                                 (archiveIssuePapers[issue.id] || []).map((paper, idx) => (
                                   <PaperCard
@@ -325,7 +296,7 @@ const JournalIssues = () => {
           </div>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: 30, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
+        <div className="issues-cta">
           <p>To publish in upcoming issues, please visit our Call for Papers page.</p>
           <a href="/callforpapers" className="button button-primary button-small">Call for Papers</a>
         </div>

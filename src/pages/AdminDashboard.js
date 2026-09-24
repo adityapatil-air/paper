@@ -8,6 +8,7 @@ import Modal from '../components/ui/Modal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import EmptyState from '../components/ui/EmptyState';
 import FilePicker from '../components/ui/FilePicker';
+import IssueEditor from '../components/admin/IssueEditor';
 import Spinner from '../components/ui/Spinner';
 import StatusBadge, { Badge } from '../components/ui/StatusBadge';
 import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
@@ -101,13 +102,8 @@ const AdminDashboard = () => {
   const [selectedIssueId, setSelectedIssueId] = useState('');
   const [assignIssueSubmitting, setAssignIssueSubmitting] = useState(false);
 
-  // Search functionality
-  const [issueForm, setIssueForm] = useState({
-    volume: '',
-    issue: '',
-    month: '',
-    year: '',
-  });
+  // Journal issue editor: null = closed, { issue: null } = create, { issue } = edit
+  const [issueEditor, setIssueEditor] = useState(null);
 
   const [importantDates, setImportantDates] = useState({
     'Manuscript Submission Deadline': '20 December 2024',
@@ -759,11 +755,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleIssueFormChange = (e) => {
-    const { name, value } = e.target;
-    setIssueForm(prev => ({ ...prev, [name]: value }));
-  };
-
   const handleImportantDateChange = (label, value) => {
     setImportantDates((prev) => ({
       ...prev,
@@ -788,30 +779,15 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleAddIssue = async (e) => {
-    e.preventDefault();
-
+  // After the editor saves, reload the list so the "current" flag is correct everywhere.
+  const handleIssueSaved = async (savedIssue, wasEdit) => {
+    setIssueEditor(null);
+    toast.success(wasEdit ? 'Issue updated.' : 'New issue added successfully.');
     try {
-      const volume = parseInt(issueForm.volume, 10);
-      const issueNumber = parseInt(issueForm.issue, 10);
-      const year = parseInt(issueForm.year, 10);
-
-      const result = await mockAPI.createIssue({
-        volume,
-        issue: issueNumber,
-        month: issueForm.month,
-        year,
-      });
-
-      if (result.success && result.issue) {
-        setIssues(prev => [result.issue, ...prev].sort((a, b) => b.year - a.year || b.issue - a.issue));
-        setIssueForm({ volume: '', issue: '', month: '', year: '' });
-        toast.success('New issue added successfully.');
-      } else {
-        toast.error(result.error || 'Failed to add issue.');
-      }
-    } catch (error) {
-      toast.error('An error occurred while adding the issue.');
+      const loadedIssues = await mockAPI.getIssues();
+      setIssues(loadedIssues);
+    } catch (err) {
+      setIssues((prev) => [savedIssue, ...prev.filter((i) => i.id !== savedIssue.id)]);
     }
   };
 
@@ -1397,94 +1373,97 @@ const AdminDashboard = () => {
                     <h2 id="sec-issues">Journal issues</h2>
                     <p>Create issues, choose the current issue and see which papers belong to each.</p>
                   </div>
+                  <button type="button" className="button button-primary button-small" onClick={() => setIssueEditor({ issue: null })}>
+                    <Icon name="plus" size={16} /> Add issue
+                  </button>
                 </div>
-                <div className="issues-layout">
-                  <div>
-                    {issues.length === 0 ? (
-                      <EmptyState compact title="No issues yet">Add your first issue using the form.</EmptyState>
-                    ) : (
-                      <ul className="issue-list">
-                        {issues.map((issue) => (
-                          <li key={issue.id} className={`issue-row${issue.isCurrent ? ' is-current' : ''}`}>
-                            <div className="issue-row-head">
-                              <div>
-                                <strong>Volume {issue.volume}, Issue {issue.issue}</strong>
-                                <span className="issue-date">{issue.month} {issue.year}</span>
-                              </div>
-                              <div className="row-actions">
-                                {issue.isCurrent && <Badge tone="accepted" icon="check">Current issue</Badge>}
-                                <button
-                                  type="button"
-                                  onClick={() => handleIssueClick(issue)}
-                                  className="icon-btn"
-                                  aria-expanded={expandedIssueId === issue.id}
-                                  aria-controls={`issue-papers-${issue.id}`}
-                                >
-                                  <Icon name="eye" size={15} /> {expandedIssueId === issue.id ? 'Hide papers' : 'View papers'}
-                                </button>
-                                {!issue.isCurrent && (
-                                  <button type="button" onClick={() => handleSetCurrentIssue(issue.id)} className="icon-btn">
-                                    Set as current
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => setIssueToDelete(issue)}
-                                  className="icon-btn is-square icon-btn-danger"
-                                  aria-label={`Delete Volume ${issue.volume}, Issue ${issue.issue}`}
-                                >
-                                  <Icon name="trash" size={16} />
-                                </button>
-                              </div>
-                            </div>
-                            {expandedIssueId === issue.id && (
-                              <ul className="issue-papers" id={`issue-papers-${issue.id}`}>
-                                {issuePapersLoadingId === issue.id ? (
-                                  <li className="skeleton-stack"><Skeleton width="70%" /><Skeleton width="40%" /></li>
-                                ) : (issuePapersByIssueId[issue.id] || []).length === 0 ? (
-                                  <li className="cell-sub">No papers have been assigned to this issue yet.</li>
-                                ) : (
-                                  (issuePapersByIssueId[issue.id] || []).map((paper) => (
-                                    <li key={paper.id}>
-                                      {paper.pdfUrl
-                                        ? <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer">{paper.title}</a>
-                                        : <strong>{paper.title}</strong>}
-                                      <span>{joinAuthors(paper.authors)}</span>
-                                    </li>
-                                  ))
-                                )}
-                              </ul>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
+                {issues.length === 0 ? (
+                  <EmptyState
+                    title="No journal issues yet"
+                    action={(
+                      <button type="button" className="button button-primary" onClick={() => setIssueEditor({ issue: null })}>
+                        <Icon name="plus" size={16} /> Add the first issue
+                      </button>
                     )}
-                  </div>
-                  <form onSubmit={handleAddIssue} className="dash-panel" aria-labelledby="add-issue-title">
-                    <div className="dash-panel-head"><h2 id="add-issue-title">Add new issue</h2></div>
-                    <div className="field-grid-2">
-                      <div className="field">
-                        <div className="field-label"><label htmlFor="volume">Volume</label></div>
-                        <input type="number" name="volume" id="volume" value={issueForm.volume} onChange={handleIssueFormChange} required className="form-input" placeholder="e.g. 3" />
-                      </div>
-                      <div className="field">
-                        <div className="field-label"><label htmlFor="issue">Issue</label></div>
-                        <input type="number" name="issue" id="issue" value={issueForm.issue} onChange={handleIssueFormChange} required className="form-input" placeholder="e.g. 4" />
-                      </div>
-                      <div className="field">
-                        <div className="field-label"><label htmlFor="month">Month</label></div>
-                        <input type="text" name="month" id="month" value={issueForm.month} onChange={handleIssueFormChange} required className="form-input" placeholder="e.g. December" />
-                      </div>
-                      <div className="field">
-                        <div className="field-label"><label htmlFor="year">Year</label></div>
-                        <input type="number" name="year" id="year" value={issueForm.year} onChange={handleIssueFormChange} required className="form-input" placeholder="e.g. 2026" />
-                      </div>
-                    </div>
-                    <button type="submit" className="button button-primary button-block">
-                      <Icon name="plus" size={16} /> Add issue
-                    </button>
-                  </form>
-                </div>
+                  >
+                    Create an issue with its title, description, cover and full-issue file, then assign published papers to it.
+                  </EmptyState>
+                ) : (
+                  <ul className="issue-list">
+                    {issues.map((issue) => (
+                      <li key={issue.id} className={`issue-row${issue.isCurrent ? ' is-current' : ''}`}>
+                        <div className="issue-row-main">
+                          {issue.coverImageUrl
+                            ? <img src={issue.coverImageUrl} alt="" className="issue-cover-thumb" />
+                            : <span className="issue-cover-thumb is-placeholder" aria-hidden="true">V{issue.volume}<br />I{issue.issue}</span>}
+                          <div className="issue-row-copy">
+                            <div className="issue-row-titles">
+                              <strong>{issue.title || `Volume ${issue.volume}, Issue ${issue.issue}`}</strong>
+                              {issue.isCurrent && <Badge tone="accepted" icon="check">Current issue</Badge>}
+                            </div>
+                            <span className="issue-date">
+                              Volume {issue.volume} · Issue {issue.issue}{issue.month || issue.year ? ` · ${[issue.month, issue.year].filter(Boolean).join(' ')}` : ''}
+                              {issue.fileName && <> · <Icon name="fileText" size={13} /> {issue.fileName}</>}
+                            </span>
+                            {issue.description && <p className="issue-desc">{issue.description}</p>}
+                          </div>
+                        </div>
+                        <div className="row-actions issue-row-actions">
+                          <button
+                            type="button"
+                            onClick={() => handleIssueClick(issue)}
+                            className="icon-btn"
+                            aria-expanded={expandedIssueId === issue.id}
+                            aria-controls={`issue-papers-${issue.id}`}
+                          >
+                            <Icon name="layers" size={15} /> {expandedIssueId === issue.id ? 'Hide papers' : 'Papers'}
+                          </button>
+                          {issue.fileUrl ? (
+                            <a href={issue.fileUrl} target="_blank" rel="noopener noreferrer" className="icon-btn">
+                              <Icon name="eye" size={15} /> View file
+                            </a>
+                          ) : (
+                            <span className="cell-sub">No file</span>
+                          )}
+                          <button type="button" onClick={() => setIssueEditor({ issue })} className="icon-btn">
+                            <Icon name="edit" size={15} /> Edit
+                          </button>
+                          {!issue.isCurrent && (
+                            <button type="button" onClick={() => handleSetCurrentIssue(issue.id)} className="icon-btn">
+                              <Icon name="check" size={15} /> Set current
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setIssueToDelete(issue)}
+                            className="icon-btn is-square icon-btn-danger"
+                            aria-label={`Delete Volume ${issue.volume}, Issue ${issue.issue}`}
+                          >
+                            <Icon name="trash" size={16} />
+                          </button>
+                        </div>
+                        {expandedIssueId === issue.id && (
+                          <ul className="issue-papers" id={`issue-papers-${issue.id}`}>
+                            {issuePapersLoadingId === issue.id ? (
+                              <li className="skeleton-stack"><Skeleton width="70%" /><Skeleton width="40%" /></li>
+                            ) : (issuePapersByIssueId[issue.id] || []).length === 0 ? (
+                              <li className="cell-sub">No papers have been assigned to this issue yet. Publish a paper, then use Manage → Add to journal issue.</li>
+                            ) : (
+                              (issuePapersByIssueId[issue.id] || []).map((paper) => (
+                                <li key={paper.id}>
+                                  {paper.pdfUrl
+                                    ? <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer">{paper.title}</a>
+                                    : <strong>{paper.title}</strong>}
+                                  <span>{joinAuthors(paper.authors)}</span>
+                                </li>
+                              ))
+                            )}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
             )}
 
@@ -1623,6 +1602,13 @@ const AdminDashboard = () => {
       </div>
 
       {/* ================= dialogs ================= */}
+
+      <IssueEditor
+        open={Boolean(issueEditor)}
+        issue={issueEditor?.issue || null}
+        onClose={() => setIssueEditor(null)}
+        onSaved={handleIssueSaved}
+      />
 
       {/* Manage paper */}
       <Modal
@@ -1978,7 +1964,7 @@ const AdminDashboard = () => {
       >
         {issueToDelete && (
           <div className="paper-ref">
-            <strong>Volume {issueToDelete.volume}, Issue {issueToDelete.issue}</strong>
+            <strong>{issueToDelete.title || `Volume ${issueToDelete.volume}, Issue ${issueToDelete.issue}`}</strong>
             <span>{issueToDelete.month} {issueToDelete.year}{issueToDelete.isCurrent ? ' · current issue' : ''}</span>
           </div>
         )}

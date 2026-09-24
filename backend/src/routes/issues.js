@@ -1,5 +1,7 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
+const { requireAdmin } = require('../middleware/requireAdmin');
+const { makeUploader, handleUpload, uploadFile, removeFileByUrl, sendStorageError } = require('../storage');
 
 const router = express.Router();
 
@@ -18,7 +20,60 @@ const mapIssueRow = (row) => ({
   month: row.month,
   year: row.year,
   isCurrent: row.is_current,
+  title: row.title || null,
+  description: row.description || null,
+  coverImageUrl: row.cover_image_url || null,
+  fileUrl: row.file_url || null,
+  fileName: row.file_name || null,
+  publishedAt: row.published_at || null,
 });
+
+const upload = makeUploader({ file: 'document', coverImage: 'image' });
+const issueUploads = handleUpload(upload.fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'coverImage', maxCount: 1 },
+]));
+
+const MIGRATION_HINT = 'The issues table is missing the new content columns. Run backend/issues_content_migration.sql in the Supabase SQL editor.';
+const isMissingColumnError = (error) => Boolean(error) && (
+  error.code === '42703' || error.code === 'PGRST204' || /column/i.test(error.message || '')
+);
+
+const toInt = (value) => {
+  const n = parseInt(String(value ?? '').trim(), 10);
+  return Number.isNaN(n) ? null : n;
+};
+const toBool = (value) => value === true || value === 'true' || value === '1' || value === 'on';
+const cleanText = (value) => {
+  const t = String(value ?? '').trim();
+  return t || null;
+};
+const cleanDate = (value) => {
+  const t = String(value ?? '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : null;
+};
+
+// Collects writable issue fields from a (multipart or JSON) body; only keys that were sent are returned.
+const readIssueFields = (body = {}) => {
+  const out = {};
+  if ('volume' in body) out.volume = toInt(body.volume);
+  if ('issue' in body) out.issue = toInt(body.issue);
+  if ('year' in body) out.year = toInt(body.year);
+  if ('month' in body) out.month = cleanText(body.month);
+  if ('title' in body) out.title = cleanText(body.title);
+  if ('description' in body) out.description = cleanText(body.description);
+  if ('publishedAt' in body) out.published_at = cleanDate(body.publishedAt);
+  return out;
+};
+
+const clearCurrentIssue = async (exceptId) => {
+  let query = supabase.from('issues').update({ is_current: false }).eq('is_current', true);
+  if (exceptId) query = query.neq('id', exceptId);
+  const { error } = await query;
+  if (error) console.error('Error clearing current issue flag', error);
+};
+
+const issueFolder = (fields) => `issues/vol${fields.volume || 'x'}-issue${fields.issue || 'x'}`;
 
 // GET /api/issues - list all issues
 router.get('/', async (req, res) => {
@@ -44,42 +99,139 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/issues - create new issue
-router.post('/', async (req, res) => {
+// POST /api/issues - create a new issue (admin). Accepts JSON or multipart with optional `file` and `coverImage`.
+router.post('/', requireAdmin, issueUploads, async (req, res) => {
+  const uploaded = [];
   try {
     if (!ensureSupabase(res)) return;
 
-    const { volume, issue, month, year } = req.body || {};
-
-    if (!volume || !issue || !year) {
-      return res.status(400).json({ success: false, error: 'volume, issue and year are required.' });
+    const fields = readIssueFields(req.body);
+    if (!fields.volume || !fields.issue || !fields.year) {
+      return res.status(400).json({ success: false, error: 'Volume, issue number and year are required whole numbers.' });
     }
 
-    const { data, error } = await supabase
-      .from('issues')
-      .insert({
-        volume,
-        issue,
-        month: month || null,
-        year,
-      })
-      .select('*')
-      .single();
+    const file = req.files?.file?.[0] || null;
+    const cover = req.files?.coverImage?.[0] || null;
+    const folder = issueFolder(fields);
+
+    // Omit empty optional fields so a plain issue still saves before the content migration is applied.
+    const payload = Object.fromEntries(Object.entries({ ...fields, month: fields.month ?? null })
+      .filter(([key, value]) => value !== null || key === 'month'));
+    if (file) {
+      payload.file_url = await uploadFile(file, folder);
+      payload.file_name = file.originalname;
+      uploaded.push(payload.file_url);
+    }
+    if (cover) {
+      payload.cover_image_url = await uploadFile(cover, `${folder}/cover`);
+      uploaded.push(payload.cover_image_url);
+    }
+    const makeCurrent = toBool(req.body?.isCurrent);
+    if (makeCurrent) payload.is_current = true;
+
+    const { data, error } = await supabase.from('issues').insert(payload).select('*').single();
 
     if (error) {
+      await Promise.all(uploaded.map(removeFileByUrl));
+      if (isMissingColumnError(error)) {
+        console.error('Error creating issue (migration not applied)', error);
+        return res.status(409).json({ success: false, error: MIGRATION_HINT, code: 'MIGRATION_REQUIRED' });
+      }
       console.error('Error creating issue', error);
       return res.status(500).json({ success: false, error: 'Failed to create issue.' });
     }
 
+    if (makeCurrent) await clearCurrentIssue(data.id);
+
     return res.json({ success: true, issue: mapIssueRow(data) });
   } catch (err) {
+    await Promise.all(uploaded.map(removeFileByUrl));
+    if (sendStorageError(res, err)) return;
     console.error('Unexpected error in POST /api/issues', err);
     return res.status(500).json({ success: false, error: 'Failed to create issue.' });
   }
 });
 
+// PUT /api/issues/:id - edit an issue (admin). Optional `file`/`coverImage` replace the stored ones;
+// `removeFile=true` / `removeCover=true` clear them.
+router.put('/:id', requireAdmin, issueUploads, async (req, res) => {
+  const uploaded = [];
+  try {
+    if (!ensureSupabase(res)) return;
+
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid issue id.' });
+    }
+
+    const { data: existing, error: loadError } = await supabase.from('issues').select('*').eq('id', id).maybeSingle();
+    if (loadError) {
+      console.error('Error loading issue before update', loadError);
+      return res.status(500).json({ success: false, error: 'Failed to load issue.' });
+    }
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Issue not found.' });
+    }
+
+    const fields = readIssueFields(req.body);
+    for (const key of ['volume', 'issue', 'year']) {
+      if (key in fields && !fields[key]) {
+        return res.status(400).json({ success: false, error: 'Volume, issue number and year must be whole numbers.' });
+      }
+    }
+
+    const update = { ...fields };
+    const file = req.files?.file?.[0] || null;
+    const cover = req.files?.coverImage?.[0] || null;
+    const folder = issueFolder({ volume: update.volume ?? existing.volume, issue: update.issue ?? existing.issue });
+
+    if (file) {
+      update.file_url = await uploadFile(file, folder);
+      update.file_name = file.originalname;
+      uploaded.push(update.file_url);
+    } else if (toBool(req.body?.removeFile)) {
+      update.file_url = null;
+      update.file_name = null;
+    }
+    if (cover) {
+      update.cover_image_url = await uploadFile(cover, `${folder}/cover`);
+      uploaded.push(update.cover_image_url);
+    } else if (toBool(req.body?.removeCover)) {
+      update.cover_image_url = null;
+    }
+
+    const makeCurrent = 'isCurrent' in (req.body || {}) ? toBool(req.body.isCurrent) : null;
+    if (makeCurrent !== null) update.is_current = makeCurrent;
+
+    if (Object.keys(update).length === 0) {
+      return res.json({ success: true, issue: mapIssueRow(existing) });
+    }
+
+    const { data, error } = await supabase.from('issues').update(update).eq('id', id).select('*').single();
+
+    if (error) {
+      await Promise.all(uploaded.map(removeFileByUrl));
+      if (isMissingColumnError(error)) {
+        console.error('Error updating issue (migration not applied)', error);
+        return res.status(409).json({ success: false, error: MIGRATION_HINT, code: 'MIGRATION_REQUIRED' });
+      }
+      console.error('Error updating issue', error);
+      return res.status(500).json({ success: false, error: 'Failed to update issue.' });
+    }
+
+    if (makeCurrent) await clearCurrentIssue(id);
+
+    return res.json({ success: true, issue: mapIssueRow(data) });
+  } catch (err) {
+    await Promise.all(uploaded.map(removeFileByUrl));
+    if (sendStorageError(res, err)) return;
+    console.error('Unexpected error in PUT /api/issues/:id', err);
+    return res.status(500).json({ success: false, error: 'Failed to update issue.' });
+  }
+});
+
 // POST /api/issues/:id/set-current - mark an issue as current
-router.post('/:id/set-current', async (req, res) => {
+router.post('/:id/set-current', requireAdmin, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -123,7 +275,7 @@ router.post('/:id/set-current', async (req, res) => {
 });
 
 // DELETE /api/issues/:id - delete an issue
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -156,7 +308,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // POST /api/issues/:id/assign-paper - assign a published paper to an issue
-router.post('/:id/assign-paper', async (req, res) => {
+router.post('/:id/assign-paper', requireAdmin, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -315,7 +467,7 @@ router.get('/:id/papers', async (req, res) => {
 });
 
 // DELETE /api/issues/:id/assign-paper/:paperId - unassign a paper from an issue
-router.delete('/:id/assign-paper/:paperId', async (req, res) => {
+router.delete('/:id/assign-paper/:paperId', requireAdmin, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 

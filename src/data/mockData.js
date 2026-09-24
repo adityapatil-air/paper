@@ -2,6 +2,24 @@
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
+// Backend-issued JWT (from /api/auth/login) for admin-only endpoints.
+const AUTH_TOKEN_KEY = 'authToken';
+const authHeaders = () => {
+  try {
+    const token = window.localStorage.getItem(AUTH_TOKEN_KEY);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch (e) {
+    return {};
+  }
+};
+const readJson = async (response) => {
+  try {
+    return await response.json();
+  } catch (e) {
+    return {};
+  }
+};
+
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -157,7 +175,7 @@ export const mockAPI = {
         return { success: false, error: data.error || 'Invalid credentials' };
       }
 
-      return { success: true, user: data.user };
+      return { success: true, user: data.user, token: data.token || null };
     } catch (error) {
       console.error('login error', error);
       return { success: false, error: 'Login failed. Please try again.' };
@@ -177,7 +195,7 @@ export const mockAPI = {
         return { success: false, error: data.error || 'Registration failed. Please try again.' };
       }
 
-      return { success: true, user: data.user };
+      return { success: true, user: data.user, token: data.token || null };
     } catch (error) {
       console.error('register error', error);
       return { success: false, error: 'Registration failed. Please try again.' };
@@ -460,17 +478,19 @@ export const mockAPI = {
     }
   },
 
+  // issueData: FormData (text fields + optional `file` / `coverImage`) or a plain object.
   createIssue: async (issueData) => {
     try {
+      const isForm = typeof FormData !== 'undefined' && issueData instanceof FormData;
       const response = await fetch(`${API_BASE_URL}/api/issues`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(issueData),
+        headers: isForm ? authHeaders() : { 'Content-Type': 'application/json', ...authHeaders() },
+        body: isForm ? issueData : JSON.stringify(issueData),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
-      if (!data.success || !data.issue) {
-        return { success: false, error: data.error || 'Failed to create issue.' };
+      if (!response.ok || !data.success || !data.issue) {
+        return { success: false, error: data.error || 'Failed to create issue.', code: data.code };
       }
 
       return { success: true, issue: data.issue };
@@ -480,10 +500,31 @@ export const mockAPI = {
     }
   },
 
+  updateIssue: async (issueId, formData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/issues/${issueId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: formData,
+      });
+      const data = await readJson(response);
+
+      if (!response.ok || !data.success || !data.issue) {
+        return { success: false, error: data.error || 'Failed to update issue.', code: data.code };
+      }
+
+      return { success: true, issue: data.issue };
+    } catch (error) {
+      console.error('updateIssue error', error);
+      return { success: false, error: 'Failed to update issue.' };
+    }
+  },
+
   setCurrentIssue: async (issueId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/issues/${issueId}/set-current`, {
         method: 'POST',
+        headers: authHeaders(),
       });
       const data = await response.json();
 
@@ -502,6 +543,7 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/issues/${issueId}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       });
       const data = await response.json();
 
@@ -520,7 +562,7 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/issues/${issueId}/assign-paper`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ paperId }),
       });
       const data = await response.json();
@@ -540,6 +582,7 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/issues/${issueId}/assign-paper/${paperId}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       });
       const data = await response.json();
 

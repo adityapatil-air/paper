@@ -123,6 +123,18 @@ const uploadFile = async (file, pathPrefix = '') => {
   return data.publicUrl;
 };
 
+// Best-effort removal of an object we uploaded, given its public URL (used to roll back failed writes).
+const removeFileByUrl = async (publicUrl) => {
+  if (!publicUrl || !supabase) return;
+  const bucket = getBucketName();
+  const marker = `/object/public/${bucket}/`;
+  const idx = String(publicUrl).indexOf(marker);
+  if (idx < 0) return;
+  const objectPath = decodeURIComponent(String(publicUrl).slice(idx + marker.length));
+  const { error } = await supabase.storage.from(bucket).remove([objectPath]);
+  if (error) console.warn(`[storage] Could not remove "${objectPath}": ${error.message || error}`);
+};
+
 // multer instance restricting each field to its allowed extensions.
 // fieldTypes: { manuscript: 'document', coverImage: 'image' }
 const makeUploader = (fieldTypes) => multer({
@@ -170,6 +182,7 @@ module.exports = {
   getBucketName,
   sanitizeFilename,
   uploadFile,
+  removeFileByUrl,
   makeUploader,
   handleUpload,
   sendStorageError,
