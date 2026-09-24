@@ -171,7 +171,8 @@ router.post(
               .eq('id', data.id);
 
             if (copyrightUpdateError) {
-              console.warn('Unable to persist copyright_url on paper record', copyrightUpdateError);
+              console.error(`[submissions] Copyright form stored at ${copyrightUrl} but its URL could not be saved on paper ${data.id}` +
+                ' (run backend/papers_files_migration.sql if papers.copyright_url is missing):', copyrightUpdateError.message || copyrightUpdateError);
             }
           }
         } catch (copyrightPersistErr) {

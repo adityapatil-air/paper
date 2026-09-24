@@ -1,6 +1,6 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
-const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
+const { makeUploader, handleUpload, uploadFile, removeFileByUrl, sendStorageError } = require('../storage');
 
 const router = express.Router();
 
@@ -76,6 +76,16 @@ router.post(
         .eq('id', paperId);
 
       if (updateError) {
+        // Don't leave files in storage that no row points to.
+        await Promise.all([manuscriptUrl, copyrightUrl].filter(Boolean).map(removeFileByUrl));
+        if (/copyright_url/.test(updateError.message || '')) {
+          console.error('papers.copyright_url column missing; run backend/papers_files_migration.sql', updateError);
+          return res.status(409).json({
+            success: false,
+            code: 'MIGRATION_REQUIRED',
+            error: 'Copyright forms can’t be saved yet: run backend/papers_files_migration.sql in the Supabase SQL editor.',
+          });
+        }
         console.error('Error updating paper file URLs in admin replace', updateError);
         return res.status(500).json({ success: false, error: 'Failed to update paper files.' });
       }
@@ -260,7 +270,15 @@ router.post('/request-revisions', async (req, res) => {
 
     if (statusError) {
       console.error('Error updating paper status to revisions_requested', statusError);
-      // Do not fail the whole request; notification to author is still important
+      if (statusError.code === '22P02') {
+        // Without this status the author can never upload a revision, so report it instead of pretending it worked.
+        return res.status(409).json({
+          success: false,
+          code: 'MIGRATION_REQUIRED',
+          error: 'The database does not support the "revisions requested" status yet. Run backend/papers_files_migration.sql in the Supabase SQL editor.',
+        });
+      }
+      // Other failures: still notify the author below.
     }
 
     if (paper.main_author_id) {
