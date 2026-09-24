@@ -942,10 +942,9 @@ ol.content-list.is-ordered>li::before{content:counter(content-list);left:0;top:.
   .stat-cards{grid-template-columns:repeat(2,1fr)}
   .stat-cards-3{grid-template-columns:repeat(3,1fr)}
   .admin-shell{grid-template-columns:1fr;gap:18px}
-  .admin-nav{position:static;padding:6px;overflow-x:auto;display:flex;gap:2px}
-  .admin-nav ul{flex-shrink:0}
+  .admin-nav{position:static;padding:6px;display:flex;flex-wrap:wrap;gap:2px}
   .admin-nav-label,.admin-nav-sep{display:none}
-  .admin-nav ul{flex-direction:row}
+  .admin-nav ul{flex-direction:row;flex-wrap:wrap}
   .admin-nav li{flex:0 0 auto}
   .admin-nav button{white-space:nowrap}
   .issues-layout{grid-template-columns:1fr}
