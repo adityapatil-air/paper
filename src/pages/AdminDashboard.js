@@ -73,6 +73,7 @@ const AdminDashboard = () => {
     affiliation: '',
     paperTitle: '',
     keywords: '',
+    abstract: '',
     comments: '',
     manuscriptFile: null,
   });
@@ -250,6 +251,7 @@ const AdminDashboard = () => {
         affiliation: adminSubmitForm.affiliation,
         paperTitle: adminSubmitForm.paperTitle,
         keywords: adminSubmitForm.keywords,
+        abstract: adminSubmitForm.abstract,
         comments: adminSubmitForm.comments,
         coAuthors,
         manuscriptFile: adminSubmitForm.manuscriptFile,
@@ -264,6 +266,7 @@ const AdminDashboard = () => {
           affiliation: '',
           paperTitle: '',
           keywords: '',
+          abstract: '',
           comments: '',
           manuscriptFile: null,
         });
@@ -1750,8 +1753,18 @@ const AdminDashboard = () => {
               <input id="as-keywords" type="text" name="keywords" value={adminSubmitForm.keywords} onChange={handleAdminSubmitFormChange} className="form-input" />
             </div>
             <div className="field is-wide">
-              <div className="field-label"><label htmlFor="as-comments">Abstract / comments</label></div>
-              <textarea id="as-comments" name="comments" value={adminSubmitForm.comments} onChange={handleAdminSubmitFormChange} className="form-textarea" rows={5} />
+              <div className="field-meta field-label">
+                <label htmlFor="as-abstract">Abstract<span className="req" aria-hidden="true">*</span></label>
+                <span className="counter" id="as-abstract-count">{(adminSubmitForm.abstract.trim() ? adminSubmitForm.abstract.trim().split(/\s+/).length : 0)} words</span>
+              </div>
+              <textarea id="as-abstract" name="abstract" value={adminSubmitForm.abstract} onChange={handleAdminSubmitFormChange} className="form-textarea" rows={6} required aria-describedby="as-abstract-count" placeholder="Summarise the problem, method, key results and conclusion." />
+            </div>
+            <div className="field is-wide">
+              <div className="field-meta field-label">
+                <label htmlFor="as-comments">Cover letter / comments<span className="optional">(optional)</span></label>
+                <span className="counter" id="as-comments-count">{adminSubmitForm.comments.length} / 500</span>
+              </div>
+              <textarea id="as-comments" name="comments" value={adminSubmitForm.comments} onChange={handleAdminSubmitFormChange} className="form-textarea" rows={4} maxLength={500} aria-describedby="as-comments-count" />
             </div>
           </div>
 

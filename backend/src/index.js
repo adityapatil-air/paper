@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const { supabase } = require('./supabaseClient');
+const { ensureBucket } = require('./storage');
 
 const authRoutes = require('./routes/auth');
 const papersRoutes = require('./routes/papers');
@@ -62,4 +63,6 @@ app.use('/api/settings', settingsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend API listening on port ${PORT}`);
+  // Create the storage bucket on first run so uploads don't fail against an empty project.
+  ensureBucket();
 });

@@ -302,6 +302,7 @@ export const mockAPI = {
       formData.append('affiliation', payload.affiliation || '');
       formData.append('paperTitle', payload.paperTitle || '');
       formData.append('keywords', payload.keywords || '');
+      formData.append('abstract', payload.abstract || '');
       formData.append('comments', payload.comments || '');
 
       if (Array.isArray(payload.coAuthors)) {

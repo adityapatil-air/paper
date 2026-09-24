@@ -1,22 +1,10 @@
 const express = require('express');
-const multer = require('multer');
 const { supabase } = require('../supabaseClient');
+const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
 
 const router = express.Router();
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB max per file
-  },
-});
-
-router.use((err, _req, res, next) => {
-  if (err && err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({ success: false, error: 'Uploaded file is too large.' });
-  }
-  return next(err);
-});
+const upload = makeUploader({ manuscript: 'document', copyrightForm: 'document' });
 
 const ensureSupabase = (res) => {
   if (!supabase) {
@@ -26,39 +14,13 @@ const ensureSupabase = (res) => {
   return true;
 };
 
-const getBucketName = () => process.env.SUPABASE_STORAGE_BUCKET || 'manuscripts';
-
-// Helper to upload a single file buffer to Supabase Storage
-const uploadFileToStorage = async (file, pathPrefix = '') => {
-  if (!file) return null;
-
-  const bucket = getBucketName();
-
-  const normalizedPrefix = pathPrefix ? `${pathPrefix.replace(/\/+$/, '')}/` : '';
-  const filePath = `${normalizedPrefix}${Date.now()}-${file.originalname}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file.buffer, {
-      contentType: file.mimetype,
-      upsert: false,
-    });
-
-  if (uploadError) {
-    throw uploadError;
-  }
-
-  const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-  return data?.publicUrl || null;
-};
-
 // POST /api/submissions - handle full paper submission with file uploads
 router.post(
   '/',
-  upload.fields([
+  handleUpload(upload.fields([
     { name: 'manuscript', maxCount: 1 },
     { name: 'copyrightForm', maxCount: 1 },
-  ]),
+  ])),
   async (req, res) => {
     try {
       if (!ensureSupabase(res)) return;
@@ -88,9 +50,9 @@ router.post(
 
       const pathPrefix = userId ? `user-${userId}` : 'anonymous';
 
-      const manuscriptUrl = await uploadFileToStorage(manuscriptFile, `${pathPrefix}/manuscripts`);
+      const manuscriptUrl = await uploadFile(manuscriptFile, `${pathPrefix}/manuscripts`);
       const copyrightUrl = copyrightFile
-        ? await uploadFileToStorage(copyrightFile, `${pathPrefix}/copyright`)
+        ? await uploadFile(copyrightFile, `${pathPrefix}/copyright`)
         : null;
 
       const keywordArray = keywords
@@ -128,6 +90,7 @@ router.post(
         authors: allAuthorNames,
         // Prefer the dedicated abstract field; older clients only sent `comments`.
         abstract: String(abstract || '').trim() || comments || null,
+        cover_letter: String(abstract || '').trim() ? (String(comments || '').trim() || null) : null,
         keywords: keywordArray,
         category: null,
         word_count: null,
@@ -144,11 +107,18 @@ router.post(
         }
       }
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('papers')
         .insert(insertPayload)
         .select('*')
         .single();
+
+      // Until papers_files_migration.sql has been run, the cover_letter column does not exist.
+      if (error && /cover_letter/.test(error.message || '')) {
+        console.warn('[submissions] papers.cover_letter column missing; run backend/papers_files_migration.sql. Saving without it.');
+        delete insertPayload.cover_letter;
+        ({ data, error } = await supabase.from('papers').insert(insertPayload).select('*').single());
+      }
 
       if (error) {
         console.error('Error inserting paper from submission', error);
@@ -227,6 +197,7 @@ router.post(
         copyrightUrl,
       });
     } catch (err) {
+      if (sendStorageError(res, err)) return;
       console.error('Unexpected error in POST /api/submissions', err);
       return res.status(500).json({ success: false, error: 'Failed to process submission.' });
     }
@@ -236,7 +207,7 @@ router.post(
 // POST /api/submissions/:paperId/revision - upload a revised manuscript for an existing paper
 router.post(
   '/:paperId/revision',
-  upload.single('manuscript'),
+  handleUpload(upload.single('manuscript')),
   async (req, res) => {
     try {
       if (!ensureSupabase(res)) return;
@@ -274,7 +245,7 @@ router.post(
       const { userId } = req.body || {};
       const pathPrefix = userId ? `user-${userId}` : `paper-${paperId}`;
 
-      const manuscriptUrl = await uploadFileToStorage(
+      const manuscriptUrl = await uploadFile(
         manuscriptFile,
         `${pathPrefix}/revisions`
       );
@@ -371,6 +342,7 @@ router.post(
 
       return res.json({ success: true, manuscriptUrl });
     } catch (err) {
+      if (sendStorageError(res, err)) return;
       console.error('Unexpected error in POST /api/submissions/:paperId/revision', err);
       return res.status(500).json({ success: false, error: 'Failed to process revised submission.' });
     }

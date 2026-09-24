@@ -4,14 +4,20 @@
     {
       "name": "researchpprs",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
+      "runtimeArgs": [
+        "start"
+      ],
       "port": 3000
     },
     {
       "name": "researchpprs-backend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 4000
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 4000,
+      "cwd": "backend"
     }
   ]
 }

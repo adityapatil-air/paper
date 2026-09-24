@@ -1,15 +1,10 @@
 const express = require('express');
-const multer = require('multer');
 const { supabase } = require('../supabaseClient');
+const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
 
 const router = express.Router();
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 20 * 1024 * 1024, // 20MB max per file
-  },
-});
+const upload = makeUploader({ manuscript: 'document', copyrightForm: 'document' });
 
 const ensureSupabase = (res) => {
   if (!supabase) {
@@ -19,37 +14,13 @@ const ensureSupabase = (res) => {
   return true;
 };
 
-const getBucketName = () => process.env.SUPABASE_STORAGE_BUCKET || 'manuscripts';
-
-const uploadFileToStorage = async (file, pathPrefix = '') => {
-  if (!file) return null;
-
-  const bucket = getBucketName();
-  const normalizedPrefix = pathPrefix ? `${pathPrefix.replace(/\/+$/, '')}/` : '';
-  const filePath = `${normalizedPrefix}${Date.now()}-${file.originalname}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file.buffer, {
-      contentType: file.mimetype,
-      upsert: false,
-    });
-
-  if (uploadError) {
-    throw uploadError;
-  }
-
-  const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-  return data?.publicUrl || null;
-};
-
 // POST /api/admin/papers/:paperId/files - replace manuscript/copyright files for an existing paper
 router.post(
   '/papers/:paperId/files',
-  upload.fields([
+  handleUpload(upload.fields([
     { name: 'manuscript', maxCount: 1 },
     { name: 'copyrightForm', maxCount: 1 },
-  ]),
+  ])),
   async (req, res) => {
     try {
       if (!ensureSupabase(res)) return;
@@ -88,11 +59,11 @@ router.post(
       let copyrightUrl = null;
 
       if (manuscriptFile) {
-        manuscriptUrl = await uploadFileToStorage(manuscriptFile, `${pathPrefix}/manuscripts`);
+        manuscriptUrl = await uploadFile(manuscriptFile, `${pathPrefix}/manuscripts`);
       }
 
       if (copyrightFile) {
-        copyrightUrl = await uploadFileToStorage(copyrightFile, `${pathPrefix}/copyright`);
+        copyrightUrl = await uploadFile(copyrightFile, `${pathPrefix}/copyright`);
       }
 
       const updatePayload = {};
@@ -111,6 +82,7 @@ router.post(
 
       return res.json({ success: true, manuscriptUrl, copyrightUrl });
     } catch (err) {
+      if (sendStorageError(res, err)) return;
       console.error('Unexpected error in POST /api/admin/papers/:paperId/files', err);
       return res.status(500).json({ success: false, error: 'Failed to update paper files.' });
     }
