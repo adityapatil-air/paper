@@ -5,6 +5,9 @@ import { mockAPI } from '../data/mockData';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+// Same base URL the rest of the app uses (mockData.js); empty means same-origin /api.
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
 const PaperRedirect = () => {
   const { id, slug } = useParams();
   const [loading, setLoading] = useState(true);
@@ -65,8 +68,8 @@ const PaperRedirect = () => {
   }, [id, slug]);
 
   const hasParam = Boolean(id || slug);
-  const pdfSrc = paperId ? `/api/papers/${paperId}/download` : null;
-  const downloadHref = paperId ? `/api/papers/${paperId}/download?download=1` : null;
+  const pdfSrc = paperId ? `${API_BASE_URL}/api/papers/${paperId}/download` : null;
+  const downloadHref = paperId ? `${API_BASE_URL}/api/papers/${paperId}/download?download=1` : null;
 
   const file = useMemo(() => {
     if (!pdfSrc) return null;
