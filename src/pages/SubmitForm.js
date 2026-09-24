@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { authHeaders } from '../data/mockData';
 import Alert from '../components/Alert';
 import Icon from '../components/ui/Icon';
 import Modal from '../components/ui/Modal';
@@ -667,7 +668,7 @@ const SubmitForm = () => {
 
     let failure = '';
     try {
-      const response = await fetch(`${API_BASE_URL}/api/submissions`, { method: 'POST', body: buildFormData() });
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, { method: 'POST', headers: authHeaders(), body: buildFormData() });
       let data = null;
       try { data = await response.json(); } catch (e) { data = null; }
 

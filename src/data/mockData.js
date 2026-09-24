@@ -2,9 +2,9 @@
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
-// Backend-issued JWT (from /api/auth/login) for admin-only endpoints.
+// Backend-issued JWT (from /api/auth/login), sent on every signed-in request.
 const AUTH_TOKEN_KEY = 'authToken';
-const authHeaders = () => {
+export const authHeaders = () => {
   try {
     const token = window.localStorage.getItem(AUTH_TOKEN_KEY);
     return token ? { Authorization: `Bearer ${token}` } : {};
