@@ -12,7 +12,7 @@ const AuthorGuidelines = () => {
   useEffect(() => {
     if (!hash) return;
     const el = document.getElementById(hash.slice(1));
-    if (el) el.scrollIntoView({ block: 'start' });
+    if (el) el.scrollIntoView({ block: 'start', behavior: 'instant' });
   }, [hash]);
   // eslint-disable-next-line no-unused-vars
   const handlePrint = useReactToPrint({
