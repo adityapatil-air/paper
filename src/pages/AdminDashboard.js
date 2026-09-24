@@ -692,11 +692,9 @@ const AdminDashboard = () => {
     }
 
     setAssignIssuePaper(paper);
-    if (issues.length > 0) {
-      setSelectedIssueId(String(issues[0].id));
-    } else {
-      setSelectedIssueId('');
-    }
+    // Preselect the current issue (the usual target); otherwise make the admin choose.
+    const currentIssue = issues.find((issue) => issue.isCurrent);
+    setSelectedIssueId(currentIssue ? String(currentIssue.id) : '');
     setShowAssignIssueModal(true);
   };
 
