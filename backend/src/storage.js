@@ -96,7 +96,9 @@ const sanitizeFilename = (originalName) => {
 const extensionOf = (name) => path.extname(String(name || '')).toLowerCase().replace('.', '');
 
 // Uploads a multer memory file and returns its public URL. Throws StorageError.
-const uploadFile = async (file, pathPrefix = '') => {
+// If the bucket is missing at upload time (e.g. it was deleted, or a getBucket
+// call gave a false positive), it recreates the bucket and retries once.
+const uploadFile = async (file, pathPrefix = '', allowRetry = true) => {
   if (!file) return null;
   if (!supabase) throw storageUnavailable(new Error('Supabase client not configured'));
   if (!(await ensureBucket())) throw storageUnavailable(new Error('Bucket unavailable'));
@@ -111,10 +113,14 @@ const uploadFile = async (file, pathPrefix = '') => {
 
   if (error) {
     const msg = error.message || String(error);
-    console.error(`[storage] Upload failed for "${filePath}" (${file.mimetype}, ${file.size} bytes): ${msg}`);
     if (/maximum allowed size|too large|payload/i.test(msg)) throw fileTooLarge();
     if (/mime type|not supported/i.test(msg)) throw unsupportedType([...Object.keys(DOCUMENT_TYPES)]);
-    if (/bucket not found/i.test(msg)) bucketReady = false;
+    if (/bucket not found/i.test(msg) && allowRetry) {
+      console.warn(`[storage] Bucket "${bucket}" reported missing during upload; recreating and retrying once.`);
+      bucketReady = false;
+      return uploadFile(file, pathPrefix, false);
+    }
+    console.error(`[storage] Upload failed for "${filePath}" (${file.mimetype}, ${file.size} bytes): ${msg}`);
     throw storageUnavailable(error);
   }
 
