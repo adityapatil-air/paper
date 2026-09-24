@@ -20,7 +20,7 @@ import ReviewPaper from './pages/ReviewPaper';
 import AuthorGuidelines from './pages/AuthorGuidelines';
 import CallForPapers from './pages/CallForPapers';
 import Indexing from './pages/Indexing';
-import JournalIssues from './pages/JournelIssue';
+import JournalIssues from './pages/JournalIssue';
 import JoinEditorialTeam from './pages/joinusedito';
 import SubmitForm from './pages/SubmitForm';
 import ContactUs from './pages/ContactUs';
