@@ -38,8 +38,9 @@ function App() {
       <ToastProvider>
       <Router>
         <div className="min-h-screen flex flex-col">
+          <a href="#main-content" className="skip-link">Skip to main content</a>
           <Header />
-          <main className="flex-1">
+          <main className="flex-1" id="main-content" tabIndex={-1}>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />

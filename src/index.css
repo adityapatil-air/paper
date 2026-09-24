@@ -301,9 +301,12 @@ button{font:inherit}
   --ring:0 0 0 4px rgba(8,125,229,.16);
   --dur:.18s;--ease:cubic-bezier(.2,.7,.3,1);
 }
+.skip-link{position:fixed;top:10px;left:10px;z-index:100;padding:10px 16px;border-radius:var(--r-sm);background:var(--navy);color:#fff;font-size:14px;font-weight:700;transform:translateY(-160%);transition:transform var(--dur) var(--ease)}
+.skip-link:focus{transform:none;outline:2px solid #fff;outline-offset:2px}
+#main-content:focus{outline:none}
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .ui-icon{flex-shrink:0;display:inline-block;vertical-align:middle}
-.form-input::placeholder,.form-textarea::placeholder{color:#6b7c8c}
+.form-input::placeholder,.form-textarea::placeholder{color:#627586}
 
 /* ---- page frame + header ---- */
 .dash-page{background:var(--sky-2);min-height:calc(100vh - 250px);padding:32px 0 64px;font-size:14px}
@@ -321,6 +324,10 @@ button{font:inherit}
 .dash-page .button,.modal-panel .button{font-size:14px;padding:11px 18px}
 .dash-page .button-small,.modal-panel .button-small{font-size:13px;padding:8px 14px}
 .button:focus-visible,.icon-btn:focus-visible,.dash-tab:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+/* darker primary in logged-in views so white labels meet 4.5:1 across the whole gradient */
+.dash-page .button-primary,.modal-panel .button-primary{background:linear-gradient(120deg,#0a6cc8,#0c74d6)}
+.dash-page .button-primary:hover,.modal-panel .button-primary:hover{background:linear-gradient(120deg,#095fb0,#0a6cc8)}
+.template-card .button-light{color:#07589a}
 .button-ghost{background:#fff;border-color:var(--line-2);color:var(--ink)}
 .button-ghost:hover{background:var(--sky-2);border-color:#b7cfe2;box-shadow:var(--sh-sm)}
 .button-danger{background:var(--danger-ink);color:#fff;box-shadow:0 8px 20px rgba(168,42,35,.22)}
@@ -627,7 +634,7 @@ button{font:inherit}
 .tag-input{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:46px;padding:6px 8px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:#fbfdff;cursor:text;transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease),background var(--dur) var(--ease)}
 .tag-input:focus-within{border-color:var(--blue);box-shadow:var(--ring);background:#fff}
 .tag-input input{flex:1 1 140px;min-width:120px;border:0;outline:0;background:transparent;padding:6px 4px;font-size:14px;color:var(--ink)}
-.tag-input input::placeholder{color:#6b7c8c}
+.tag-input input::placeholder{color:#627586}
 .tag{display:inline-flex;align-items:center;gap:4px;padding:4px 4px 4px 11px;border-radius:var(--r-pill);background:var(--sky);color:#0b4f86;font-size:13px;font-weight:600;border:1px solid #cfe6f9;animation:popIn .15s var(--ease)}
 .tag button{display:grid;place-items:center;width:22px;height:22px;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;transition:background var(--dur) var(--ease)}
 .tag button:hover{background:#cfe6f9}
