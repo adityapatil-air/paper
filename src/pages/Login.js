@@ -73,7 +73,7 @@ const Login = () => {
             <ul className="auth-visual-points">
               <li><span className="dot" /> Track every submission through peer review in real time</li>
               <li><span className="dot" /> Collaborate with reviewers and editors on one platform</li>
-              <li><span className="dot" /> Publish open-access research trusted by 500+ researchers</li>
+              <li><span className="dot" /> Publish open-access research that anyone can read for free</li>
             </ul>
           </div>
           <p className="auth-visual-foot">International Journal of Engineering Practices and Applications</p>

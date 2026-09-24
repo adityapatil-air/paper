@@ -49,7 +49,7 @@ const Landing = () => {
       <section className="journal-hero">
         <div className="journal-container hero-grid">
           <div className="hero-copy">
-            <span className="hero-badge"><span className="dot-live" /> Trusted by 500+ Researchers Worldwide</span>
+            <span className="hero-badge"><span className="dot-live" /> Peer-reviewed · Open access · ISSN 3139-5961</span>
             <p className="eyebrow">INTERNATIONAL JOURNAL OF</p>
             <h1>Engineering Practices<br />and Applications</h1>
             <p className="hero-description">A peer-reviewed, open-access journal advancing research, innovation, and real-world applications across engineering disciplines.</p>
