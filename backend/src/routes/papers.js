@@ -2,6 +2,7 @@ const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { Readable } = require('stream');
 const { requireAuth } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/requireAdmin');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ const ensureSupabase = (res) => {
 };
 
 // DELETE /api/papers/:id - delete a paper by id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -275,8 +276,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/papers - submit a new paper
-router.post('/', async (req, res) => {
+// POST /api/papers - submit a new paper (metadata only; the site uses /api/submissions).
+// Owner, fee and payment status are set by the server, never taken from the request.
+router.post('/', requireAuth, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -287,9 +289,6 @@ router.post('/', async (req, res) => {
       keywords,
       category,
       wordCount,
-      submissionFee,
-      paymentStatus,
-      mainAuthorId,
     } = req.body || {};
 
     if (!title || !authors || !Array.isArray(authors) || authors.length === 0) {
@@ -298,8 +297,6 @@ router.post('/', async (req, res) => {
 
     const mappedKeywords = Array.isArray(keywords) ? keywords : [];
     const wordCountInt = wordCount ? parseInt(wordCount, 10) : null;
-    const submissionFeeNumber = typeof submissionFee === 'number' ? submissionFee : 150;
-    const paymentStatusValue = paymentStatus || 'pending';
 
     const insertPayload = {
       title,
@@ -308,13 +305,13 @@ router.post('/', async (req, res) => {
       keywords: mappedKeywords,
       category: category || null,
       word_count: wordCountInt,
-      submission_fee: submissionFeeNumber,
-      payment_status: paymentStatusValue,
+      submission_fee: 150,
+      payment_status: 'pending',
       status: 'submitted',
     };
 
-    if (mainAuthorId) {
-      insertPayload.main_author_id = mainAuthorId;
+    if (req.user.role !== 'admin') {
+      insertPayload.main_author_id = req.user.id;
     }
 
     const { data, error } = await supabase

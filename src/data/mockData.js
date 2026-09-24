@@ -268,7 +268,7 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/papers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(paperData)
       });
       const data = await response.json();
@@ -777,9 +777,10 @@ export const mockAPI = {
   deletePaper: async (paperId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/papers/${paperId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: authHeaders(),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to delete paper.' };
