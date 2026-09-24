@@ -1,8 +1,12 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { makeUploader, handleUpload, uploadFile, removeFileByUrl, sendStorageError } = require('../storage');
+const { requireAdmin } = require('../middleware/requireAdmin');
 
 const router = express.Router();
+
+// Every /api/admin route is administrator-only.
+router.use(requireAdmin);
 
 const upload = makeUploader({ manuscript: 'document', copyrightForm: 'document' });
 

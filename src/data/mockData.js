@@ -377,9 +377,10 @@ export const mockAPI = {
 
       const response = await fetch(`${API_BASE_URL}/api/admin/papers/${paperId}/files`, {
         method: 'POST',
+        headers: authHeaders(),
         body: formData,
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to update paper files.' };
@@ -796,8 +797,8 @@ export const mockAPI = {
 // Admin helper methods attached after mockAPI definition
 mockAPI.getReviewers = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/admin/reviewers`);
-    const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/api/admin/reviewers`, { headers: authHeaders() });
+    const data = await readJson(response);
 
     if (!data.success || !Array.isArray(data.reviewers)) {
       return [];
@@ -814,10 +815,10 @@ mockAPI.assignReviewer = async (paperId, reviewerId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/assign-reviewer`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ paperId, reviewerId })
     });
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!data.success) {
       return { success: false, error: data.error || 'Failed to assign reviewer.' };
@@ -834,10 +835,10 @@ mockAPI.publishPaper = async (paperId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/publish-paper`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ paperId })
     });
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!data.success) {
       return { success: false, error: data.error || 'Failed to publish paper.' };
@@ -854,10 +855,10 @@ mockAPI.requestRevisions = async (paperId, note) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/request-revisions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ paperId, note }),
     });
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!data.success) {
       return { success: false, error: data.error || 'Failed to request revisions.' };
@@ -874,10 +875,10 @@ mockAPI.rejectPaper = async (paperId, note) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/reject-paper`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ paperId, note }),
     });
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!data.success) {
       return { success: false, error: data.error || 'Failed to reject paper.' };
