@@ -125,3 +125,6 @@ export const formatDate = (value) => {
 };
 
 export const joinAuthors = (authors) => (Array.isArray(authors) ? authors.join(', ') : String(authors || ''));
+
+// Author line for a paper as a reviewer sees it (the API withholds names during double-blind review).
+export const paperAuthorsLabel = (paper) => (paper?.authorsHidden ? 'Hidden for double-blind review' : joinAuthors(paper?.authors));

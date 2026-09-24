@@ -101,6 +101,13 @@ const canViewPaper = (user, row, assignmentsByPaperId) => {
   return (assignmentsByPaperId[row.id] || []).includes(user.id);
 };
 
+// Double-blind review: reviewers do not receive author names for unpublished papers.
+const hideAuthorsFromReviewer = (paper, user) => (
+  user?.role === 'reviewer' && paper.status !== 'published'
+    ? { ...paper, authors: [], authorsHidden: true }
+    : paper
+);
+
 // GET /api/papers - the caller's papers: admins see every paper, authors only the papers
 // they submitted, reviewers only the papers assigned to them. Guests use /published.
 router.get('/', requireAuth, async (req, res) => {
@@ -143,7 +150,7 @@ router.get('/', requireAuth, async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch papers.' });
     }
 
-    const papers = (paperRows || []).map((row) => mapPaperRow(row, assignmentsByPaperId));
+    const papers = (paperRows || []).map((row) => hideAuthorsFromReviewer(mapPaperRow(row, assignmentsByPaperId), req.user));
 
     return res.json({ success: true, papers });
   } catch (err) {
@@ -278,7 +285,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Paper not found.' });
     }
 
-    const paper = mapPaperRow(row, assignmentsByPaperId);
+    const paper = hideAuthorsFromReviewer(mapPaperRow(row, assignmentsByPaperId), req.user);
 
     return res.json({ success: true, paper });
   } catch (err) {

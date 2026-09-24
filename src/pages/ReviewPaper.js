@@ -7,7 +7,7 @@ import Icon from '../components/ui/Icon';
 import EmptyState from '../components/ui/EmptyState';
 import Spinner from '../components/ui/Spinner';
 import { Skeleton, SkeletonText } from '../components/ui/Skeleton';
-import { formatDate, joinAuthors } from '../components/ui/DashHeader';
+import { formatDate, paperAuthorsLabel } from '../components/ui/DashHeader';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -116,7 +116,7 @@ const ReviewPaper = () => {
               <p className="dash-role"><span className="dash-role-dot" aria-hidden="true" />Manuscript · Paper ID {paper.id}</p>
               <h1 id="manuscript-title">{paper.title}</h1>
               <dl className="meta-list">
-                <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(paper.authors) || 'N/A'}</dd></div>
+                <div className="is-wide"><dt>Authors</dt><dd>{paperAuthorsLabel(paper) || 'N/A'}</dd></div>
                 <div><dt>Category</dt><dd>{paper.category || 'N/A'}</dd></div>
                 <div><dt>Submitted</dt><dd>{paper.submissionDate ? formatDate(paper.submissionDate) : 'N/A'}</dd></div>
               </dl>

@@ -38,6 +38,7 @@ const GUIDELINES = [
   'Use the IEEE reference style throughout.',
   'The work must be original and not under review elsewhere.',
   'All submissions go through double-blind peer review.',
+  'Remove author names and affiliations from the manuscript file; you enter them in this form.',
 ];
 
 const countWords = (text) => {
@@ -1037,7 +1038,7 @@ const SubmitForm = () => {
               section={SECTIONS[3]}
               index={3}
               complete={sectionState.manuscript.done}
-              description="Upload the full manuscript prepared with the IJEPA template."
+              description="Upload the full manuscript prepared with the IJEPA template, without author names or affiliations (reviewers must not see who wrote it)."
               headingRef={(el) => { headingRefs.current.manuscript = el; }}
             >
               <div className="field">

@@ -10,7 +10,7 @@ import Spinner from '../components/ui/Spinner';
 import { Badge } from '../components/ui/StatusBadge';
 import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
-import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
+import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, paperAuthorsLabel } from '../components/ui/DashHeader';
 
 const RATING_LABELS = { 1: 'Poor', 2: 'Below average', 3: 'Average', 4: 'Good', 5: 'Excellent' };
 const EMPTY_REVIEW = { rating: '', recommendation: '', comments: '' };
@@ -321,7 +321,7 @@ const ReviewerDashboard = () => {
                             <tr key={`${paper.id}-${totalRounds}`}>
                               <td className="cell-primary">
                                 <button type="button" className="cell-title-btn" onClick={() => setDetailItem(item)}>{paper.title}</button>
-                                <span className="cell-sub">{joinAuthors(paper.authors)}</span>
+                                <span className="cell-sub">{paperAuthorsLabel(paper)}</span>
                               </td>
                               <td data-label="Category">{paper.category || '—'}</td>
                               <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
@@ -385,7 +385,7 @@ const ReviewerDashboard = () => {
                       <tr key={review.id}>
                         <td className="cell-primary">
                           <button type="button" className="cell-title-btn" onClick={() => setViewReview({ review, paper })}>{paper.title}</button>
-                          <span className="cell-sub">{joinAuthors(paper.authors)}</span>
+                          <span className="cell-sub">{paperAuthorsLabel(paper)}</span>
                         </td>
                         <td data-label="Reviewed on" className="nowrap">{formatDate(review.submittedDate)}</td>
                         <td data-label="Rating"><Stars rating={review.rating} /></td>
@@ -433,7 +433,7 @@ const ReviewerDashboard = () => {
           <>
             <div className="dash-panel-head">{assignmentBadge(detailItem)}</div>
             <dl className="meta-list">
-              <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(detailItem.paper.authors) || '—'}</dd></div>
+              <div className="is-wide"><dt>Authors</dt><dd>{paperAuthorsLabel(detailItem.paper) || '—'}</dd></div>
               <div><dt>Category</dt><dd>{detailItem.paper.category || '—'}</dd></div>
               <div><dt>Submitted</dt><dd>{formatDate(detailItem.paper.submissionDate)}</dd></div>
               {detailItem.paper.reviewDeadline && <div><dt>Deadline</dt><dd>{formatDate(detailItem.paper.reviewDeadline)}</dd></div>}
@@ -484,7 +484,7 @@ const ReviewerDashboard = () => {
                 <dt>Recommendation</dt>
                 <dd><Badge tone={RECOMMENDATIONS[viewReview.review.recommendation]?.tone || 'neutral'}>{recommendationLabel(viewReview.review.recommendation)}</Badge></dd>
               </div>
-              <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(viewReview.paper.authors)}</dd></div>
+              <div className="is-wide"><dt>Authors</dt><dd>{paperAuthorsLabel(viewReview.paper)}</dd></div>
             </dl>
             <div className="detail-section">
               <h3>Review comments</h3>
@@ -515,7 +515,7 @@ const ReviewerDashboard = () => {
           <form id="review-form" onSubmit={handleSubmitReview} noValidate>
             <div className="paper-ref">
               <dl className="meta-list">
-                <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(selectedPaper.authors)}</dd></div>
+                <div className="is-wide"><dt>Authors</dt><dd>{paperAuthorsLabel(selectedPaper)}</dd></div>
                 <div><dt>Category</dt><dd>{selectedPaper.category || '—'}</dd></div>
                 <div><dt>Submitted</dt><dd>{formatDate(selectedPaper.submissionDate)}</dd></div>
                 {selectedPaper.reviewDeadline && <div><dt>Deadline</dt><dd>{formatDate(selectedPaper.reviewDeadline)}</dd></div>}
