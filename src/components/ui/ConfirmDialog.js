@@ -27,7 +27,7 @@ const ConfirmDialog = ({
     closeDisabled={busy}
     footer={(
       <>
-        <button type="button" className="button button-ghost" onClick={onCancel} disabled={busy} data-autofocus={tone === 'danger' ? true : undefined}>
+        <button type="button" className="button button-ghost" onClick={onCancel} disabled={busy} data-autofocus>
           {cancelLabel}
         </button>
         <button

@@ -384,21 +384,23 @@ button{font:inherit}
 
 /* ---- responsive data table: scrolls on tablet, stacks into cards under 760px ---- */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:var(--r-md);background:#fff}
-.data-table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;min-width:760px}
-.data-table th{position:sticky;top:0;text-align:left;padding:12px 16px;background:var(--surface-2);color:var(--navy);font-size:12px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:700}
-.data-table td{padding:14px 16px;border-bottom:1px solid var(--line);color:var(--ink);vertical-align:middle}
+.data-table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;min-width:700px}
+.data-table th{position:sticky;top:0;text-align:left;padding:12px 14px;background:var(--surface-2);color:var(--navy);font-size:12px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:700}
+.data-table td{padding:14px;border-bottom:1px solid var(--line);color:var(--ink);vertical-align:middle}
 .data-table tbody tr:last-child td{border-bottom:0}
 .data-table tbody tr{transition:background var(--dur) var(--ease)}
 .data-table tbody tr:hover td{background:#f8fbfe}
 .data-table .col-actions{text-align:right;white-space:nowrap}
 .data-table td.nowrap{white-space:nowrap}
-.data-table .col-actions .row-actions{justify-content:flex-end}
+.data-table .col-actions .row-actions{justify-content:flex-end;flex-wrap:nowrap}
 .cell-title{font-weight:700;color:var(--navy);line-height:1.4;display:block}
 .cell-title-btn{border:0;background:none;padding:0;text-align:left;font:inherit;font-weight:700;color:var(--navy);cursor:pointer;line-height:1.4}
 .cell-title-btn:hover{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
 .cell-sub{display:block;margin-top:3px;font-size:13px;color:var(--muted)}
 .cell-flags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.badge-stack{display:inline-flex;flex-direction:column;align-items:flex-start;gap:4px}
+.badge-stack .cell-sub{margin:0;font-size:12.5px}
 @media(max-width:760px){
   .table-scroll{border:0;background:none;overflow:visible}
   .data-table{min-width:0}
@@ -411,7 +413,7 @@ button{font:inherit}
   .data-table td.cell-primary::before{display:none}
   .data-table td.col-actions{display:block;text-align:left;padding-top:12px;margin-top:6px;border-top:1px solid var(--line)}
   .data-table td.col-actions::before{display:none}
-  .data-table .col-actions .row-actions{justify-content:flex-start}
+  .data-table .col-actions .row-actions{justify-content:flex-start;flex-wrap:wrap}
   .data-table tbody tr:hover td{background:none}
 }
 
@@ -802,6 +804,7 @@ button{font:inherit}
 .board-main{flex:1;min-width:0;border:0;background:none;padding:0;text-align:left;font:inherit;cursor:pointer}
 .board-main strong{display:block;font-size:14px;color:var(--ink)}
 .board-main span{display:block;font-size:13px;color:var(--muted)}
+.icon-flip{transform:rotate(180deg)}
 .board-order{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:28px;text-align:right}
 .reviewer-picker{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:var(--r-md);max-height:300px;overflow-y:auto}
 .reviewer-option{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;cursor:pointer;font:inherit;transition:background var(--dur) var(--ease)}
@@ -858,7 +861,8 @@ button{font:inherit}
   .stat-cards{grid-template-columns:repeat(2,1fr)}
   .stat-cards-3{grid-template-columns:repeat(3,1fr)}
   .admin-shell{grid-template-columns:1fr;gap:18px}
-  .admin-nav{position:static;padding:6px;overflow-x:auto}
+  .admin-nav{position:static;padding:6px;overflow-x:auto;display:flex;gap:2px}
+  .admin-nav ul{flex-shrink:0}
   .admin-nav-label,.admin-nav-sep{display:none}
   .admin-nav ul{flex-direction:row}
   .admin-nav li{flex:0 0 auto}
@@ -890,7 +894,7 @@ button{font:inherit}
   .viewer-head{padding:18px}
   .viewer-toolbar{top:68px}
 }
-@media(max-width:420px){.stat-cards,.stat-cards-3{grid-template-columns:1fr}}
+@media(max-width:340px){.stat-cards,.stat-cards-3{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
   .success-art .sa-check{stroke-dashoffset:0}

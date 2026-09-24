@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mockAPI } from '../data/mockData';
@@ -30,6 +30,9 @@ const ReviewerDashboard = () => {
   const [assignedPapers, setAssignedPapers] = useState([]);
   const [completedReviews, setCompletedReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Only the first load shows the skeleton; later refreshes keep the current content on screen.
+  const hasLoadedOnce = useRef(false);
+  useEffect(() => { if (!loading) hasLoadedOnce.current = true; }, [loading]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [reviewFormData, setReviewFormData] = useState(EMPTY_REVIEW);
@@ -224,7 +227,7 @@ const ReviewerDashboard = () => {
     .map((review) => ({ review, paper: assignedPapers.find((p) => p.id === review.paperId) }))
     .filter((row) => row.paper);
 
-  if (loading) {
+  if (loading && !hasLoadedOnce.current) {
     return <DashboardSkeleton stats={3} label="Loading your assignments" />;
   }
 

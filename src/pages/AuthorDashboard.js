@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mockAPI } from '../data/mockData';
@@ -40,6 +40,9 @@ const AuthorDashboard = () => {
   const [activeTab, setActiveTab] = useState('submissions');
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Only the first load shows the skeleton; later refreshes keep the current content on screen.
+  const hasLoadedOnce = useRef(false);
+  useEffect(() => { if (!loading) hasLoadedOnce.current = true; }, [loading]);
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
@@ -210,7 +213,7 @@ const AuthorDashboard = () => {
     return dateB - dateA;
   });
 
-  if (loading) {
+  if (loading && !hasLoadedOnce.current) {
     return <DashboardSkeleton label="Loading your papers" />;
   }
 
