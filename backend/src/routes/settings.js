@@ -1,5 +1,6 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
+const { requireAdmin } = require('../middleware/requireAdmin');
 
 const router = express.Router();
 
@@ -39,7 +40,7 @@ router.get('/important-dates', async (req, res) => {
 });
 
 // POST /api/settings/important-dates
-router.post('/important-dates', async (req, res) => {
+router.post('/important-dates', requireAdmin, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -93,7 +94,7 @@ router.get('/editorial-board', async (req, res) => {
 });
 
 // POST /api/settings/editorial-board
-router.post('/editorial-board', async (req, res) => {
+router.post('/editorial-board', requireAdmin, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 

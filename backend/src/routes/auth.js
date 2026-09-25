@@ -2,10 +2,31 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { supabase } = require('../supabaseClient');
+const { JWT_SECRET } = require('../jwtSecret');
+const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev-key-change-me';
+// Must match MIN_PASSWORD_LENGTH in src/pages/Register.js.
+const MIN_PASSWORD_LENGTH = 8;
+
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+const TOO_MANY_LOGINS = 'Too many sign-in attempts. Please wait 15 minutes and try again.';
+
+// Password guessing: 10 attempts per account per IP, and 50 per IP overall, every 15 minutes.
+const loginPerAccount = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  max: 10,
+  key: (req) => `${req.ip}|${String(req.body?.email || '').trim().toLowerCase()}`,
+  message: TOO_MANY_LOGINS,
+});
+const loginPerIp = rateLimit({ windowMs: FIFTEEN_MINUTES, max: 50, key: (req) => req.ip, message: TOO_MANY_LOGINS });
+const registerPerIp = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  key: (req) => req.ip,
+  message: 'Too many accounts created from this network. Please try again in an hour.',
+});
 
 const buildPublicUser = (row) => {
   if (!row) return null;
@@ -14,16 +35,20 @@ const buildPublicUser = (row) => {
 };
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', registerPerIp, async (req, res) => {
   try {
     if (!supabase) {
       return res.status(500).json({ success: false, error: 'Supabase client is not configured on the server.' });
     }
 
-    const { name, email, password, affiliation, department, role } = req.body || {};
+    const { name, email, password, affiliation, department } = req.body || {};
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, error: 'Name, email and password are required.' });
+    }
+
+    if (String(password).length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ success: false, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.` });
     }
 
     const { data: existing, error: existingError } = await supabase
@@ -43,9 +68,9 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const allowedRoles = ['author', 'reviewer', 'editor', 'admin'];
-    const requestedRole = (role || 'author').toLowerCase();
-    const finalRole = allowedRoles.includes(requestedRole) ? requestedRole : 'author';
+    // Self-registration always creates an author. Reviewer, editor and admin roles
+    // are granted by the editorial team, never taken from the request body.
+    const finalRole = 'author';
 
     const { data, error } = await supabase
       .from('users')
@@ -76,7 +101,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', loginPerIp, loginPerAccount, async (req, res) => {
   try {
     if (!supabase) {
       return res.status(500).json({ success: false, error: 'Supabase client is not configured on the server.' });

@@ -1,7 +1,34 @@
-# IJEPA — Audit V3 (Phase 1: audit only, no code changed)
+# IJEPA — Audit V3
 
-**Date:** 2026-09-24 · **Commit audited:** `7591f29` (clean working tree) · **Env:** local — CRA `:3000`, Express `:4000`, Supabase **dev** project `xwwoinsgvxgeaksqxtdq` (production is `vvtpfaohltoeevwicrnv`; production was **not** touched or probed).
+**Phase 1 (audit) date:** 2026-09-24 · **Commit audited:** `7591f29`
+**Phase 2 (fixes) date:** 2026-09-25 · **Env:** local — CRA `:3005`, Express `:4000`, Supabase **dev** project `xwwoinsgvxgeaksqxtdq` (production `vvtpfaohltoeevwicrnv` was **not** touched).
 **Method:** clicked through every flow in the in-app browser as guest / author / reviewer / admin, checked every write via the network log, checked storage and DB state with `curl`, read the code for root causes. Breakpoints 1440 / 1024 / 768 / 375.
+
+---
+
+## Phase 2 — fix status (2026-09-25)
+
+**All 8 P0, all 16 P1, and all 23 P2 issues are fixed in code**, one commit per issue (message = audit ID). Each was re-tested in the browser or with curl before its commit; evidence is in the session. P3 items are not done (you said P3 only if asked). The frontend dev server moved to **port 3005** (3000 and 3001 were taken by other local apps).
+
+### ⚠️ Three things only you can finish — the fixes are in the repo but not yet active
+
+1. **P0-02 — Run `backend/rls_migration.sql`** in the Supabase SQL editor for **both** the dev and production projects. Until then the anon key still reads every table (re-checked today: `users`/`papers`/`reviews`/`notifications` all readable). It's DDL, so it can't be applied over the API. Non-destructive.
+2. **P1-07 — Run `backend/accepted_status_migration.sql`** (adds the `accepted` enum value). Until then the Accept button returns a clear "run the migration" message and papers can't be published. Non-destructive.
+3. **P0-04 — Rotate `JWT_SECRET` and the Razorpay key secret**, then purge `backend/.env copy` from git history. The file is now untracked and ignored and the server fails closed without `JWT_SECRET`, but the old secret is still in past commits on `origin/main` and `origin/dev`. Rotating logs everyone out; history rewrite is destructive — both are your call.
+
+Optional data cleanup: **`backend/clear_placeholder_dois.sql`** removes the two `10.1000/example.*` DOIs already stored (P1-08).
+
+### Still outstanding after Phase 2
+
+- **P1-03 (partial):** unpublished papers are now access-controlled at the API (done), but the storage bucket is still public, so a leaked file URL opens without auth. Moving to a private bucket + signed URLs is a larger change, not done.
+- **P1-13:** no transactional email exists. Assignment/decision/publication still notify in-app only. Needs an email provider + credentials (your decision); the contact form and password reset now hand off to `mailto:` as an interim (P1-12, P1-04).
+- **All P3 items** (§4) — not started.
+
+### Fix map (audit ID → commit)
+
+P0-01…P0-08, P1-01/02/04/05/06/07/08/09/10/11/12/14/15/16, P2-01…P2-23 → see `git log` (each commit is titled with its audit ID). P1-03 → covered by P0-05 + P1-02 (API side). P1-13 → not fixed (see above).
+
+---
 
 ## Verdict
 

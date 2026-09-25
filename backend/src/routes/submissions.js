@@ -1,10 +1,20 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
 const upload = makeUploader({ manuscript: 'document', copyrightForm: 'document' });
+
+// The journal's Aims & Scope areas; must match SUBJECT_AREAS in src/pages/SubmitForm.js.
+const SUBJECT_AREAS = [
+  'Civil, Mechanical, Electrical, and Electronics Engineering',
+  'Computer Science, Information Technology, and Artificial Intelligence',
+  'Industrial, Manufacturing, and Materials Engineering',
+  'Communication, Control, and Instrumentation Systems',
+  'Sustainable, Green, and Emerging Engineering Practices',
+];
 
 const ensureSupabase = (res) => {
   if (!supabase) {
@@ -17,6 +27,7 @@ const ensureSupabase = (res) => {
 // POST /api/submissions - handle full paper submission with file uploads
 router.post(
   '/',
+  requireAuth,
   handleUpload(upload.fields([
     { name: 'manuscript', maxCount: 1 },
     { name: 'copyrightForm', maxCount: 1 },
@@ -34,8 +45,30 @@ router.post(
         abstract,
         comments,
         coAuthors,
-        userId,
+        category,
       } = req.body || {};
+
+      if (category && !SUBJECT_AREAS.includes(category)) {
+        return res.status(400).json({ success: false, error: 'Choose a subject area from the list.' });
+      }
+
+      // The submitting author is the signed-in user, never a client-supplied id. When an
+      // admin submits on an author's behalf, the paper belongs to the registered author whose
+      // email matches the corresponding author's (if any), so they can follow it.
+      let ownerId = req.user.role === 'admin' ? null : req.user.id;
+      if (req.user.role === 'admin' && email) {
+        const { data: authorAccount, error: authorLookupError } = await supabase
+          .from('users')
+          .select('id')
+          .ilike('email', String(email).trim())
+          .eq('role', 'author')
+          .maybeSingle();
+        if (authorLookupError) {
+          console.warn('Could not look up the corresponding author account', authorLookupError);
+        } else if (authorAccount) {
+          ownerId = authorAccount.id;
+        }
+      }
 
       if (!fullName || !email || !affiliation || !paperTitle) {
         return res.status(400).json({ success: false, error: 'Required fields are missing.' });
@@ -48,7 +81,7 @@ router.post(
         return res.status(400).json({ success: false, error: 'Manuscript file is required.' });
       }
 
-      const pathPrefix = userId ? `user-${userId}` : 'anonymous';
+      const pathPrefix = ownerId ? `user-${ownerId}` : 'anonymous';
 
       const manuscriptUrl = await uploadFile(manuscriptFile, `${pathPrefix}/manuscripts`);
       const copyrightUrl = copyrightFile
@@ -92,7 +125,7 @@ router.post(
         abstract: String(abstract || '').trim() || comments || null,
         cover_letter: String(abstract || '').trim() ? (String(comments || '').trim() || null) : null,
         keywords: keywordArray,
-        category: null,
+        category: category || null,
         word_count: null,
         submission_fee: 150,
         payment_status: 'pending',
@@ -100,11 +133,8 @@ router.post(
         pdf_url: manuscriptUrl,
       };
 
-      if (userId) {
-        const parsedUserId = parseInt(userId, 10);
-        if (!Number.isNaN(parsedUserId)) {
-          insertPayload.main_author_id = parsedUserId;
-        }
+      if (ownerId) {
+        insertPayload.main_author_id = ownerId;
       }
 
       let { data, error } = await supabase
@@ -208,6 +238,7 @@ router.post(
 // POST /api/submissions/:paperId/revision - upload a revised manuscript for an existing paper
 router.post(
   '/:paperId/revision',
+  requireAuth,
   handleUpload(upload.single('manuscript')),
   async (req, res) => {
     try {
@@ -226,9 +257,9 @@ router.post(
       // Only allow revised uploads when revisions have been explicitly requested
       const { data: paper, error: paperError } = await supabase
         .from('papers')
-        .select('id, status')
+        .select('id, status, main_author_id')
         .eq('id', paperId)
-        .single();
+        .maybeSingle();
 
       if (paperError) {
         console.error('Error loading paper before revision upload', paperError);
@@ -239,12 +270,15 @@ router.post(
         return res.status(404).json({ success: false, error: 'Paper not found.' });
       }
 
+      if (paper.main_author_id !== req.user.id) {
+        return res.status(403).json({ success: false, error: 'Only the author who submitted this paper can upload a revision.', code: 'FORBIDDEN' });
+      }
+
       if (paper.status !== 'revisions_requested') {
         return res.status(400).json({ success: false, error: 'Revised manuscript can only be uploaded after a revision request.' });
       }
 
-      const { userId } = req.body || {};
-      const pathPrefix = userId ? `user-${userId}` : `paper-${paperId}`;
+      const pathPrefix = `user-${req.user.id}`;
 
       const manuscriptUrl = await uploadFile(
         manuscriptFile,

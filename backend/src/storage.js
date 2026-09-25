@@ -95,11 +95,33 @@ const sanitizeFilename = (originalName) => {
 
 const extensionOf = (name) => path.extname(String(name || '')).toLowerCase().replace('.', '');
 
+// The extension is only a claim; check the file's leading bytes ("magic numbers") match it.
+const startsWith = (buf, bytes, offset = 0) => bytes.every((b, i) => buf[offset + i] === b);
+const SIGNATURES = {
+  // PDF readers accept the header anywhere in the first 1 KB.
+  pdf: (buf) => buf.subarray(0, 1024).includes('%PDF-'),
+  doc: (buf) => startsWith(buf, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
+  docx: (buf) => startsWith(buf, [0x50, 0x4b, 0x03, 0x04]),
+  png: (buf) => startsWith(buf, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  jpg: (buf) => startsWith(buf, [0xff, 0xd8, 0xff]),
+  jpeg: (buf) => startsWith(buf, [0xff, 0xd8, 0xff]),
+  webp: (buf) => startsWith(buf, [0x52, 0x49, 0x46, 0x46]) && startsWith(buf, [0x57, 0x45, 0x42, 0x50], 8),
+};
+const contentMismatch = (ext) =>
+  new StorageError('FILE_CONTENT_MISMATCH', `This file is not a valid .${ext} file. Please upload the original document.`, 415);
+
 // Uploads a multer memory file and returns its public URL. Throws StorageError.
 // If the bucket is missing at upload time (e.g. it was deleted, or a getBucket
 // call gave a false positive), it recreates the bucket and retries once.
 const uploadFile = async (file, pathPrefix = '', allowRetry = true) => {
   if (!file) return null;
+
+  const ext = extensionOf(file.originalname);
+  const check = SIGNATURES[ext];
+  if (!check || !file.buffer || !check(file.buffer)) throw contentMismatch(ext || 'unknown');
+  // Store the content type for the verified extension, not the one the browser claimed.
+  const contentType = (DOCUMENT_TYPES[ext] || IMAGE_TYPES[ext])[0];
+
   if (!supabase) throw storageUnavailable(new Error('Supabase client not configured'));
   if (!(await ensureBucket())) throw storageUnavailable(new Error('Bucket unavailable'));
 
@@ -109,7 +131,7 @@ const uploadFile = async (file, pathPrefix = '', allowRetry = true) => {
 
   const { error } = await supabase.storage
     .from(bucket)
-    .upload(filePath, file.buffer, { contentType: file.mimetype, upsert: false });
+    .upload(filePath, file.buffer, { contentType, upsert: false });
 
   if (error) {
     const msg = error.message || String(error);
@@ -120,7 +142,7 @@ const uploadFile = async (file, pathPrefix = '', allowRetry = true) => {
       bucketReady = false;
       return uploadFile(file, pathPrefix, false);
     }
-    console.error(`[storage] Upload failed for "${filePath}" (${file.mimetype}, ${file.size} bytes): ${msg}`);
+    console.error(`[storage] Upload failed for "${filePath}" (${contentType}, ${file.size} bytes): ${msg}`);
     throw storageUnavailable(error);
   }
 

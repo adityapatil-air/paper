@@ -49,7 +49,7 @@ const Landing = () => {
       <section className="journal-hero">
         <div className="journal-container hero-grid">
           <div className="hero-copy">
-            <span className="hero-badge"><span className="dot-live" /> Trusted by 500+ Researchers Worldwide</span>
+            <span className="hero-badge"><span className="dot-live" /> Peer-reviewed · Open access · ISSN 3139-5961</span>
             <p className="eyebrow">INTERNATIONAL JOURNAL OF</p>
             <h1>Engineering Practices<br />and Applications</h1>
             <p className="hero-description">A peer-reviewed, open-access journal advancing research, innovation, and real-world applications across engineering disciplines.</p>
@@ -70,7 +70,7 @@ const Landing = () => {
       <main className="journal-container">
         <section className="content-section articles-section">
           <div className="section-heading"><div><p className="eyebrow blue">RESEARCH & PUBLICATION</p><h2>Latest Articles</h2></div><Link to="/papers" className="section-link">View All Articles →</Link></div>
-          {loading ? <div className="loading-state">Loading published papers...</div> : papers.length === 0 ? <div className="empty-state">No published papers are available at this time.</div> : <div className="article-grid">{papers.slice(0, 3).map((paper) => <article className="article-card" key={paper.id}><span className="article-tag">{paper.category || 'Research Article'}</span><h3>{paper.title}</h3><p className="article-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p><small>Published: {formatDate(paper.publicationDate)}</small>{paper.doi && <small>DOI: {paper.doi}</small>}<div className="article-actions"><Link to={`/paper/${paper.id}`} className="button button-small button-light">Read Abstract</Link>{paper.pdfUrl && <a href={paper.pdfUrl} className="button button-small button-dark" target="_blank" rel="noreferrer">↓&nbsp; Download PDF</a>}</div></article>)}</div>}
+          {loading ? <div className="loading-state">Loading published papers...</div> : papers.length === 0 ? <div className="empty-state">No published papers are available at this time.</div> : <div className="article-grid">{papers.slice(0, 3).map((paper) => <article className="article-card" key={paper.id}><span className="article-tag">{paper.category || 'Research Article'}</span><h3>{paper.title}</h3><p className="article-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p><small>Published: {formatDate(paper.publicationDate)}</small>{paper.doi && <small>DOI: {paper.doi}</small>}<div className="article-actions"><Link to={`/p/${paper.id}`} className="button button-small button-light">Read Abstract</Link>{paper.pdfUrl && <a href={paper.pdfUrl} className="button button-small button-dark" target="_blank" rel="noreferrer">↓&nbsp; Download PDF</a>}</div></article>)}</div>}
         </section>
 
         <section className="content-section current-issue-section" aria-labelledby="home-current-issue">

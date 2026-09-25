@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { mockAPI } from '../data/mockData';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { formatDate } from '../components/ui/DashHeader';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -143,12 +145,17 @@ const BrowsePapers = () => {
     return groups;
   };
 
-  const toggleIssueOpen = (key) => {
+  const toggleIssueOpen = (key, isOpen) => {
     setOpenIssueKeys((prev) => ({
       ...prev,
-      [key]: !prev[key],
+      [key]: !isOpen,
     }));
   };
+
+  // Groups start open while searching or filtering (so matches are visible), and the
+  // newest group starts open otherwise; the user's own toggles win.
+  const isFiltering = Boolean(normalizedSearch) || selectedCategory !== 'all';
+  const isGroupOpen = (key, index) => openIssueKeys[key] ?? (isFiltering || index === 0);
 
   const handleOpenPaper = (paper) => {
     setSelectedPaper(paper);
@@ -241,9 +248,10 @@ const BrowsePapers = () => {
         <div className="journal-container">
           <div className="papers-toolbar">
             <div className="form-group">
-              <label>What are you looking for?</label>
+              <label htmlFor="browse-search">What are you looking for?</label>
               <input
-                type="text"
+                id="browse-search"
+                type="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Enter keywords, topic, author name, or phrase..."
@@ -252,8 +260,9 @@ const BrowsePapers = () => {
             </div>
 
             <div className="form-group">
-              <label>Section (Category)</label>
+              <label htmlFor="browse-category">Section (Category)</label>
               <select
+                id="browse-category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="form-select"
@@ -267,30 +276,35 @@ const BrowsePapers = () => {
             </div>
           </div>
 
+          <p className="results-note" role="status">
+            {filteredPapers.length} published paper{filteredPapers.length === 1 ? '' : 's'}{isFiltering ? (filteredPapers.length === 1 ? ' matches your search' : ' match your search') : ''}
+          </p>
+
           {filteredPapers.length === 0 ? (
             <div className="empty-state">No published papers found matching your search.</div>
           ) : (
-            groupedByIssue().map((group) => {
-              const isOpen = openIssueKeys[group.key] === true;
+            groupedByIssue().map((group, index) => {
+              const isOpen = isGroupOpen(group.key, index);
+              const panelId = `issue-group-${index}`;
 
               return (
                 <div key={group.key} className="issue-group">
-                  <button type="button" onClick={() => toggleIssueOpen(group.key)} className="issue-toggle">
-                    <h2>{group.label}</h2>
-                    <span className={`chevron${isOpen ? ' open' : ''}`}>▾</span>
+                  <button type="button" onClick={() => toggleIssueOpen(group.key, isOpen)} className="issue-toggle" aria-expanded={isOpen} aria-controls={panelId}>
+                    <h2>{group.label} <span className="sr-only">({group.papers.length} paper{group.papers.length === 1 ? '' : 's'})</span></h2>
+                    <span className={`chevron${isOpen ? ' open' : ''}`} aria-hidden="true">▾</span>
                   </button>
 
                   {isOpen && (
-                    <div className="article-grid" style={{ marginTop: 14 }}>
+                    <div className="article-grid" id={panelId} style={{ marginTop: 14 }}>
                       {group.papers.map((paper) => (
                         <article className="article-card" key={paper.id}>
                           {paper.category && <span className="article-tag">{paper.category}</span>}
-                          <h3 style={{ cursor: 'pointer' }} onClick={() => handleOpenPaper(paper)}>{paper.title}</h3>
+                          <h3><Link to={`/p/${paper.id}`}>{paper.title}</Link></h3>
                           <p className="article-authors">
                             Authors: {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors || 'N/A'}
                           </p>
                           {paper.publicationDate && (
-                            <small>Published: {new Date(paper.publicationDate).toLocaleDateString()}</small>
+                            <small>Published: {formatDate(paper.publicationDate)}</small>
                           )}
                           <div className="article-actions">
                             <button type="button" className="button button-small button-light" onClick={() => handleOpenPaper(paper)}>
@@ -332,13 +346,13 @@ const BrowsePapers = () => {
                     onLoadSuccess={onDocumentLoadSuccess}
                     onLoadError={(err) => setPdfError('Failed to load PDF.')}
                     loading={<LoadingSpinner size="sm" text="Loading PDF..." />}
-                    error={<div style={{ color: '#ffd9d9', fontSize: 10 }}>Failed to load PDF.</div>}
+                    error={<div style={{ color: '#ffd9d9', fontSize: 13 }}>Failed to load PDF.</div>}
                   >
                     <Page pageNumber={pageNumber} height={650} scale={zoom} />
                   </Document>
 
                   {pdfError && (
-                    <div style={{ color: '#ffd9d9', fontSize: 9, marginTop: 10 }}>{pdfError}</div>
+                    <div style={{ color: '#ffd9d9', fontSize: 13, marginTop: 10 }}>{pdfError}</div>
                   )}
 
                   {numPages && (

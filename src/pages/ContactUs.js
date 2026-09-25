@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const EDITORIAL_EMAIL = 'editor@ijepa.org';
+
 const ContactUs = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -7,33 +9,20 @@ const ContactUs = () => {
     subject: '',
     message: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState('');
+  const [composeOpened, setComposeOpened] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (submitError) setSubmitError('');
   };
 
-  const handleSubmit = async (e) => {
+  // The site has no mail service, so the message is handed to the visitor's email app,
+  // addressed to the editorial office. The form keeps its text in case no app opens.
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitError('');
-
-    try {
-      // Replace with real API call in production
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      setSubmitSuccess(true);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-      setTimeout(() => setSubmitSuccess(false), 5000);
-    } catch (error) {
-      setSubmitError('Failed to send message. Please try again later.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    const body = `${formData.message}\n\n— ${formData.name} (${formData.email})`;
+    window.location.href = `mailto:${EDITORIAL_EMAIL}?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(body)}`;
+    setComposeOpened(true);
   };
 
   return (
@@ -91,23 +80,20 @@ const ContactUs = () => {
           <div>
             <h2>Send a Message</h2>
 
-            {submitSuccess && (
-              <div className="contact-note" style={{ marginTop: 0, marginBottom: 14 }}>
-                Message sent successfully! We'll get back to you soon.
-              </div>
-            )}
+            <p>This form opens your email app with the message addressed to <a href={`mailto:${EDITORIAL_EMAIL}`}>{EDITORIAL_EMAIL}</a>.</p>
 
-            {submitError && (
-              <div className="contact-note" style={{ marginTop: 0, marginBottom: 14, background: '#fbe9e9', color: '#8a2b2b' }}>
-                {submitError}
+            {composeOpened && (
+              <div className="contact-note" role="status" style={{ marginTop: 0, marginBottom: 14 }}>
+                Your email app should now show the message. Send it from there. If nothing opened, email <a href={`mailto:${EDITORIAL_EMAIL}`}>{EDITORIAL_EMAIL}</a> directly.
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>Full Name *</label>
+                <label htmlFor="contact-name">Full Name *</label>
                 <input
                   type="text"
+                  id="contact-name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
@@ -118,9 +104,10 @@ const ContactUs = () => {
               </div>
 
               <div className="form-group">
-                <label>Email *</label>
+                <label htmlFor="contact-email">Email *</label>
                 <input
                   type="email"
+                  id="contact-email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -131,9 +118,10 @@ const ContactUs = () => {
               </div>
 
               <div className="form-group">
-                <label>Subject *</label>
+                <label htmlFor="contact-subject">Subject *</label>
                 <input
                   type="text"
+                  id="contact-subject"
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
@@ -144,8 +132,9 @@ const ContactUs = () => {
               </div>
 
               <div className="form-group">
-                <label>Message *</label>
+                <label htmlFor="contact-message">Message *</label>
                 <textarea
+                  id="contact-message"
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
@@ -158,11 +147,10 @@ const ContactUs = () => {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
                 className="button button-primary"
                 style={{ width: '100%' }}
               >
-                {isSubmitting ? 'Sending...' : 'Send Message'}
+                Continue in email app
               </button>
             </form>
           </div>

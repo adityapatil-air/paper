@@ -1,6 +1,8 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { Readable } = require('stream');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/requireAdmin');
 
 const router = express.Router();
 
@@ -13,7 +15,7 @@ const ensureSupabase = (res) => {
 };
 
 // DELETE /api/papers/:id - delete a paper by id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -89,15 +91,54 @@ const loadAssignmentsByPaper = async () => {
   return assignmentsByPaperId;
 };
 
-// GET /api/papers - all papers
-router.get('/', async (req, res) => {
+// Published papers are public. Anything else is visible only to admins, the paper's
+// author and its assigned reviewers.
+const canViewPaper = (user, row, assignmentsByPaperId) => {
+  if (row.status === 'published') return true;
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  if (row.main_author_id === user.id) return true;
+  return (assignmentsByPaperId[row.id] || []).includes(user.id);
+};
+
+// Double-blind review: reviewers do not receive author names for unpublished papers.
+const hideAuthorsFromReviewer = (paper, user) => (
+  user?.role === 'reviewer' && paper.status !== 'published'
+    ? { ...paper, authors: [], authorsHidden: true }
+    : paper
+);
+
+// GET /api/papers - the caller's papers: admins see every paper, authors only the papers
+// they submitted, reviewers only the papers assigned to them. Guests use /published.
+router.get('/', requireAuth, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
-    const { data: paperRows, error } = await supabase
+    const { id: userId, role } = req.user;
+    if (!['admin', 'author', 'reviewer'].includes(role)) {
+      return res.json({ success: true, papers: [] });
+    }
+
+    const assignmentsByPaperId = await loadAssignmentsByPaper();
+
+    let query = supabase
       .from('papers')
       .select('*')
       .order('submission_date', { ascending: false });
+
+    if (role === 'author') {
+      query = query.eq('main_author_id', userId);
+    } else if (role === 'reviewer') {
+      const assignedIds = Object.keys(assignmentsByPaperId)
+        .filter((paperId) => assignmentsByPaperId[paperId].includes(userId))
+        .map(Number);
+      if (assignedIds.length === 0) {
+        return res.json({ success: true, papers: [] });
+      }
+      query = query.in('id', assignedIds);
+    }
+
+    const { data: paperRows, error } = await query;
 
     if (error) {
       console.error('Error fetching papers', error, {
@@ -109,8 +150,7 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch papers.' });
     }
 
-    const assignmentsByPaperId = await loadAssignmentsByPaper();
-    const papers = (paperRows || []).map((row) => mapPaperRow(row, assignmentsByPaperId));
+    const papers = (paperRows || []).map((row) => hideAuthorsFromReviewer(mapPaperRow(row, assignmentsByPaperId), req.user));
 
     return res.json({ success: true, papers });
   } catch (err) {
@@ -151,7 +191,7 @@ router.get('/published', async (req, res) => {
 });
 
 // GET /api/papers/:id/download - stream a paper PDF through this server
-router.get('/:id/download', async (req, res) => {
+router.get('/:id/download', optionalAuth, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -162,7 +202,7 @@ router.get('/:id/download', async (req, res) => {
 
     const { data: row, error } = await supabase
       .from('papers')
-      .select('id, title, pdf_url')
+      .select('id, title, pdf_url, status, main_author_id')
       .eq('id', id)
       .maybeSingle();
 
@@ -176,7 +216,8 @@ router.get('/:id/download', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch paper.' });
     }
 
-    if (!row) {
+    const downloadAssignments = row && row.status !== 'published' ? await loadAssignmentsByPaper() : {};
+    if (!row || !canViewPaper(req.user, row, downloadAssignments)) {
       return res.status(404).json({ success: false, error: 'Paper not found.' });
     }
 
@@ -213,8 +254,8 @@ router.get('/:id/download', async (req, res) => {
   }
 });
 
-// GET /api/papers/:id - single paper by id
-router.get('/:id', async (req, res) => {
+// GET /api/papers/:id - single paper by id (see canViewPaper)
+router.get('/:id', optionalAuth, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -239,12 +280,12 @@ router.get('/:id', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch paper.' });
     }
 
-    if (!row) {
+    const assignmentsByPaperId = await loadAssignmentsByPaper();
+    if (!row || !canViewPaper(req.user, row, assignmentsByPaperId)) {
       return res.status(404).json({ success: false, error: 'Paper not found.' });
     }
 
-    const assignmentsByPaperId = await loadAssignmentsByPaper();
-    const paper = mapPaperRow(row, assignmentsByPaperId);
+    const paper = hideAuthorsFromReviewer(mapPaperRow(row, assignmentsByPaperId), req.user);
 
     return res.json({ success: true, paper });
   } catch (err) {
@@ -253,8 +294,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/papers - submit a new paper
-router.post('/', async (req, res) => {
+// POST /api/papers - submit a new paper (metadata only; the site uses /api/submissions).
+// Owner, fee and payment status are set by the server, never taken from the request.
+router.post('/', requireAuth, async (req, res) => {
   try {
     if (!ensureSupabase(res)) return;
 
@@ -265,9 +307,6 @@ router.post('/', async (req, res) => {
       keywords,
       category,
       wordCount,
-      submissionFee,
-      paymentStatus,
-      mainAuthorId,
     } = req.body || {};
 
     if (!title || !authors || !Array.isArray(authors) || authors.length === 0) {
@@ -276,8 +315,6 @@ router.post('/', async (req, res) => {
 
     const mappedKeywords = Array.isArray(keywords) ? keywords : [];
     const wordCountInt = wordCount ? parseInt(wordCount, 10) : null;
-    const submissionFeeNumber = typeof submissionFee === 'number' ? submissionFee : 150;
-    const paymentStatusValue = paymentStatus || 'pending';
 
     const insertPayload = {
       title,
@@ -286,13 +323,13 @@ router.post('/', async (req, res) => {
       keywords: mappedKeywords,
       category: category || null,
       word_count: wordCountInt,
-      submission_fee: submissionFeeNumber,
-      payment_status: paymentStatusValue,
+      submission_fee: 150,
+      payment_status: 'pending',
       status: 'submitted',
     };
 
-    if (mainAuthorId) {
-      insertPayload.main_author_id = mainAuthorId;
+    if (req.user.role !== 'admin') {
+      insertPayload.main_author_id = req.user.id;
     }
 
     const { data, error } = await supabase

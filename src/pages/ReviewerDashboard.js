@@ -6,11 +6,12 @@ import { useToast } from '../components/ui/Toast';
 import Icon from '../components/ui/Icon';
 import Modal from '../components/ui/Modal';
 import EmptyState from '../components/ui/EmptyState';
+import Alert from '../components/Alert';
 import Spinner from '../components/ui/Spinner';
 import { Badge } from '../components/ui/StatusBadge';
 import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
-import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
+import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, paperAuthorsLabel } from '../components/ui/DashHeader';
 
 const RATING_LABELS = { 1: 'Poor', 2: 'Below average', 3: 'Average', 4: 'Good', 5: 'Excellent' };
 const EMPTY_REVIEW = { rating: '', recommendation: '', comments: '' };
@@ -30,6 +31,7 @@ const ReviewerDashboard = () => {
   const [assignedPapers, setAssignedPapers] = useState([]);
   const [completedReviews, setCompletedReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   // Only the first load shows the skeleton; later refreshes keep the current content on screen.
   const hasLoadedOnce = useRef(false);
   useEffect(() => { if (!loading) hasLoadedOnce.current = true; }, [loading]);
@@ -48,6 +50,7 @@ const ReviewerDashboard = () => {
   const loadReviewerData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError('');
 
       // Get assigned papers
       const allPapers = await mockAPI.getAllPapers();
@@ -65,6 +68,7 @@ const ReviewerDashboard = () => {
       setReviewerNotifications(Array.isArray(notifResult) ? notifResult : []);
     } catch (error) {
       console.error('Error loading reviewer data:', error);
+      setLoadError(error?.message || 'We couldn’t load your review assignments.');
     } finally {
       setLoading(false);
     }
@@ -132,7 +136,7 @@ const ReviewerDashboard = () => {
         setSelectedPaper(null);
         loadReviewerData();
       } else {
-        toast.error('Failed to submit review. Please try again.');
+        toast.error(result.error || 'Failed to submit review. Please try again.');
       }
     } catch (error) {
       toast.error('An error occurred while submitting the review.');
@@ -158,7 +162,8 @@ const ReviewerDashboard = () => {
     const reviewsForPaper = completedReviews.filter((review) => review.paperId === paper.id);
     const totalRounds = getRevisionRounds(paper);
     const reviewCount = reviewsForPaper.length;
-    const isCompleted = reviewCount >= totalRounds;
+    // Only papers still with reviewers can need a review (not those awaiting a revision or decided).
+    const isCompleted = paper.status !== 'under_review' || reviewCount >= totalRounds;
     const isRevisionRound = !isCompleted && totalRounds > 1;
 
     return {
@@ -245,6 +250,15 @@ const ReviewerDashboard = () => {
           )}
         />
 
+        {loadError && (
+          <Alert type="error" title="We couldn’t load your review assignments" message={loadError}>
+            <button type="button" className="button button-small button-primary" onClick={loadReviewerData} disabled={loading}>
+              {loading ? 'Retrying…' : 'Try again'}
+            </button>
+          </Alert>
+        )}
+
+        {!loadError && (<>
         <div className="stat-cards stat-cards-3">
           <StatCard label="Assigned papers" value={stats.assigned} icon="inbox" />
           <StatCard label="Pending reviews" value={stats.pending} icon="clock" tone="amber" />
@@ -320,7 +334,7 @@ const ReviewerDashboard = () => {
                             <tr key={`${paper.id}-${totalRounds}`}>
                               <td className="cell-primary">
                                 <button type="button" className="cell-title-btn" onClick={() => setDetailItem(item)}>{paper.title}</button>
-                                <span className="cell-sub">{joinAuthors(paper.authors)}</span>
+                                <span className="cell-sub">{paperAuthorsLabel(paper)}</span>
                               </td>
                               <td data-label="Category">{paper.category || '—'}</td>
                               <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
@@ -384,7 +398,7 @@ const ReviewerDashboard = () => {
                       <tr key={review.id}>
                         <td className="cell-primary">
                           <button type="button" className="cell-title-btn" onClick={() => setViewReview({ review, paper })}>{paper.title}</button>
-                          <span className="cell-sub">{joinAuthors(paper.authors)}</span>
+                          <span className="cell-sub">{paperAuthorsLabel(paper)}</span>
                         </td>
                         <td data-label="Reviewed on" className="nowrap">{formatDate(review.submittedDate)}</td>
                         <td data-label="Rating"><Stars rating={review.rating} /></td>
@@ -406,6 +420,7 @@ const ReviewerDashboard = () => {
             )}
           </TabPanel>
         )}
+        </>)}
       </div>
 
       {/* Assigned paper details */}
@@ -432,7 +447,7 @@ const ReviewerDashboard = () => {
           <>
             <div className="dash-panel-head">{assignmentBadge(detailItem)}</div>
             <dl className="meta-list">
-              <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(detailItem.paper.authors) || '—'}</dd></div>
+              <div className="is-wide"><dt>Authors</dt><dd>{paperAuthorsLabel(detailItem.paper) || '—'}</dd></div>
               <div><dt>Category</dt><dd>{detailItem.paper.category || '—'}</dd></div>
               <div><dt>Submitted</dt><dd>{formatDate(detailItem.paper.submissionDate)}</dd></div>
               {detailItem.paper.reviewDeadline && <div><dt>Deadline</dt><dd>{formatDate(detailItem.paper.reviewDeadline)}</dd></div>}
@@ -483,7 +498,7 @@ const ReviewerDashboard = () => {
                 <dt>Recommendation</dt>
                 <dd><Badge tone={RECOMMENDATIONS[viewReview.review.recommendation]?.tone || 'neutral'}>{recommendationLabel(viewReview.review.recommendation)}</Badge></dd>
               </div>
-              <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(viewReview.paper.authors)}</dd></div>
+              <div className="is-wide"><dt>Authors</dt><dd>{paperAuthorsLabel(viewReview.paper)}</dd></div>
             </dl>
             <div className="detail-section">
               <h3>Review comments</h3>
@@ -514,7 +529,7 @@ const ReviewerDashboard = () => {
           <form id="review-form" onSubmit={handleSubmitReview} noValidate>
             <div className="paper-ref">
               <dl className="meta-list">
-                <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(selectedPaper.authors)}</dd></div>
+                <div className="is-wide"><dt>Authors</dt><dd>{paperAuthorsLabel(selectedPaper)}</dd></div>
                 <div><dt>Category</dt><dd>{selectedPaper.category || '—'}</dd></div>
                 <div><dt>Submitted</dt><dd>{formatDate(selectedPaper.submissionDate)}</dd></div>
                 {selectedPaper.reviewDeadline && <div><dt>Deadline</dt><dd>{formatDate(selectedPaper.reviewDeadline)}</dd></div>}

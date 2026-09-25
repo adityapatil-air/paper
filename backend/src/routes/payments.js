@@ -2,8 +2,41 @@ const express = require('express');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { supabase } = require('../supabaseClient');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
+
+// The paper's author may pay only once it is accepted and not yet paid.
+const loadPayablePaper = async (req, res, rawPaperId) => {
+    const paperId = parseInt(rawPaperId, 10);
+    if (Number.isNaN(paperId)) {
+        res.status(400).json({ success: false, error: 'paperId is required.' });
+        return null;
+    }
+    const { data: paper, error } = await supabase
+        .from('papers')
+        .select('id, title, status, main_author_id, submission_fee, payment_status')
+        .eq('id', paperId)
+        .maybeSingle();
+    if (error) {
+        console.error('Error loading paper for payment', error);
+        res.status(500).json({ success: false, error: 'Failed to load paper.' });
+        return null;
+    }
+    if (!paper || paper.main_author_id !== req.user.id) {
+        res.status(404).json({ success: false, error: 'Paper not found.' });
+        return null;
+    }
+    if (paper.status !== 'accepted') {
+        res.status(409).json({ success: false, error: 'Payment is due only after the paper is accepted.' });
+        return null;
+    }
+    if (paper.payment_status === 'paid') {
+        res.status(409).json({ success: false, error: 'This paper is already paid.' });
+        return null;
+    }
+    return paper;
+};
 
  const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
 
@@ -20,19 +53,24 @@ router.get('/key', (req, res) => {
 });
 
 // POST /api/payments/create-order
-router.post('/create-order', async (req, res) => {
+// The amount comes from the paper's submission_fee, never from the client.
+router.post('/create-order', requireAuth, async (req, res) => {
     try {
-        const { paperId, amount } = req.body;
+        const paper = await loadPayablePaper(req, res, req.body?.paperId);
+        if (!paper) return;
 
-        // Default to 150 INR if not specified
-        const amountInRupees = amount || 150;
+        const amountInRupees = Number(paper.submission_fee);
+        if (!Number.isFinite(amountInRupees) || amountInRupees <= 0) {
+            console.error('Paper has no valid submission_fee', { paperId: paper.id, submission_fee: paper.submission_fee });
+            return res.status(500).json({ success: false, error: 'The fee for this paper is not configured.' });
+        }
 
         const options = {
-            amount: amountInRupees * 100, // amount in the smallest currency unit (paise)
+            amount: Math.round(amountInRupees * 100), // amount in the smallest currency unit (paise)
             currency: "INR",
-            receipt: `receipt_paper_${paperId}`,
+            receipt: `receipt_paper_${paper.id}`,
             notes: {
-                paperId: paperId
+                paperId: String(paper.id)
             }
         };
 
@@ -50,39 +88,51 @@ router.post('/create-order', async (req, res) => {
 });
 
 // POST /api/payments/verify-payment
-router.post('/verify-payment', async (req, res) => {
+// A valid signature proves the payment belongs to the order; the order's own notes and
+// status (fetched from Razorpay) prove it was for this paper and fully paid.
+router.post('/verify-payment', requireAuth, async (req, res) => {
     try {
         const {
             razorpayOrderId,
             razorpayPaymentId,
             razorpaySignature,
-            paperId
-        } = req.body;
+        } = req.body || {};
+
+        if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+            return res.status(400).json({ success: false, error: 'Missing payment details.' });
+        }
+
+        const paper = await loadPayablePaper(req, res, req.body?.paperId);
+        if (!paper) return;
 
         const body = razorpayOrderId + "|" + razorpayPaymentId;
 
         const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
             .update(body.toString())
             .digest('hex');
 
-        const isAuthentic = expectedSignature === razorpaySignature;
+        const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+        const givenBuf = Buffer.from(String(razorpaySignature), 'utf8');
+        const isAuthentic = expectedBuf.length === givenBuf.length && crypto.timingSafeEqual(expectedBuf, givenBuf);
 
         if (isAuthentic) {
-            // Update payment status in Supabase
-            if (paperId) {
-                const { error } = await supabase
-                    .from('papers')
-                    .update({ payment_status: 'paid' })
-                    .eq('id', paperId);
+            const order = await razorpay.orders.fetch(razorpayOrderId);
+            if (String(order?.notes?.paperId) !== String(paper.id) || order?.status !== 'paid') {
+                return res.status(400).json({ success: false, error: 'This payment does not match the paper.' });
+            }
 
-                if (error) {
-                    console.error('Error updating payment status in Supabase', error);
-                    return res.status(500).json({
-                        success: false,
-                        message: "Payment verified but failed to update paper status in database"
-                    });
-                }
+            const { error } = await supabase
+                .from('papers')
+                .update({ payment_status: 'paid' })
+                .eq('id', paper.id);
+
+            if (error) {
+                console.error('Error updating payment status in Supabase', error);
+                return res.status(500).json({
+                    success: false,
+                    message: "Payment verified but failed to update paper status in database"
+                });
             }
 
             res.json({

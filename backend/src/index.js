@@ -18,6 +18,12 @@ const settingsRoutes = require('./routes/settings');
 
 const app = express();
 
+// Behind a reverse proxy (Nginx, Render) every request arrives from the proxy's address;
+// set TRUST_PROXY=true there so req.ip (used by the auth rate limits) is the client's.
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
+
 // Basic config
 const PORT = process.env.PORT || 4000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';

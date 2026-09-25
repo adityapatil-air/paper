@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { authHeaders } from '../data/mockData';
 import Alert from '../components/Alert';
 import Icon from '../components/ui/Icon';
 import Modal from '../components/ui/Modal';
@@ -25,7 +26,16 @@ const ABSTRACT_MAX_WORDS = 300;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DRAFT_KEY_PREFIX = 'ijepa.submissionDraft.v1';
 
-const EMPTY_FORM = { fullName: '', email: '', affiliation: '', paperTitle: '', abstract: '', comments: '' };
+const EMPTY_FORM = { fullName: '', email: '', affiliation: '', paperTitle: '', category: '', abstract: '', comments: '' };
+
+// The journal's Aims & Scope areas (home page); the backend accepts the same list.
+const SUBJECT_AREAS = [
+  'Civil, Mechanical, Electrical, and Electronics Engineering',
+  'Computer Science, Information Technology, and Artificial Intelligence',
+  'Industrial, Manufacturing, and Materials Engineering',
+  'Communication, Control, and Instrumentation Systems',
+  'Sustainable, Green, and Emerging Engineering Practices',
+];
 const COAUTHOR_FIELDS = ['fullName', 'affiliation', 'email'];
 
 const SECTIONS = [
@@ -43,6 +53,7 @@ const GUIDELINES = [
   'Use the IEEE reference style throughout.',
   'The work must be original and not under review elsewhere.',
   'All submissions go through double-blind peer review.',
+  'Remove author names and affiliations from the manuscript file; you enter them in this form.',
 ];
 
 const countWords = (text) => {
@@ -90,6 +101,8 @@ const validateField = (name, rawValue) => {
       return value ? '' : 'Enter your affiliation or institution.';
     case 'paperTitle':
       return value ? '' : 'Enter the title of your paper.';
+    case 'category':
+      return value ? '' : 'Choose the subject area of your paper.';
     case 'abstract': {
       const words = countWords(value);
       if (!words) return 'Add an abstract for your paper.';
@@ -391,7 +404,7 @@ const SubmitForm = () => {
 
   const errors = useMemo(() => {
     const next = {};
-    ['fullName', 'email', 'affiliation', 'paperTitle', 'abstract', 'comments'].forEach((name) => {
+    ['fullName', 'email', 'affiliation', 'paperTitle', 'category', 'abstract', 'comments'].forEach((name) => {
       const msg = validateField(name, form[name]);
       if (msg) next[name] = msg;
     });
@@ -415,21 +428,21 @@ const SubmitForm = () => {
   const fieldOrder = useMemo(() => [
     'fullName', 'email', 'affiliation',
     ...coAuthors.flatMap((c) => COAUTHOR_FIELDS.map((f) => coKey(c.id, f))),
-    'paperTitle', 'abstract', 'manuscript', 'comments',
+    'paperTitle', 'category', 'abstract', 'manuscript', 'comments',
   ], [coAuthors]);
 
   const sectionErrors = (keys) => keys.some((k) => visibleError(k));
   const coAuthorKeys = coAuthors.flatMap((c) => COAUTHOR_FIELDS.map((f) => coKey(c.id, f)));
   const authorDone = !errors.fullName && !errors.email && !errors.affiliation;
   const coAuthorsDone = coAuthorKeys.every((k) => !errors[k]);
-  const detailsDone = !errors.paperTitle && !errors.abstract;
+  const detailsDone = !errors.paperTitle && !errors.category && !errors.abstract;
   const manuscriptDone = Boolean(manuscript) && !fileError;
   const readyToReview = authorDone && coAuthorsDone && detailsDone && manuscriptDone && !errors.comments;
 
   const sectionState = {
     author: { done: authorDone, error: sectionErrors(['fullName', 'email', 'affiliation']) },
     coauthors: { done: coAuthorsDone && coAuthors.some(coAuthorHasContent), error: sectionErrors(coAuthorKeys) },
-    details: { done: detailsDone, error: sectionErrors(['paperTitle', 'abstract']) },
+    details: { done: detailsDone, error: sectionErrors(['paperTitle', 'category', 'abstract']) },
     manuscript: { done: manuscriptDone, error: Boolean(visibleError('manuscript')) },
     cover: { done: Boolean(form.comments.trim()) && !errors.comments, error: sectionErrors(['comments']) },
     review: { done: false, error: false },
@@ -653,6 +666,7 @@ const SubmitForm = () => {
     data.append('email', form.email.trim());
     data.append('affiliation', form.affiliation.trim());
     data.append('paperTitle', form.paperTitle.trim());
+    data.append('category', form.category);
     data.append('abstract', form.abstract.trim());
     data.append('keywords', keywords.join(', '));
     data.append('comments', form.comments.trim());
@@ -673,7 +687,7 @@ const SubmitForm = () => {
 
     let failure = '';
     try {
-      const response = await fetch(`${API_BASE_URL}/api/submissions`, { method: 'POST', body: buildFormData() });
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, { method: 'POST', headers: authHeaders(), body: buildFormData() });
       let data = null;
       try { data = await response.json(); } catch (e) { data = null; }
 
@@ -975,6 +989,23 @@ const SubmitForm = () => {
                 )}
               </Field>
 
+              <Field id="category" label="Subject area" required error={visibleError('category')}>
+                {(a11y) => (
+                  <select
+                    {...a11y}
+                    name="category"
+                    value={form.category}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    required
+                    className={`form-select${visibleError('category') ? ' is-invalid' : ''}`}
+                  >
+                    <option value="">Choose the area that fits best…</option>
+                    {SUBJECT_AREAS.map((area) => <option key={area} value={area}>{area}</option>)}
+                  </select>
+                )}
+              </Field>
+
               <Field
                 id="abstract"
                 label="Abstract"
@@ -1042,7 +1073,7 @@ const SubmitForm = () => {
               section={SECTIONS[3]}
               index={3}
               complete={sectionState.manuscript.done}
-              description="Upload the full manuscript prepared with the IJEPA template."
+              description="Upload the full manuscript prepared with the IJEPA template, without author names or affiliations (reviewers must not see who wrote it)."
               headingRef={(el) => { headingRefs.current.manuscript = el; }}
             >
               <div className="field">
@@ -1158,7 +1189,7 @@ const SubmitForm = () => {
               <div className="review-grid">
                 {[
                   { label: 'Author information', ok: authorDone && coAuthorsDone, value: authorDone ? `${form.fullName} · ${form.email}${filledCoAuthors.length ? ` · ${filledCoAuthors.length} co-author${filledCoAuthors.length === 1 ? '' : 's'}` : ''}` : 'Name, email and affiliation are required', section: 'author' },
-                  { label: 'Paper details', ok: detailsDone, value: detailsDone ? `${form.paperTitle} · ${abstractWords}-word abstract${keywords.length ? ` · ${keywords.length} keyword${keywords.length === 1 ? '' : 's'}` : ''}` : 'Title and a 150–300 word abstract are required', section: 'details' },
+                  { label: 'Paper details', ok: detailsDone, value: detailsDone ? `${form.paperTitle} · ${form.category} · ${abstractWords}-word abstract${keywords.length ? ` · ${keywords.length} keyword${keywords.length === 1 ? '' : 's'}` : ''}` : 'Title and a 150–300 word abstract are required', section: 'details' },
                   { label: 'Manuscript', ok: manuscriptDone, value: manuscript ? `${manuscript.name} (${formatBytes(manuscript.size)})` : 'No file attached yet', section: 'manuscript' },
                   { label: 'Cover letter', ok: Boolean(form.comments.trim()), optional: true, value: form.comments.trim() ? `${coverLength} characters` : 'Not added (optional)', section: 'cover' },
                 ].map((row) => (

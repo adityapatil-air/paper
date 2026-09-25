@@ -9,9 +9,9 @@ const getApiBaseUrl = () => {
 };
 const API_BASE_URL = getApiBaseUrl();
 
-// Backend-issued JWT (from /api/auth/login) for admin-only endpoints.
+// Backend-issued JWT (from /api/auth/login), sent on every signed-in request.
 const AUTH_TOKEN_KEY = 'authToken';
-const authHeaders = () => {
+export const authHeaders = () => {
   try {
     const token = window.localStorage.getItem(AUTH_TOKEN_KEY);
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -185,26 +185,23 @@ export const mockAPI = {
     }
   },
 
+  // Papers visible to the signed-in user (admin: all, author: own, reviewer: assigned).
+  // Throws on failure so dashboards can show an error instead of an empty list.
   getAllPapers: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/papers`);
-      const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/api/papers`, { headers: authHeaders() });
+    const data = await readJson(response);
 
-      if (!data.success || !Array.isArray(data.papers)) {
-        return [];
-      }
-
-      return data.papers;
-    } catch (error) {
-      console.error('getAllPapers error', error);
-      return [];
+    if (!response.ok || !data.success || !Array.isArray(data.papers)) {
+      throw new Error(data.error || 'Failed to load papers.');
     }
+
+    return data.papers;
   },
 
   getPaperById: async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/papers/${id}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/api/papers/${id}`, { headers: authHeaders() });
+      const data = await readJson(response);
 
       if (!data.success) {
         return null;
@@ -221,7 +218,7 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/papers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(paperData)
       });
       const data = await response.json();
@@ -247,9 +244,10 @@ export const mockAPI = {
 
       const response = await fetch(`${API_BASE_URL}/api/submissions/${paperId}/revision`, {
         method: 'POST',
+        headers: authHeaders(),
         body: formData,
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to upload revised manuscript.' };
@@ -289,6 +287,7 @@ export const mockAPI = {
 
       const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
+        headers: authHeaders(),
         body: formData,
       });
 
@@ -327,9 +326,10 @@ export const mockAPI = {
 
       const response = await fetch(`${API_BASE_URL}/api/admin/papers/${paperId}/files`, {
         method: 'POST',
+        headers: authHeaders(),
         body: formData,
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to update paper files.' };
@@ -345,8 +345,8 @@ export const mockAPI = {
   // Reviews
   getReviewsByReviewer: async (reviewerId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/reviews/reviewer/${reviewerId}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/api/reviews/reviewer/${reviewerId}`, { headers: authHeaders() });
+      const data = await readJson(response);
 
       if (!data.success || !Array.isArray(data.reviews)) {
         return [];
@@ -361,8 +361,8 @@ export const mockAPI = {
 
   getReviewsByPaper: async (paperId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/reviews/paper/${paperId}`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/api/reviews/paper/${paperId}`, { headers: authHeaders() });
+      const data = await readJson(response);
 
       if (!data.success || !Array.isArray(data.reviews)) {
         return [];
@@ -375,15 +375,40 @@ export const mockAPI = {
     }
   },
 
+  // Every review, for the admin dashboard (admins only).
+  getAllReviews: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/reviews`, { headers: authHeaders() });
+    const data = await readJson(response);
+    if (!response.ok || !data.success || !Array.isArray(data.reviews)) {
+      throw new Error(data.error || 'Failed to load reviews.');
+    }
+    return data.reviews;
+  },
+
+  // Reviewer comments on the signed-in author's own paper (no reviewer identities).
+  getReviewsForAuthor: async (paperId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/reviews/paper/${paperId}/for-author`, { headers: authHeaders() });
+      const data = await readJson(response);
+      if (!response.ok || !data.success || !Array.isArray(data.reviews)) {
+        return { success: false, error: data.error || 'Failed to load reviewer comments.' };
+      }
+      return { success: true, reviews: data.reviews };
+    } catch (error) {
+      console.error('getReviewsForAuthor error', error);
+      return { success: false, error: 'Failed to load reviewer comments.' };
+    }
+  },
+
   submitReview: async (reviewData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/reviews`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(reviewData),
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to submit review.' };
@@ -550,8 +575,9 @@ export const mockAPI = {
   // Notifications
   getNotifications: async (userId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/notifications?userId=${userId}`);
-      const data = await response.json();
+      // The server returns the signed-in user's notifications (the token decides, not userId).
+      const response = await fetch(`${API_BASE_URL}/api/notifications`, { headers: authHeaders() });
+      const data = await readJson(response);
 
       if (!data.success || !Array.isArray(data.notifications)) {
         return [];
@@ -567,9 +593,10 @@ export const mockAPI = {
   markNotificationRead: async (notificationId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
-        method: 'POST'
+        method: 'POST',
+        headers: authHeaders(),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!data.success) {
         return { success: false };
@@ -586,8 +613,9 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!data.success) {
         return { success: false };
@@ -672,10 +700,10 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/settings/important-dates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ dates }),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to save important dates.' };
@@ -708,10 +736,10 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/settings/editorial-board`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ board }),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to save editorial board.' };
@@ -727,9 +755,10 @@ export const mockAPI = {
   deletePaper: async (paperId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/papers/${paperId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: authHeaders(),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Failed to delete paper.' };
@@ -746,8 +775,8 @@ export const mockAPI = {
 // Admin helper methods attached after mockAPI definition
 mockAPI.getReviewers = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/admin/reviewers`);
-    const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/api/admin/reviewers`, { headers: authHeaders() });
+    const data = await readJson(response);
 
     if (!data.success || !Array.isArray(data.reviewers)) {
       return [];
@@ -764,10 +793,10 @@ mockAPI.assignReviewer = async (paperId, reviewerId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/assign-reviewer`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ paperId, reviewerId })
     });
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!data.success) {
       return { success: false, error: data.error || 'Failed to assign reviewer.' };
@@ -780,14 +809,55 @@ mockAPI.assignReviewer = async (paperId, reviewerId) => {
   }
 };
 
-mockAPI.publishPaper = async (paperId) => {
+mockAPI.acceptPaper = async (paperId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/accept-paper`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ paperId })
+    });
+    const data = await readJson(response);
+
+    if (!data.success) {
+      return { success: false, error: data.error || 'Failed to accept paper.', code: data.code };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('acceptPaper error', error);
+    return { success: false, error: 'Failed to accept paper.' };
+  }
+};
+
+mockAPI.markPaymentReceived = async (paperId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/mark-paid`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ paperId })
+    });
+    const data = await readJson(response);
+
+    if (!data.success) {
+      return { success: false, error: data.error || 'Failed to record the payment.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('markPaymentReceived error', error);
+    return { success: false, error: 'Failed to record the payment.' };
+  }
+};
+
+// doi: optional DOI registered with CrossRef for this paper.
+mockAPI.publishPaper = async (paperId, doi) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/publish-paper`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paperId })
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ paperId, doi: doi || undefined })
     });
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!data.success) {
       return { success: false, error: data.error || 'Failed to publish paper.' };
@@ -804,10 +874,10 @@ mockAPI.requestRevisions = async (paperId, note) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/request-revisions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ paperId, note }),
     });
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!data.success) {
       return { success: false, error: data.error || 'Failed to request revisions.' };
@@ -824,10 +894,10 @@ mockAPI.rejectPaper = async (paperId, note) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/reject-paper`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ paperId, note }),
     });
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!data.success) {
       return { success: false, error: data.error || 'Failed to reject paper.' };

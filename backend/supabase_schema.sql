@@ -12,7 +12,7 @@ create extension if not exists pgcrypto;
 create type user_role as enum ('author', 'reviewer', 'admin', 'editor');
 
 -- Paper status
-create type paper_status as enum ('submitted', 'under_review', 'published', 'rejected');
+create type paper_status as enum ('submitted', 'under_review', 'accepted', 'published', 'rejected');
 
 -- Payment status
 create type payment_status as enum ('pending', 'paid');
@@ -195,3 +195,19 @@ create table if not exists public.issue_papers (
 
 create index if not exists issue_papers_issue_idx on public.issue_papers (issue_id);
 create index if not exists issue_papers_paper_idx on public.issue_papers (paper_id);
+
+-- =========================
+-- ROW LEVEL SECURITY
+-- =========================
+-- The backend uses the service-role key (bypasses RLS). With RLS on and no
+-- policies, the public anon key shipped to browsers cannot read or write tables.
+
+alter table public.users              enable row level security;
+alter table public.papers             enable row level security;
+alter table public.paper_authors      enable row level security;
+alter table public.reviews            enable row level security;
+alter table public.review_assignments enable row level security;
+alter table public.notifications      enable row level security;
+alter table public.issues             enable row level security;
+alter table public.issue_papers       enable row level security;
+alter table if exists public.site_settings enable row level security;

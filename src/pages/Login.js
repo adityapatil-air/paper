@@ -73,7 +73,7 @@ const Login = () => {
             <ul className="auth-visual-points">
               <li><span className="dot" /> Track every submission through peer review in real time</li>
               <li><span className="dot" /> Collaborate with reviewers and editors on one platform</li>
-              <li><span className="dot" /> Publish open-access research trusted by 500+ researchers</li>
+              <li><span className="dot" /> Publish open-access research that anyone can read for free</li>
             </ul>
           </div>
           <p className="auth-visual-foot">International Journal of Engineering Practices and Applications</p>
@@ -120,7 +120,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'none', color: 'var(--blue)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'none', color: 'var(--blue)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                   >
                     {showPassword ? 'HIDE' : 'SHOW'}
                   </button>
@@ -128,7 +128,10 @@ const Login = () => {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
-                <Link to="/forgot-password" style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>Forgot your password?</Link>
+                {/* No self-service reset yet (the backend sends no email); the editorial office resets passwords. */}
+                <a href="mailto:editor@ijepa.org?subject=Password%20reset%20request" style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
+                  Forgot your password? Email editor@ijepa.org
+                </a>
               </div>
 
               <button type="submit" disabled={loading} className="button button-primary" style={{ width: '100%' }}>

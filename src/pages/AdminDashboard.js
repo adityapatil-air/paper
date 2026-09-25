@@ -6,6 +6,7 @@ import { useToast } from '../components/ui/Toast';
 import Icon from '../components/ui/Icon';
 import Modal from '../components/ui/Modal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
+import Alert from '../components/Alert';
 import EmptyState from '../components/ui/EmptyState';
 import FilePicker from '../components/ui/FilePicker';
 import IssueEditor from '../components/admin/IssueEditor';
@@ -83,6 +84,11 @@ const AdminDashboard = () => {
 
   const [showQuickPublishModal, setShowQuickPublishModal] = useState(false);
   const [quickPublishPaper, setQuickPublishPaper] = useState(null);
+  const [acceptTargetPaper, setAcceptTargetPaper] = useState(null);
+  const [accepting, setAccepting] = useState(false);
+  const [publishDoi, setPublishDoi] = useState('');
+  const [markPaidPaper, setMarkPaidPaper] = useState(null);
+  const [markingPaid, setMarkingPaid] = useState(false);
 
   const [showPdfViewerModal, setShowPdfViewerModal] = useState(false);
   const [pdfViewerPaper, setPdfViewerPaper] = useState(null);
@@ -141,43 +147,31 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
 
-      const allPapers = await mockAPI.getAllPapers();
+      // Independent requests run in parallel; reviews come in one request for all papers.
+      const [allPapers, allReviews, reviewerUsers, loadedIssues, notifResult, assignments] = await Promise.all([
+        mockAPI.getAllPapers(),
+        mockAPI.getAllReviews().catch((err) => {
+          console.error('Error loading reviews in admin dashboard', err);
+          return [];
+        }),
+        mockAPI.getReviewers(),
+        mockAPI.getIssues(),
+        user && user.id ? mockAPI.getNotifications(user.id).catch(() => []) : Promise.resolve([]),
+        mockAPI.getIssueAssignments(),
+      ]);
 
-      // Load reviews for each paper so admins can see review progress
-      const reviewResults = await Promise.all(
-        allPapers.map(async (paper) => {
-          const reviews = await mockAPI.getReviewsByPaper(paper.id);
-          return { paperId: paper.id, reviews };
-        })
-      );
-
+      // Reviews grouped by paper so admins can see review progress
       const reviewsMap = {};
-      reviewResults.forEach(({ paperId, reviews }) => {
-        reviewsMap[paperId] = reviews;
+      allReviews.forEach((review) => {
+        (reviewsMap[review.paperId] = reviewsMap[review.paperId] || []).push(review);
       });
       setPaperReviews(reviewsMap);
-
-      const reviewerUsers = await mockAPI.getReviewers();
       setReviewers(reviewerUsers);
-
-      const loadedIssues = await mockAPI.getIssues();
       setIssues(loadedIssues);
+      // Admin notifications are used to detect revised manuscripts
+      setAdminNotifications(Array.isArray(notifResult) ? notifResult : []);
 
-      // Load admin notifications so we can detect revised manuscripts
-      if (user && user.id) {
-        try {
-          const notifResult = await mockAPI.getNotifications(user.id);
-          setAdminNotifications(Array.isArray(notifResult) ? notifResult : []);
-        } catch (err) {
-          console.error('Error loading admin notifications in dashboard', err);
-          setAdminNotifications([]);
-        }
-      } else {
-        setAdminNotifications([]);
-      }
-
-      // Load issue assignments so we know which issue each published paper belongs to
-      const assignments = await mockAPI.getIssueAssignments();
+      // Issue assignments tell us which issue each published paper belongs to
       const assignmentsByPaperId = {};
       assignments.forEach((assignment) => {
         if (assignment && assignment.paperId && assignment.issue) {
@@ -417,26 +411,6 @@ const AdminDashboard = () => {
     };
   }, []);
 
-  // Load admin notifications based on the logged-in user so we can show revised-manuscript badges
-  useEffect(() => {
-    const loadNotificationsForAdmin = async () => {
-      if (!user || !user.id) {
-        setAdminNotifications([]);
-        return;
-      }
-
-      try {
-        const notifResult = await mockAPI.getNotifications(user.id);
-        setAdminNotifications(Array.isArray(notifResult) ? notifResult : []);
-      } catch (err) {
-        console.error('Error loading admin notifications in AdminDashboard', err);
-        setAdminNotifications([]);
-      }
-    };
-
-    loadNotificationsForAdmin();
-  }, [user]);
-
   const handleAssignReviewer = async () => {
     if (!selectedPaper || !selectedReviewer) return;
 
@@ -630,9 +604,9 @@ const AdminDashboard = () => {
     }
   };
 
-  const handlePublishPaper = async (paperId) => {
+  const handlePublishPaper = async (paperId, doi) => {
     try {
-      const result = await mockAPI.publishPaper(paperId);
+      const result = await mockAPI.publishPaper(paperId, doi);
       if (result.success) {
         toast.success('Paper published successfully.');
         loadAdminData();
@@ -718,11 +692,9 @@ const AdminDashboard = () => {
     }
 
     setAssignIssuePaper(paper);
-    if (issues.length > 0) {
-      setSelectedIssueId(String(issues[0].id));
-    } else {
-      setSelectedIssueId('');
-    }
+    // Preselect the current issue (the usual target); otherwise make the admin choose.
+    const currentIssue = issues.find((issue) => issue.isCurrent);
+    setSelectedIssueId(currentIssue ? String(currentIssue.id) : '');
     setShowAssignIssueModal(true);
   };
 
@@ -859,7 +831,11 @@ const AdminDashboard = () => {
 
   const reviewerSearch = searchTerm.trim().toLowerCase();
 
-  let filteredReviewers = reviewers.filter((reviewer) => {
+  // Reviewers already on the selected paper are not offered again.
+  const alreadyAssignedIds = Array.isArray(selectedPaper?.assignedReviewers) ? selectedPaper.assignedReviewers : [];
+  const assignableReviewers = reviewers.filter((reviewer) => !alreadyAssignedIds.includes(reviewer.id));
+
+  let filteredReviewers = assignableReviewers.filter((reviewer) => {
     const name = (reviewer.name || '').toLowerCase();
     const email = (reviewer.email || '').toLowerCase();
     const affiliation = (reviewer.affiliation || '').toLowerCase();
@@ -919,7 +895,7 @@ const AdminDashboard = () => {
     );
   };
 
-  const adminUnfinishedStatuses = ['submitted', 'under_review', 'revisions_requested'];
+  const adminUnfinishedStatuses = ['submitted', 'under_review', 'revisions_requested', 'accepted'];
 
   let visibleAdminPapers = (papers || []).filter(matchesAdminSearch);
 
@@ -947,7 +923,7 @@ const AdminDashboard = () => {
   });
 
   const underReviewPapersBase = (papers || []).filter(
-    (p) => p.status === 'under_review' || p.status === 'revisions_requested'
+    (p) => p.status === 'under_review' || p.status === 'revisions_requested' || p.status === 'accepted'
   );
 
   let visibleUnderReviewPapers = underReviewPapersBase.filter(matchesAdminSearch);
@@ -984,13 +960,63 @@ const AdminDashboard = () => {
   const requestPublish = (paper) => {
     setManagePaper(null);
     setQuickPublishPaper(paper);
+    setPublishDoi(paper?.doi || '');
     setShowQuickPublishModal(true);
+  };
+
+  // A paper can be accepted once it has at least one review; it is published only after that.
+  const canAccept = (paper) => paper?.status === 'under_review' && (paperReviews[paper.id] || []).length > 0;
+
+  const requestAccept = (paper) => {
+    setManagePaper(null);
+    setShowReviewsModal(false);
+    setAcceptTargetPaper(paper);
+  };
+
+  const canMarkPaid = (paper) => (paper?.status === 'accepted' || paper?.status === 'published') && paper.paymentStatus !== 'paid';
+
+  const confirmMarkPaid = async () => {
+    if (!markPaidPaper) return;
+    setMarkingPaid(true);
+    try {
+      const result = await mockAPI.markPaymentReceived(markPaidPaper.id);
+      if (result.success) {
+        toast.success('Payment recorded.');
+        setMarkPaidPaper(null);
+        loadAdminData();
+      } else {
+        toast.error(result.error || 'Failed to record the payment.');
+      }
+    } catch (error) {
+      toast.error('An error occurred while recording the payment.');
+    } finally {
+      setMarkingPaid(false);
+    }
+  };
+
+  const confirmAccept = async () => {
+    if (!acceptTargetPaper) return;
+    setAccepting(true);
+    try {
+      const result = await mockAPI.acceptPaper(acceptTargetPaper.id);
+      if (result.success) {
+        toast.success('Paper accepted. The author will see a payment request on their dashboard.');
+        setAcceptTargetPaper(null);
+        loadAdminData();
+      } else {
+        toast.error(result.error || 'Failed to accept paper.');
+      }
+    } catch (error) {
+      toast.error('An error occurred while accepting the paper.');
+    } finally {
+      setAccepting(false);
+    }
   };
 
   const confirmPublish = async () => {
     if (!quickPublishPaper) return;
     setPublishing(true);
-    await handlePublishPaper(quickPublishPaper.id);
+    await handlePublishPaper(quickPublishPaper.id, publishDoi.trim());
     setPublishing(false);
     setShowQuickPublishModal(false);
     setQuickPublishPaper(null);
@@ -1074,11 +1100,14 @@ const AdminDashboard = () => {
     ] },
   ];
 
+  // "Revised manuscript received" only matters while that revision is back with reviewers.
+  const showRevisedFlag = (paper) => paper.status === 'under_review' && hasRevisedManuscript(paper);
+
   const paperFlags = (paper) => (
-    (paper.status === 'revisions_requested' || hasRevisedManuscript(paper)) && (
+    (paper.status === 'revisions_requested' || showRevisedFlag(paper)) && (
       <span className="cell-flags">
         {paper.status === 'revisions_requested' && <Badge tone="revision" icon="edit">Waiting for revised manuscript</Badge>}
-        {hasRevisedManuscript(paper) && <Badge tone="review" icon="refresh">Revised manuscript received</Badge>}
+        {showRevisedFlag(paper) && <Badge tone="review" icon="refresh">Revised manuscript received</Badge>}
       </span>
     )
   );
@@ -1293,7 +1322,7 @@ const AdminDashboard = () => {
                 <div className="section-title">
                   <div>
                     <h2 id="sec-review">Under review</h2>
-                    <p>Papers with reviewers, including those waiting for a revised manuscript.</p>
+                    <p>Papers with reviewers, waiting for a revised manuscript, or accepted and waiting to be published.</p>
                   </div>
                 </div>
                 {underReviewPapersBase.length === 0 ? (
@@ -1347,9 +1376,16 @@ const AdminDashboard = () => {
                                   </td>
                                   <td className="col-actions">
                                     <div className="row-actions">
-                                      <button type="button" onClick={() => requestPublish(paper)} className="button button-primary button-small">
-                                        <Icon name="globe" size={15} /> Publish
-                                      </button>
+                                      {canAccept(paper) && (
+                                        <button type="button" onClick={() => requestAccept(paper)} className="button button-primary button-small">
+                                          <Icon name="checkCircle" size={15} /> Accept
+                                        </button>
+                                      )}
+                                      {paper.status === 'accepted' && (
+                                        <button type="button" onClick={() => requestPublish(paper)} className="button button-primary button-small">
+                                          <Icon name="globe" size={15} /> Publish
+                                        </button>
+                                      )}
                                       {manageButton(paper)}
                                     </div>
                                   </td>
@@ -1623,7 +1659,12 @@ const AdminDashboard = () => {
               <Icon name="trash" size={16} /> Delete paper
             </button>
             <button type="button" className="button button-ghost" onClick={() => setManagePaper(null)}>Close</button>
-            {managePaper.status !== 'published' && (
+            {canAccept(managePaper) && (
+              <button type="button" className="button button-primary" onClick={() => requestAccept(managePaper)}>
+                <Icon name="checkCircle" size={16} /> Accept paper
+              </button>
+            )}
+            {managePaper.status === 'accepted' && (
               <button type="button" className="button button-primary" onClick={() => requestPublish(managePaper)}>
                 <Icon name="globe" size={16} /> Publish paper
               </button>
@@ -1674,6 +1715,11 @@ const AdminDashboard = () => {
                 {managePaper.status === 'under_review' && (
                   <button type="button" className="icon-btn" onClick={() => { const p = managePaper; setManagePaper(null); openRequestRevisionsModal(p); }}>
                     <Icon name="edit" size={15} /> Request revisions
+                  </button>
+                )}
+                {canMarkPaid(managePaper) && (
+                  <button type="button" className="icon-btn" onClick={() => { const p = managePaper; setManagePaper(null); setMarkPaidPaper(p); }}>
+                    <Icon name="credit" size={15} /> Mark fee as paid
                   </button>
                 )}
                 {managePaper.status === 'published' && issues.length > 0 && !managePaper.assignedIssue && (
@@ -1781,8 +1827,8 @@ const AdminDashboard = () => {
 
           <FilePicker
             id="as-manuscript"
-            label="Manuscript (PDF)"
-            extensions={['pdf']}
+            label="Manuscript (PDF, DOC or DOCX)"
+            extensions={['pdf', 'doc', 'docx']}
             file={adminSubmitForm.manuscriptFile}
             onChange={(f) => { setAdminSubmitForm((prev) => ({ ...prev, manuscriptFile: f })); setAdminFileError(''); }}
             disabled={adminSubmittingPaper}
@@ -1948,6 +1994,53 @@ const AdminDashboard = () => {
         onConfirm={confirmPublish}
       >
         {quickPublishPaper && <div className="paper-ref"><strong>{quickPublishPaper.title}</strong><span>ID: {quickPublishPaper.id}</span></div>}
+        {quickPublishPaper && (
+          <div className="form-group">
+            <label htmlFor="publish-doi">DOI (optional)</label>
+            <input
+              id="publish-doi"
+              type="text"
+              className="form-input"
+              value={publishDoi}
+              onChange={(e) => setPublishDoi(e.target.value)}
+              placeholder="10.xxxx/ijepa.2026.001"
+              aria-describedby="publish-doi-hint"
+              disabled={publishing}
+            />
+            <p id="publish-doi-hint" className="form-hint">Enter the DOI registered with CrossRef for this paper. Leave it empty if none has been registered yet.</p>
+          </div>
+        )}
+        {quickPublishPaper && quickPublishPaper.paymentStatus !== 'paid' && (
+          <Alert type="warning" message="The article processing charge for this paper has not been recorded as paid." />
+        )}
+      </ConfirmDialog>
+
+      {/* Mark fee as paid */}
+      <ConfirmDialog
+        open={Boolean(markPaidPaper)}
+        title="Mark the fee as paid?"
+        message="Only do this after confirming the payment in the Razorpay dashboard. The author is notified."
+        confirmLabel="Yes, mark as paid"
+        busyLabel="Saving…"
+        busy={markingPaid}
+        onCancel={() => { if (!markingPaid) setMarkPaidPaper(null); }}
+        onConfirm={confirmMarkPaid}
+      >
+        {markPaidPaper && <div className="paper-ref"><strong>{markPaidPaper.title}</strong><span>ID: {markPaidPaper.id}</span></div>}
+      </ConfirmDialog>
+
+      {/* Accept */}
+      <ConfirmDialog
+        open={Boolean(acceptTargetPaper)}
+        title="Accept this paper?"
+        message="The author is asked to pay the article processing charge. You can publish the paper after that."
+        confirmLabel="Yes, accept"
+        busyLabel="Accepting…"
+        busy={accepting}
+        onCancel={() => { if (!accepting) setAcceptTargetPaper(null); }}
+        onConfirm={confirmAccept}
+      >
+        {acceptTargetPaper && <div className="paper-ref"><strong>{acceptTargetPaper.title}</strong><span>ID: {acceptTargetPaper.id}</span></div>}
       </ConfirmDialog>
 
       {/* Delete issue */}
@@ -2030,6 +2123,10 @@ const AdminDashboard = () => {
                     </li>
                   ))}
                 </ul>
+              ) : assignableReviewers.length === 0 ? (
+                <EmptyState compact variant="review" title="No other reviewers available">
+                  {reviewers.length === 0 ? 'There are no reviewer accounts yet.' : 'Every reviewer is already assigned to this paper.'}
+                </EmptyState>
               ) : (
                 <EmptyState compact variant="search" title="No reviewers found">Try a different search.</EmptyState>
               )}
@@ -2054,6 +2151,11 @@ const AdminDashboard = () => {
             <button type="button" onClick={() => { setShowReviewsModal(false); openRejectPaperModal(reviewsModalPaper); }} className="button button-danger-outline">
               <Icon name="xCircle" size={16} /> Reject paper
             </button>
+            {canAccept(reviewsModalPaper) && (
+              <button type="button" onClick={() => requestAccept(reviewsModalPaper)} className="button button-primary">
+                <Icon name="checkCircle" size={16} /> Accept paper
+              </button>
+            )}
           </>
         )}
       >

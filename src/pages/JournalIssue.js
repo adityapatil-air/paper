@@ -247,23 +247,24 @@ const JournalIssues = () => {
                   {isVolumeExpanded && (
                     <div className="archive-issue-grid">
                       {issuesInVolume.map((issue) => (
-                        <div
-                          key={issue.id}
-                          className="issue-card"
-                          onClick={() => handleArchiveIssueClick(issue)}
-                        >
-                          <div className="issue-card-head">
+                        <div key={issue.id} className="issue-card">
+                          <button
+                            type="button"
+                            className="issue-card-head issue-card-toggle"
+                            onClick={() => handleArchiveIssueClick(issue)}
+                            aria-expanded={expandedIssueId === issue.id}
+                          >
                             <span>
                               <strong>Issue {issue.issue}, {[issue.month, issue.year].filter(Boolean).join(' ')}</strong>
                               {issue.title && <span className="archive-issue-title">{issue.title}</span>}
                             </span>
                             <span>
                               {expandedIssueId === issue.id ? 'Hide' : 'View'}
-                              <svg className="chevron chevron-inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="chevron chevron-inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                               </svg>
                             </span>
-                          </div>
+                          </button>
 
                           {expandedIssueId === issue.id && (
                             <div className="issue-card-body">

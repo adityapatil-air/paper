@@ -4,6 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import Alert from '../components/Alert';
 import logo from '../assets/logo.png';
 
+// Must match MIN_PASSWORD_LENGTH in backend/src/routes/auth.js.
+const MIN_PASSWORD_LENGTH = 8;
+
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -11,8 +14,7 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     affiliation: '',
-    department: '',
-    role: 'author' // Default role
+    department: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,8 +35,8 @@ const Register = () => {
       setError('Passwords do not match');
       return false;
     }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    if (formData.password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
       return false;
     }
     if (!formData.name.trim()) {
@@ -47,10 +49,6 @@ const Register = () => {
     }
     if (!formData.affiliation.trim()) {
       setError('Affiliation is required');
-      return false;
-    }
-    if (!formData.role) {
-      setError('Please select a role');
       return false;
     }
     return true;
@@ -70,14 +68,7 @@ const Register = () => {
       const { confirmPassword, ...userData } = formData;
       const result = await register(userData);
       if (result.success) {
-        const role = userData.role;
-        if (role === 'reviewer') {
-          navigate('/reviewer-dashboard');
-        } else if (role === 'admin' || role === 'editor') {
-          navigate('/admin-dashboard');
-        } else {
-          navigate('/author-dashboard');
-        }
+        navigate('/author-dashboard');
       } else {
         setError(result.error);
       }
@@ -172,40 +163,17 @@ const Register = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div className="form-group">
-                  <label htmlFor="department">Department</label>
-                  <input
-                    id="department"
-                    name="department"
-                    type="text"
-                    value={formData.department}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="Field of Study"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="role">Register As</label>
-                  <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    className="form-select"
-                    required
-                  >
-                    <option value="author">Author</option>
-                    <option value="reviewer">Reviewer</option>
-                    <option value="editor">Editor</option>
-                  </select>
-                  <p className="form-hint">
-                    {formData.role === 'author' && 'Submit your own manuscripts for review.'}
-                    {formData.role === 'reviewer' && 'Review manuscripts assigned to you by editors.'}
-                    {formData.role === 'editor' && 'Manage submissions and assign reviewers.'}
-                  </p>
-                </div>
+              <div className="form-group">
+                <label htmlFor="department">Department</label>
+                <input
+                  id="department"
+                  name="department"
+                  type="text"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className="form-input"
+                  placeholder="Field of Study"
+                />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -220,7 +188,11 @@ const Register = () => {
                     onChange={handleChange}
                     className="form-input"
                     placeholder="Create a password"
+                    aria-describedby="password-hint"
                   />
+                  <p id="password-hint" className="form-hint" style={formData.password && formData.password.length < MIN_PASSWORD_LENGTH ? { color: 'var(--danger)' } : undefined}>
+                    At least {MIN_PASSWORD_LENGTH} characters.
+                  </p>
                 </div>
 
                 <div className="form-group">
@@ -270,7 +242,7 @@ const Register = () => {
             </button>
 
             <p className="auth-footer-link">
-              By registering, you'll be able to submit research papers for review as an <strong>{formData.role}</strong>.
+              New accounts are author accounts. Want to review or edit for IJEPA? <Link to="/joinusedito">Join the editorial team</Link>.
             </p>
           </div>
         </div>
