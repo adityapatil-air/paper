@@ -25,3 +25,6 @@ backend/papers_metadata.json
 .claude/
 logs/
 *.log
+
+# Local source PDFs for the back-catalogue import (not part of the app)
+Papers to upload/
