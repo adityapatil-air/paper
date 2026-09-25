@@ -136,9 +136,7 @@ const AdminDashboard = () => {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [, setIsDropdownOpen] = useState(false);
   const [reviewerSortBy, setReviewerSortBy] = useState('name_az');
-  const dropdownRef = useRef(null);
   const [adminSearchTerm, setAdminSearchTerm] = useState('');
   const [adminSortBy, setAdminSortBy] = useState('recent');
   const [adminShowAllPapers, setAdminShowAllPapers] = useState(false);
@@ -396,20 +394,6 @@ const AdminDashboard = () => {
       loadEditorialBoard();
     }
   }, [user]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const handleAssignReviewer = async () => {
     if (!selectedPaper || !selectedReviewer) return;
@@ -2100,7 +2084,7 @@ const AdminDashboard = () => {
                 <div><dt>Submitted</dt><dd>{formatDate(selectedPaper.submissionDate)}</dd></div>
               </dl>
             </div>
-            <div ref={dropdownRef}>
+            <div>
               <FilterBar
                 search={searchTerm}
                 onSearch={setSearchTerm}

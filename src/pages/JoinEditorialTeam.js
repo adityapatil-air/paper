@@ -33,14 +33,14 @@ const JoinEditorialTeam = () => {
 
         <h2>Roles &amp; Responsibilities</h2>
         <div className="page-card">
-          <h3 style={{ margin: '0 0 8px', color: 'var(--navy)', fontSize: 15 }}>Associate Editors</h3>
+          <h3 className="role-heading">Associate Editors</h3>
           <ul className="content-list">
             <li>Assist in managing the peer-review process.</li>
             <li>Provide editorial decisions and recommendations.</li>
             <li>Contribute to the strategic development of the journal.</li>
           </ul>
 
-          <h3 style={{ margin: '0 0 8px', color: 'var(--navy)', fontSize: 15 }}>Reviewers</h3>
+          <h3 className="role-heading">Reviewers</h3>
           <ul className="content-list is-flush">
             <li>Provide constructive, detailed, and timely reviews of assigned manuscripts.</li>
             <li>Help uphold the quality and integrity of published research.</li>

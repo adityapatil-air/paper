@@ -211,8 +211,8 @@ const EditorialBoard = () => {
           ))
         )}
 
-        <div className="callout" style={{ margin: '38px 0 0' }}>
-          <div className="callout-inner journal-container" style={{ padding: '18px 0' }}>
+        <div className="callout board-callout">
+          <div className="callout-inner journal-container is-compact">
             <div className="callout-icon">✎</div>
             <div>
               <h2>Interested in Joining the Editorial Board?</h2>

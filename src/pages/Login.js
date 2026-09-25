@@ -120,7 +120,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'none', color: 'var(--blue)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                    className="password-toggle"
                   >
                     {showPassword ? 'HIDE' : 'SHOW'}
                   </button>
@@ -129,7 +129,7 @@ const Login = () => {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
                 {/* No self-service reset yet (the backend sends no email); the editorial office resets passwords. */}
-                <a href="mailto:editor@ijepa.org?subject=Password%20reset%20request" style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
+                <a href="mailto:editor@ijepa.org?subject=Password%20reset%20request" className="form-link">
                   Forgot your password? Email editor@ijepa.org
                 </a>
               </div>

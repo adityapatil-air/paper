@@ -18,7 +18,7 @@ import AuthorGuidelines from './pages/AuthorGuidelines';
 import CallForPapers from './pages/CallForPapers';
 import Indexing from './pages/Indexing';
 import JournalIssues from './pages/JournalIssue';
-import JoinEditorialTeam from './pages/joinusedito';
+import JoinEditorialTeam from './pages/JoinEditorialTeam';
 import ContactUs from './pages/ContactUs';
 import AboutUs from './pages/AboutUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';

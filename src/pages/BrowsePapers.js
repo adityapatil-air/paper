@@ -346,17 +346,17 @@ const BrowsePapers = () => {
                     onLoadSuccess={onDocumentLoadSuccess}
                     onLoadError={(err) => setPdfError('Failed to load PDF.')}
                     loading={<LoadingSpinner size="sm" text="Loading PDF..." />}
-                    error={<div style={{ color: '#ffd9d9', fontSize: 13 }}>Failed to load PDF.</div>}
+                    error={<div className="viewer-error">Failed to load PDF.</div>}
                   >
                     <Page pageNumber={pageNumber} height={650} scale={zoom} />
                   </Document>
 
                   {pdfError && (
-                    <div style={{ color: '#ffd9d9', fontSize: 13, marginTop: 10 }}>{pdfError}</div>
+                    <div className="viewer-error has-gap">{pdfError}</div>
                   )}
 
                   {numPages && (
-                    <div className="viewer-controls" style={{ color: '#dbeefb' }}>
+                    <div className="viewer-controls is-on-dark">
                       <button type="button" onClick={handleZoomOut} className="button button-small button-outline" disabled={zoom <= 0.5}>-</button>
                       <span>{Math.round(zoom * 100)}%</span>
                       <button type="button" onClick={handleZoomIn} className="button button-small button-outline" disabled={zoom >= 2}>+</button>

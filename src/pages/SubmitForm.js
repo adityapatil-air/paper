@@ -326,6 +326,7 @@ const SubmitForm = () => {
   const profile = useMemo(() => ({
     fullName: user?.name && !String(user.name).includes('@') ? String(user.name) : '',
     email: user?.email ? String(user.email) : '',
+    affiliation: user?.affiliation ? String(user.affiliation) : '',
   }), [user]);
 
   // Redirect guests to login; the route itself is public.
@@ -336,7 +337,7 @@ const SubmitForm = () => {
   // Pre-fill identity from the account and restore any saved draft (once).
   useEffect(() => {
     if (!user || initialized) return;
-    const base = { ...EMPTY_FORM, fullName: profile.fullName, email: profile.email };
+    const base = { ...EMPTY_FORM, fullName: profile.fullName, email: profile.email, affiliation: profile.affiliation };
     const draft = readDraft(user.id);
     let next = base;
     if (draft) {
@@ -355,8 +356,8 @@ const SubmitForm = () => {
   }, [user, initialized, profile]);
 
   const hasDraftContent = useMemo(() => (
-    Boolean(form.affiliation.trim() || form.paperTitle.trim() || form.abstract.trim() || form.comments.trim())
-    || form.fullName !== profile.fullName || form.email !== profile.email
+    Boolean(form.paperTitle.trim() || form.abstract.trim() || form.comments.trim())
+    || form.fullName !== profile.fullName || form.email !== profile.email || form.affiliation !== profile.affiliation
     || coAuthors.some(coAuthorHasContent) || keywords.length > 0
   ), [form, coAuthors, keywords, profile]);
 
@@ -631,7 +632,7 @@ const SubmitForm = () => {
   // draft
   const discardDraft = () => {
     if (user) clearDraft(user.id);
-    setForm({ ...EMPTY_FORM, fullName: profile.fullName, email: profile.email });
+    setForm({ ...EMPTY_FORM, fullName: profile.fullName, email: profile.email, affiliation: profile.affiliation });
     setLocked({ fullName: Boolean(profile.fullName), email: Boolean(profile.email) && !validateField('email', profile.email) });
     setCoAuthors([]);
     setKeywords([]);
@@ -718,7 +719,7 @@ const SubmitForm = () => {
 
   const resetForAnother = () => {
     setSubmission(null);
-    setForm({ ...EMPTY_FORM, fullName: profile.fullName, email: profile.email });
+    setForm({ ...EMPTY_FORM, fullName: profile.fullName, email: profile.email, affiliation: profile.affiliation });
     setLocked({ fullName: Boolean(profile.fullName), email: Boolean(profile.email) && !validateField('email', profile.email) });
     setCoAuthors([]);
     setKeywords([]);

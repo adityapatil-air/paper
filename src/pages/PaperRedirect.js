@@ -194,11 +194,11 @@ const PaperRedirect = () => {
         <div className="page-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Link to="/journal-issues" style={{ color: 'var(--blue)', fontSize: 12, fontWeight: 700 }}>
+              <Link to="/journal-issues" className="crumb-link">
                 Back to Journal Issues
               </Link>
               <span style={{ color: 'var(--muted)' }}>/</span>
-              <span style={{ fontSize: 12, color: 'var(--ink)' }}>
+              <span className="crumb-current">
                 {loading ? 'Loading paper…' : `Paper #${paperId}`}
               </span>
             </div>
@@ -242,13 +242,13 @@ const PaperRedirect = () => {
             <div className="empty-state">Paper not found. The paper file link may be missing.</div>
           ) : (
             <div style={{ width: '100%', overflow: 'auto', display: 'flex', justifyContent: 'center', background: 'var(--sky)' }}>
-              <div style={{ padding: '24px 0' }}>
+              <div className="viewer-pad">
                 {viewerError ? (
-                  <div className="empty-state" style={{ background: '#fff' }}>{viewerError}</div>
+                  <div className="empty-state is-on-light">{viewerError}</div>
                 ) : (
                   <Document
                     file={file}
-                    loading={<div className="loading-state" style={{ background: '#fff' }}>Loading PDF…</div>}
+                    loading={<div className="loading-state is-on-light">Loading PDF…</div>}
                     onLoadSuccess={onDocumentLoadSuccess}
                     onLoadError={(err) => setViewerError(err?.message || 'Failed to load PDF.')}
                   >

@@ -47,9 +47,9 @@ const ContactUs = () => {
 
             <div className="page-card">
               <h3>Editorial Office</h3>
-              <p style={{ margin: '0 0 6px' }}>International Journal of Engineering Practices and Applications (IJEPA)</p>
-              <p style={{ margin: '0 0 4px' }}>Email: <a href="mailto:editor@ijepa.org">editor@ijepa.org</a></p>
-              <p style={{ margin: '0 0 4px' }}>Phone: +91 8149844901</p>
+              <p className="contact-line is-lead">International Journal of Engineering Practices and Applications (IJEPA)</p>
+              <p className="contact-line">Email: <a href="mailto:editor@ijepa.org">editor@ijepa.org</a></p>
+              <p className="contact-line">Phone: +91 8149844901</p>
               <p style={{ margin: 0 }}>Website: <a href="https://www.ijepa.org">www.ijepa.org</a></p>
 
               <h4><span className="dot" />For Authors</h4>

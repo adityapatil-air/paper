@@ -50,9 +50,9 @@ const Header = () => {
   return (
     <header className="site-header">
       <div className="institutional-bar">
-        <div>International Peer-Reviewed Open Access Journal <span className="institutional-extra">&nbsp;|&nbsp; Published by Buildsoftech Publication &nbsp;|&nbsp; ISSN: 3139-5961</span></div>
+        <div><span className="institutional-main">International Peer-Reviewed Open Access Journal</span><span className="institutional-extra">&nbsp;|&nbsp; Published by Buildsoftech Publication &nbsp;|&nbsp; ISSN: 3139-5961</span><span className="institutional-mobile">Open Access · ISSN 3139-5961</span></div>
         <div className="institutional-links">
-          {user ? <button onClick={handleLogout}>Logout</button> : <><Link to="/login">Login</Link><span>|</span><Link to="/register">Register</Link></>}
+          {user ? <button onClick={handleLogout}>Logout</button> : <><Link to="/login">Login</Link><span className="auth-sep" aria-hidden="true">|</span><Link to="/register">Register</Link></>}
         </div>
       </div>
 

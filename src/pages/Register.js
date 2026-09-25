@@ -214,9 +214,9 @@ const Register = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, margin: '6px 0 20px' }}>
+              <div className="terms-row">
                 <input id="terms" name="terms" type="checkbox" required style={{ marginTop: 3 }} />
-                <label htmlFor="terms" style={{ fontSize: 12, color: 'var(--muted)', textTransform: 'none', fontWeight: 400 }}>
+                <label htmlFor="terms" className="terms-label">
                   I agree to the{' '}
                   <a href="/terms-of-service" style={{ color: 'var(--blue)', fontWeight: 600 }}>Terms of Service</a>{' '}
                   and{' '}
