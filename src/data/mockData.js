@@ -1,6 +1,13 @@
 // Mock data for the research paper review platform
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:4000';
+  }
+  return '';
+};
+const API_BASE_URL = getApiBaseUrl();
 
 // Backend-issued JWT (from /api/auth/login) for admin-only endpoints.
 const AUTH_TOKEN_KEY = 'authToken';
@@ -65,64 +72,7 @@ export const mockUsers = [
   }
 ];
 
-export const mockPapers = [
-  {
-    id: 1,
-    title: 'Advanced Machine Learning Techniques for Natural Language Processing',
-    authors: ['Dr. Sarah Johnson', 'Dr. Alex Thompson'],
-    abstract: 'This paper presents novel approaches to improving natural language processing through advanced machine learning techniques...',
-    keywords: ['Machine Learning', 'NLP', 'Deep Learning', 'Text Processing'],
-    status: 'published',
-    submissionDate: '2024-01-15',
-    publicationDate: '2024-03-20',
-    doi: '10.1000/example.2024.001',
-    pdfUrl: '/papers/paper1.pdf',
-    category: 'Computer Science',
-    wordCount: 8500,
-    citationCount: 12
-  },
-  {
-    id: 2,
-    title: 'Quantum Computing Applications in Cryptography',
-    authors: ['Prof. David Wilson', 'Dr. Lisa Park'],
-    abstract: 'We explore the potential of quantum computing to revolutionize cryptographic systems and security protocols...',
-    keywords: ['Quantum Computing', 'Cryptography', 'Security', 'Quantum Algorithms'],
-    status: 'published',
-    submissionDate: '2024-02-01',
-    publicationDate: '2024-04-15',
-    doi: '10.1000/example.2024.002',
-    pdfUrl: '/papers/paper2.pdf',
-    category: 'Computer Science',
-    wordCount: 9200,
-    citationCount: 8
-  },
-  {
-    id: 3,
-    title: 'Sustainable Energy Solutions for Smart Cities',
-    authors: ['Dr. Maria Garcia', 'Prof. James Brown'],
-    abstract: 'This research investigates sustainable energy solutions and their implementation in smart city infrastructure...',
-    keywords: ['Sustainable Energy', 'Smart Cities', 'Renewable Energy', 'Urban Planning'],
-    status: 'under_review',
-    submissionDate: '2024-03-10',
-    category: 'Environmental Science',
-    wordCount: 7800,
-    assignedReviewers: [2],
-    reviewDeadline: '2024-04-15'
-  },
-  {
-    id: 4,
-    title: 'Biomedical Applications of Artificial Intelligence',
-    authors: ['Dr. Robert Kim', 'Dr. Jennifer Lee'],
-    abstract: 'We present comprehensive analysis of AI applications in biomedical research and clinical practice...',
-    keywords: ['Artificial Intelligence', 'Biomedical', 'Healthcare', 'Machine Learning'],
-    status: 'submitted',
-    submissionDate: '2024-03-20',
-    category: 'Biomedical Engineering',
-    wordCount: 9500,
-    submissionFee: 730,
-    paymentStatus: 'pending'
-  }
-];
+export const mockPapers = [];
 
 export const mockReviews = [
   {

@@ -8,8 +8,14 @@ import Spinner from '../components/ui/Spinner';
 import { Skeleton } from '../components/ui/Skeleton';
 import paperTemplate from '../assets/Paper Template.docx';
 
-// Same base URL the rest of the app uses (mockData.js); empty means same-origin /api.
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:4000';
+  }
+  return '';
+};
+const API_BASE_URL = getApiBaseUrl();
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx'];

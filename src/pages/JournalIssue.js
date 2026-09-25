@@ -77,18 +77,13 @@ const JournalIssues = () => {
     if (activeArchiveVolumeKey) setExpandedVolumeKey(activeArchiveVolumeKey);
   }, [activeArchiveVolumeKey, expandedVolumeKey]);
 
-  const slugify = (value) => {
-    return String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/['"]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  };
-
-  const formatPaperId = (paperId, year) => {
+  const formatPaperId = (paper, serial, year) => {
+    if (paper && paper.doi && paper.doi.includes('IJEPA-')) {
+      const match = paper.doi.match(/IJEPA-\d+-\d+/);
+      if (match) return match[0];
+    }
     const normalizedYear = year || 2026;
-    const raw = String(paperId ?? '').trim();
+    const raw = String(serial ?? '').trim();
     const parsed = parseInt(raw, 10);
     const normalizedSerial = Number.isNaN(parsed) ? raw : String(parsed);
     const paddedSerial = String(normalizedSerial || '').padStart(2, '0');
@@ -139,11 +134,11 @@ const JournalIssues = () => {
 
   const PaperCard = ({ paper, serial }) => (
     <div className="paper-mini">
-      <p className="paper-mini-line">Paper ID: {formatPaperId(serial, paper.issueYear)}</p>
+      <p className="paper-mini-line">Paper ID: {formatPaperId(paper, serial, paper.issueYear)}</p>
       <p className="paper-mini-line">
         <strong>Title:</strong>{' '}
         {paper.pdfUrl ? (
-          <a href={`/paper/${slugify(paper.title)}`}>{paper.title}</a>
+          <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer">{paper.title}</a>
         ) : (
           <span>{paper.title}</span>
         )}
@@ -151,6 +146,13 @@ const JournalIssues = () => {
       <p className="flush">
         <strong>Authors:</strong> {getAuthorsText(paper.authors)}
       </p>
+      {paper.pdfUrl && (
+        <p className="flush" style={{ marginTop: 4 }}>
+          <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer" className="archive-file-link">
+            ↓ Download PDF
+          </a>
+        </p>
+      )}
     </div>
   );
 

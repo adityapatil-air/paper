@@ -1,11 +1,20 @@
 node_modules
 .vercel
 
+# AI & IDE
+.claude
+.DS_Store
+
 # Environment variables
 backend/.env
 backend/.env.production
 .env
 .env.*
 !.env.example
+
 # Build output
 /build
+
+# Temporary data/scripts
+backend/parse_papers.py
+backend/papers_metadata.json

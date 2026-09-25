@@ -1,6 +1,7 @@
 {
   "name": "research-paper-review-platform",
   "version": "0.1.0",
+  "proxy": "http://localhost:4000",
   "description": "A comprehensive React-based platform for academic research paper submission, review, and publication. Built with React, Tailwind CSS, and React Router.",
   "license": "ISC",
   "author": "",
