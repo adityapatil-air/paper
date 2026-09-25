@@ -188,8 +188,15 @@ const ReviewPaper = () => {
             ) : (
               <div className="viewer-message">
                 <div>
-                  <h2>Inline view not available</h2>
-                  <p>This manuscript is stored in a format the browser cannot preview directly. Please contact the editor to obtain a PDF version for easier inline review.</p>
+                  <h2>Word manuscript</h2>
+                  <p>Initial submissions are sent as Word files, which the browser can't preview. Download the manuscript to review it in Word or another document editor.</p>
+                  {paper.pdfUrl ? (
+                    <a href={paper.pdfUrl} download className="button button-primary">
+                      <Icon name="download" size={16} /> Download manuscript
+                    </a>
+                  ) : (
+                    <p>No manuscript file is attached yet. Please contact the editor.</p>
+                  )}
                 </div>
               </div>
             )}

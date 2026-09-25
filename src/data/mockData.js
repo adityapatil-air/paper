@@ -629,12 +629,13 @@ export const mockAPI = {
   },
 
   // Payments
-  createPaymentOrder: async (paperId, amount) => {
+  // The server sets the amount from the currency; the client never sends an amount.
+  createPaymentOrder: async (paperId, currency) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paperId, amount })
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ paperId, currency })
       });
       const data = await response.json();
 
@@ -653,13 +654,13 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/payments/verify-payment`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(paymentData)
       });
       const data = await response.json();
 
       if (!data.success) {
-        return { success: false, error: data.message || 'Payment verification failed.' };
+        return { success: false, error: data.error || data.message || 'Payment verification failed.' };
       }
 
       return { success: true };
@@ -669,14 +670,35 @@ export const mockAPI = {
     }
   },
 
-  getRazorpayKey: async () => {
+  // { configured, key, fees: { INR, USD } }
+  getPaymentConfig: async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/payments/key`);
       const data = await response.json();
-      return data.key;
+      return { configured: Boolean(data.configured && data.key), key: data.key || null, fees: data.fees || { INR: 1500, USD: 50 } };
     } catch (error) {
-      console.error('getRazorpayKey error', error);
-      return null;
+      console.error('getPaymentConfig error', error);
+      return { configured: false, key: null, fees: { INR: 1500, USD: 50 } };
+    }
+  },
+
+  uploadCopyrightForm: async (paperId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('copyrightForm', file);
+      const response = await fetch(`${API_BASE_URL}/api/submissions/${paperId}/copyright`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'Failed to upload the copyright form.' };
+      }
+      return { success: true, copyrightUrl: data.copyrightUrl };
+    } catch (error) {
+      console.error('uploadCopyrightForm error', error);
+      return { success: false, error: 'Failed to upload the copyright form.' };
     }
   },
 

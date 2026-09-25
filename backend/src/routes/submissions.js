@@ -8,6 +8,7 @@ const router = express.Router();
 // New submissions accept Word only (per the Author Guidelines); revisions keep the document rule.
 const submissionUpload = makeUploader({ manuscript: 'word', copyrightForm: 'document' });
 const upload = makeUploader({ manuscript: 'document', copyrightForm: 'document' });
+const copyrightUpload = makeUploader({ copyrightForm: 'pdf' });
 
 // The journal's Aims & Scope areas; must match SUBJECT_AREAS in src/pages/SubmitForm.js.
 const SUBJECT_AREAS = [
@@ -129,7 +130,7 @@ router.post(
         keywords: keywordArray,
         category: category || null,
         word_count: null,
-        submission_fee: 150,
+        submission_fee: 1500,
         payment_status: 'pending',
         status: 'submitted',
         pdf_url: manuscriptUrl,
@@ -382,6 +383,81 @@ router.post(
       if (sendStorageError(res, err)) return;
       console.error('Unexpected error in POST /api/submissions/:paperId/revision', err);
       return res.status(500).json({ success: false, error: 'Failed to process revised submission.' });
+    }
+  }
+);
+
+// POST /api/submissions/:paperId/copyright - the author uploads the signed copyright form after acceptance
+router.post(
+  '/:paperId/copyright',
+  requireAuth,
+  handleUpload(copyrightUpload.single('copyrightForm')),
+  async (req, res) => {
+    try {
+      if (!ensureSupabase(res)) return;
+
+      const paperId = parseInt(req.params.paperId, 10);
+      if (Number.isNaN(paperId)) {
+        return res.status(400).json({ success: false, error: 'Invalid paper id.' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'Signed copyright form (PDF) is required.' });
+      }
+
+      const { data: paper, error: paperError } = await supabase
+        .from('papers')
+        .select('id, title, status, main_author_id')
+        .eq('id', paperId)
+        .maybeSingle();
+
+      if (paperError) {
+        console.error('Error loading paper before copyright upload', paperError);
+        return res.status(500).json({ success: false, error: 'Failed to verify paper before upload.' });
+      }
+      if (!paper) {
+        return res.status(404).json({ success: false, error: 'Paper not found.' });
+      }
+      if (paper.main_author_id !== req.user.id) {
+        return res.status(403).json({ success: false, error: 'Only the author who submitted this paper can upload its copyright form.', code: 'FORBIDDEN' });
+      }
+      if (!['accepted', 'published'].includes(paper.status)) {
+        return res.status(409).json({ success: false, error: 'The copyright form is requested only after the paper is accepted.' });
+      }
+
+      const copyrightUrl = await uploadFile(req.file, `user-${req.user.id}/copyright`);
+
+      const { error: updateError } = await supabase
+        .from('papers')
+        .update({ copyright_url: copyrightUrl })
+        .eq('id', paperId);
+
+      if (updateError) {
+        console.error('Error saving copyright_url', updateError);
+        return res.status(500).json({ success: false, error: 'The form was uploaded but could not be saved on the paper.' });
+      }
+
+      // Best-effort: let the admins know the form has arrived.
+      try {
+        const { data: admins } = await supabase.from('users').select('id').eq('role', 'admin');
+        const rows = (admins || []).map((a) => ({
+          user_id: a.id,
+          title: 'Copyright form received',
+          message: `The author uploaded the signed copyright form for "${paper.title}".`,
+          type: 'info',
+        }));
+        if (rows.length) {
+          const { error: notifError } = await supabase.from('notifications').insert(rows);
+          if (notifError) console.error('Error inserting copyright notifications', notifError);
+        }
+      } catch (notifErr) {
+        console.error('Unexpected error while creating copyright notifications', notifErr);
+      }
+
+      return res.json({ success: true, copyrightUrl });
+    } catch (err) {
+      if (sendStorageError(res, err)) return;
+      console.error('Unexpected error in POST /api/submissions/:paperId/copyright', err);
+      return res.status(500).json({ success: false, error: 'Failed to upload the copyright form.' });
     }
   }
 );

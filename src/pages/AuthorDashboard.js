@@ -14,12 +14,27 @@ import StatusBadge, { Badge } from '../components/ui/StatusBadge';
 import { recommendationLabel } from '../components/ui/Stars';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
+import copyrightTemplate from '../assets/Copyright.pdf';
 
-const HOSTED_PAYMENT_LINK = 'https://rzp.io/rzp/dOBF1Tdq';
 const UNFINISHED_STATUSES = ['submitted', 'under_review', 'revisions_requested', 'accepted'];
 
 // The article processing charge is due only after acceptance (see Author Guidelines §6).
 const needsPayment = (paper) => paper.status === 'accepted' && paper.paymentStatus !== 'paid';
+// The signed copyright form is requested once the paper is accepted (see Author Guidelines §8).
+const needsCopyright = (paper) => ['accepted', 'published'].includes(paper.status) && !paper.copyrightUrl;
+
+const CURRENCY_LABEL = { INR: (n) => `₹${Number(n).toLocaleString('en-IN')}`, USD: (n) => `US$${n}` };
+
+// Loads Razorpay Checkout once and resolves to window.Razorpay.
+const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
+  if (window.Razorpay) { resolve(window.Razorpay); return; }
+  const script = document.createElement('script');
+  script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+  script.async = true;
+  script.onload = () => (window.Razorpay ? resolve(window.Razorpay) : reject(new Error('Razorpay unavailable')));
+  script.onerror = () => reject(new Error('Could not load Razorpay'));
+  document.body.appendChild(script);
+});
 
 // Short, status-driven hint shown in the table's "Next step" column.
 const nextStep = (paper) => {
@@ -58,6 +73,13 @@ const AuthorDashboard = () => {
   const [revisionFeedback, setRevisionFeedback] = useState({ loading: false, reviews: [], error: '' });
   const [revisionFile, setRevisionFile] = useState(null);
   const [revisionUploading, setRevisionUploading] = useState(false);
+  const [paymentPaper, setPaymentPaper] = useState(null);
+  const [paymentConfig, setPaymentConfig] = useState(null);
+  const [paymentCurrency, setPaymentCurrency] = useState('INR');
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [copyrightPaper, setCopyrightPaper] = useState(null);
+  const [copyrightFile, setCopyrightFile] = useState(null);
+  const [copyrightUploading, setCopyrightUploading] = useState(false);
 
   useEffect(() => {
     loadAuthorPapers();
@@ -119,8 +141,97 @@ const AuthorDashboard = () => {
     }
   };
 
-  const handlePayment = async (_paperId) => {
-    window.open(HOSTED_PAYMENT_LINK, '_blank', 'noopener,noreferrer');
+  const handlePayment = async (paper) => {
+    setDetailPaper(null);
+    setPaymentPaper(paper);
+    setPaymentConfig(null);
+    setPaymentConfig(await mockAPI.getPaymentConfig());
+  };
+
+  const closePaymentModal = () => {
+    if (paymentBusy) return;
+    setPaymentPaper(null);
+  };
+
+  const startCheckout = async () => {
+    if (!paymentPaper || !paymentConfig?.configured) return;
+    setPaymentBusy(true);
+    try {
+      const Razorpay = await loadRazorpayCheckout();
+      const orderResult = await mockAPI.createPaymentOrder(paymentPaper.id, paymentCurrency);
+      if (!orderResult.success) {
+        toast.error(orderResult.error);
+        setPaymentBusy(false);
+        return;
+      }
+      const { order } = orderResult;
+      const paper = paymentPaper;
+      const checkout = new Razorpay({
+        key: paymentConfig.key,
+        order_id: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'IJEPA',
+        description: `Article processing charge · Paper #${paper.id}`,
+        prefill: { name: user?.name || '', email: user?.email || '' },
+        notes: { paperId: String(paper.id) },
+        theme: { color: '#0a6acb' },
+        handler: async (response) => {
+          const verify = await mockAPI.verifyPayment({
+            paperId: paper.id,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+          });
+          setPaymentBusy(false);
+          if (verify.success) {
+            toast.success('Payment received. Thank you!');
+            setPaymentPaper(null);
+            loadAuthorPapers();
+          } else {
+            toast.error(`${verify.error} If money was deducted, contact editor@ijepa.org with paper ID #${paper.id}.`);
+          }
+        },
+        modal: { ondismiss: () => setPaymentBusy(false) },
+      });
+      checkout.on('payment.failed', (resp) => {
+        setPaymentBusy(false);
+        toast.error(resp?.error?.description || 'Payment failed. Please try again.');
+      });
+      checkout.open();
+    } catch (error) {
+      console.error('Checkout error', error);
+      toast.error('Could not open the payment window. Check your connection and try again.');
+      setPaymentBusy(false);
+    }
+  };
+
+  const openCopyrightModal = (paper) => {
+    setDetailPaper(null);
+    setCopyrightPaper(paper);
+    setCopyrightFile(null);
+  };
+
+  const closeCopyrightModal = () => {
+    if (copyrightUploading) return;
+    setCopyrightPaper(null);
+    setCopyrightFile(null);
+  };
+
+  const handleSubmitCopyright = async (e) => {
+    e.preventDefault();
+    if (!copyrightPaper || !copyrightFile) return;
+    setCopyrightUploading(true);
+    const result = await mockAPI.uploadCopyrightForm(copyrightPaper.id, copyrightFile);
+    setCopyrightUploading(false);
+    if (result.success) {
+      toast.success('Copyright form uploaded.');
+      setCopyrightPaper(null);
+      setCopyrightFile(null);
+      loadAuthorPapers();
+    } else {
+      toast.error(result.error);
+    }
   };
 
   const openRevisionModal = async (paper) => {
@@ -239,7 +350,7 @@ const AuthorDashboard = () => {
   const primaryAction = (paper) => {
     if (needsPayment(paper)) {
       return (
-        <button type="button" onClick={() => handlePayment(paper.id)} className="button button-primary button-small">
+        <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">
           <Icon name="credit" size={15} /> Pay now
         </button>
       );
@@ -251,7 +362,41 @@ const AuthorDashboard = () => {
         </button>
       );
     }
+    if (needsCopyright(paper)) {
+      return (
+        <button type="button" onClick={() => openCopyrightModal(paper)} className="button button-primary button-small">
+          <Icon name="upload" size={15} /> Upload copyright form
+        </button>
+      );
+    }
     return null;
+  };
+
+  const copyrightCallout = (paper) => {
+    if (!['accepted', 'published'].includes(paper.status)) return null;
+    if (paper.copyrightUrl) {
+      return (
+        <div className="callout-box is-success">
+          <Icon name="checkCircle" size={20} />
+          <div>
+            <strong>Copyright form received</strong>
+            <p><a href={paper.copyrightUrl} target="_blank" rel="noopener noreferrer">View the uploaded form</a></p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="callout-box is-warning">
+        <Icon name="fileText" size={20} />
+        <div>
+          <strong>Signed copyright form needed</strong>
+          <p>Download the form, sign it and upload it as a PDF. <a href={copyrightTemplate} download="IJEPA Copyright Form.pdf">Download the copyright form</a></p>
+        </div>
+        <div className="callout-actions">
+          <button type="button" onClick={() => openCopyrightModal(paper)} className="button button-primary button-small">Upload form</button>
+        </div>
+      </div>
+    );
   };
 
   const statusCallout = (paper) => {
@@ -264,7 +409,7 @@ const AuthorDashboard = () => {
             <p>INR 1500 for Indian authors or USD 50 for international authors. Your paper ID is #{paper.id}.</p>
           </div>
           <div className="callout-actions">
-            <button type="button" onClick={() => handlePayment(paper.id)} className="button button-primary button-small">Pay now</button>
+            <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">Pay now</button>
           </div>
         </div>
       );
@@ -482,7 +627,7 @@ const AuthorDashboard = () => {
                             <td data-label="Fee" className="nowrap"><strong>INR 1500</strong> / USD 50</td>
                             <td className="col-actions">
                               <div className="row-actions">
-                                <button type="button" onClick={() => handlePayment(paper.id)} className="button button-primary button-small">
+                                <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">
                                   <Icon name="credit" size={15} /> Pay now
                                 </button>
                               </div>
@@ -525,6 +670,7 @@ const AuthorDashboard = () => {
             <PaperStepper paper={detailPaper} />
             <div className="detail-section">
               {statusCallout(detailPaper)}
+              {copyrightCallout(detailPaper)}
             </div>
             <div className="detail-section">
               <dl className="meta-list">
@@ -651,6 +797,90 @@ const AuthorDashboard = () => {
               file={revisionFile}
               onChange={setRevisionFile}
               disabled={revisionUploading}
+            />
+          </form>
+        )}
+      </Modal>
+
+      {/* Payment */}
+      <Modal
+        open={Boolean(paymentPaper)}
+        onClose={closePaymentModal}
+        closeDisabled={paymentBusy}
+        title="Pay article processing charge"
+        description={paymentPaper?.title}
+        footer={(
+          <>
+            <button type="button" onClick={closePaymentModal} className="button button-ghost" disabled={paymentBusy}>Cancel</button>
+            {paymentConfig?.configured && (
+              <button type="button" onClick={startCheckout} disabled={paymentBusy} className="button button-primary" aria-busy={paymentBusy || undefined}>
+                {paymentBusy
+                  ? <><Spinner size="sm" /> Opening payment…</>
+                  : <><Icon name="credit" size={16} /> Pay {CURRENCY_LABEL[paymentCurrency](paymentConfig.fees[paymentCurrency])}</>}
+              </button>
+            )}
+          </>
+        )}
+      >
+        {paymentPaper && (
+          !paymentConfig ? (
+            <Spinner size="sm" label="Checking payment options" />
+          ) : !paymentConfig.configured ? (
+            <div className="callout-box is-warning">
+              <Icon name="info" size={20} />
+              <div>
+                <strong>Online payment isn't available yet</strong>
+                <p>Please email <a href={`mailto:editor@ijepa.org?subject=APC payment for paper %23${paymentPaper.id}`}>editor@ijepa.org</a> with your paper ID (#{paymentPaper.id}) and the editorial office will send payment details.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="paper-ref"><strong>Paper ID #{paymentPaper.id}</strong></div>
+              <p>Choose how you are paying. The amount is set by the journal (Author Guidelines §6).</p>
+              <Segmented
+                label="Author type"
+                value={paymentCurrency}
+                onChange={setPaymentCurrency}
+                options={[
+                  { value: 'INR', label: `Indian author · ${CURRENCY_LABEL.INR(paymentConfig.fees.INR)}` },
+                  { value: 'USD', label: `International author · ${CURRENCY_LABEL.USD(paymentConfig.fees.USD)}` },
+                ]}
+              />
+              <p className="form-hint">Payments are processed securely by Razorpay. You'll get a confirmation here once it's complete.</p>
+            </>
+          )
+        )}
+      </Modal>
+
+      {/* Copyright form upload */}
+      <Modal
+        open={Boolean(copyrightPaper)}
+        onClose={closeCopyrightModal}
+        closeDisabled={copyrightUploading}
+        title="Upload signed copyright form"
+        description={copyrightPaper?.title}
+        footer={(
+          <>
+            <button type="button" onClick={closeCopyrightModal} className="button button-ghost" disabled={copyrightUploading}>Cancel</button>
+            <button type="submit" form="copyright-form" disabled={copyrightUploading || !copyrightFile} className="button button-primary" aria-busy={copyrightUploading || undefined}>
+              {copyrightUploading ? <><Spinner size="sm" /> Uploading…</> : <><Icon name="upload" size={16} /> Upload form</>}
+            </button>
+          </>
+        )}
+      >
+        {copyrightPaper && (
+          <form id="copyright-form" onSubmit={handleSubmitCopyright} noValidate>
+            <p>
+              Download the IJEPA copyright transfer form, fill it in, sign it and upload it as a PDF.{' '}
+              <a href={copyrightTemplate} download="IJEPA Copyright Form.pdf">Download the copyright form</a>
+            </p>
+            <FilePicker
+              id="copyright-file"
+              label="Signed copyright form (PDF)"
+              extensions={['pdf']}
+              file={copyrightFile}
+              onChange={setCopyrightFile}
+              disabled={copyrightUploading}
             />
           </form>
         )}

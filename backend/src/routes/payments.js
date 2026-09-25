@@ -40,41 +40,63 @@ const loadPayablePaper = async (req, res, rawPaperId) => {
 
  const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-// Initialize Razorpay
-// Note: Ensure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are set in your .env file
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Article processing charges (Author Guidelines section 6). Set on the server only;
+// the client picks the currency, never the amount.
+const APC = {
+    INR: Number(process.env.APC_INR || 1500),
+    USD: Number(process.env.APC_USD || 50),
+};
 
-// GET /api/payments/key
+const paymentsConfigured = () => {
+    const id = process.env.RAZORPAY_KEY_ID || '';
+    const secret = process.env.RAZORPAY_KEY_SECRET || '';
+    return Boolean(id && secret && !/^YOUR_/i.test(id) && !/^YOUR_/i.test(secret));
+};
+
+// Created on first use so a missing key never stops the server from starting.
+let razorpayClient = null;
+const getRazorpay = () => {
+    if (!razorpayClient) {
+        razorpayClient = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+    }
+    return razorpayClient;
+};
+
+// GET /api/payments/key - public key id, whether online payment is available, and the fees
 router.get('/key', (req, res) => {
-    res.json({ key: process.env.RAZORPAY_KEY_ID });
+    const configured = paymentsConfigured();
+    res.json({ key: configured ? process.env.RAZORPAY_KEY_ID : null, configured, fees: APC });
 });
 
-// POST /api/payments/create-order
-// The amount comes from the paper's submission_fee, never from the client.
+// POST /api/payments/create-order  body: { paperId, currency: 'INR' | 'USD' }
 router.post('/create-order', requireAuth, async (req, res) => {
     try {
+        if (!paymentsConfigured()) {
+            return res.status(503).json({ success: false, error: 'Online payment is not available yet. Please contact editor@ijepa.org.' });
+        }
+
         const paper = await loadPayablePaper(req, res, req.body?.paperId);
         if (!paper) return;
 
-        const amountInRupees = Number(paper.submission_fee);
-        if (!Number.isFinite(amountInRupees) || amountInRupees <= 0) {
-            console.error('Paper has no valid submission_fee', { paperId: paper.id, submission_fee: paper.submission_fee });
-            return res.status(500).json({ success: false, error: 'The fee for this paper is not configured.' });
+        const currency = String(req.body?.currency || 'INR').toUpperCase();
+        const amount = APC[currency];
+        if (!Number.isFinite(amount) || amount <= 0) {
+            return res.status(400).json({ success: false, error: 'Choose INR or USD.' });
         }
 
         const options = {
-            amount: Math.round(amountInRupees * 100), // amount in the smallest currency unit (paise)
-            currency: "INR",
+            amount: Math.round(amount * 100), // smallest currency unit (paise / cents)
+            currency,
             receipt: `receipt_paper_${paper.id}`,
             notes: {
                 paperId: String(paper.id)
             }
         };
 
-        const order = await razorpay.orders.create(options);
+        const order = await getRazorpay().orders.create(options);
 
         if (!order) {
             return res.status(500).json({ success: false, error: "Failed to create Razorpay order" });
@@ -117,7 +139,7 @@ router.post('/verify-payment', requireAuth, async (req, res) => {
         const isAuthentic = expectedBuf.length === givenBuf.length && crypto.timingSafeEqual(expectedBuf, givenBuf);
 
         if (isAuthentic) {
-            const order = await razorpay.orders.fetch(razorpayOrderId);
+            const order = await getRazorpay().orders.fetch(razorpayOrderId);
             if (String(order?.notes?.paperId) !== String(paper.id) || order?.status !== 'paid') {
                 return res.status(400).json({ success: false, error: 'This payment does not match the paper.' });
             }

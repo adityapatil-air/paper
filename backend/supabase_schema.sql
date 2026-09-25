@@ -66,7 +66,7 @@ create table if not exists public.papers (
   doi              text unique,
   citation_count   integer default 0,
 
-  submission_fee   numeric(10,2) default 150,
+  submission_fee   numeric(10,2) default 1500,
   payment_status   payment_status not null default 'pending',
 
   review_deadline  date,

@@ -1686,6 +1686,14 @@ const AdminDashboard = () => {
                 <div><dt>Submitted</dt><dd>{formatDate(managePaper.submissionDate)}</dd></div>
                 <div><dt>Assigned reviewers</dt><dd>{Array.isArray(managePaper.assignedReviewers) ? managePaper.assignedReviewers.length : 0}</dd></div>
                 {managePaper.doi && <div><dt>DOI</dt><dd>{managePaper.doi}</dd></div>}
+                {['accepted', 'published'].includes(managePaper.status) && (
+                  <div>
+                    <dt>Copyright form</dt>
+                    <dd>{managePaper.copyrightUrl
+                      ? <a href={managePaper.copyrightUrl} target="_blank" rel="noopener noreferrer">Received · view</a>
+                      : 'Not received yet'}</dd>
+                  </div>
+                )}
                 {managePaper.assignedIssue && (
                   <div><dt>Journal issue</dt><dd>Volume {managePaper.assignedIssue.volume}, Issue {managePaper.assignedIssue.issue}</dd></div>
                 )}
@@ -2012,6 +2020,9 @@ const AdminDashboard = () => {
         )}
         {quickPublishPaper && quickPublishPaper.paymentStatus !== 'paid' && (
           <Alert type="warning" message="The article processing charge for this paper has not been recorded as paid." />
+        )}
+        {quickPublishPaper && !quickPublishPaper.copyrightUrl && (
+          <Alert type="warning" message="The author has not uploaded the signed copyright form yet." />
         )}
       </ConfirmDialog>
 

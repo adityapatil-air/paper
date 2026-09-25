@@ -323,7 +323,7 @@ router.post('/', requireAuth, async (req, res) => {
       keywords: mappedKeywords,
       category: category || null,
       word_count: wordCountInt,
-      submission_fee: 150,
+      submission_fee: 1500,
       payment_status: 'pending',
       status: 'submitted',
     };
