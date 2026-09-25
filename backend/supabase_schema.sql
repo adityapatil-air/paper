@@ -12,7 +12,7 @@ create extension if not exists pgcrypto;
 create type user_role as enum ('author', 'reviewer', 'admin', 'editor');
 
 -- Paper status
-create type paper_status as enum ('submitted', 'under_review', 'accepted', 'published', 'rejected');
+create type paper_status as enum ('submitted', 'under_review', 'revisions_requested', 'accepted', 'published', 'rejected');
 
 -- Payment status
 create type payment_status as enum ('pending', 'paid');
@@ -72,6 +72,8 @@ create table if not exists public.papers (
   review_deadline  date,
 
   pdf_url          text,
+  copyright_url    text,
+  cover_letter     text,
 
   created_at       timestamptz not null default timezone('utc', now()),
   updated_at       timestamptz not null default timezone('utc', now())
@@ -174,6 +176,13 @@ create table if not exists public.issues (
   month      text,
   year       integer not null,
   is_current boolean not null default false,
+
+  title           text,
+  description     text,
+  cover_image_url text,
+  file_url        text,
+  file_name       text,
+  published_at    date,
 
   created_at timestamptz not null default timezone('utc', now())
 );

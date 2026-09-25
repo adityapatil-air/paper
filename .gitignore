@@ -20,3 +20,8 @@ backend/.env.production
 # Temporary data/scripts
 backend/parse_papers.py
 backend/papers_metadata.json
+
+# Local tooling and runtime logs
+.claude/
+logs/
+*.log

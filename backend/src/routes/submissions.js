@@ -143,9 +143,9 @@ router.post(
         .select('*')
         .single();
 
-      // Until papers_files_migration.sql has been run, the cover_letter column does not exist.
+      // Until the schema columns from supabase_schema.sql exist, the cover_letter column does not exist.
       if (error && /cover_letter/.test(error.message || '')) {
-        console.warn('[submissions] papers.cover_letter column missing; run backend/papers_files_migration.sql. Saving without it.');
+        console.warn('[submissions] papers.cover_letter column missing; apply backend/supabase_schema.sql. Saving without it.');
         delete insertPayload.cover_letter;
         ({ data, error } = await supabase.from('papers').insert(insertPayload).select('*').single());
       }
@@ -202,7 +202,7 @@ router.post(
 
             if (copyrightUpdateError) {
               console.error(`[submissions] Copyright form stored at ${copyrightUrl} but its URL could not be saved on paper ${data.id}` +
-                ' (run backend/papers_files_migration.sql if papers.copyright_url is missing):', copyrightUpdateError.message || copyrightUpdateError);
+                ' (apply backend/supabase_schema.sql if papers.copyright_url is missing):', copyrightUpdateError.message || copyrightUpdateError);
             }
           }
         } catch (copyrightPersistErr) {

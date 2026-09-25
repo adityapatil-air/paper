@@ -83,11 +83,11 @@ router.post(
         // Don't leave files in storage that no row points to.
         await Promise.all([manuscriptUrl, copyrightUrl].filter(Boolean).map(removeFileByUrl));
         if (/copyright_url/.test(updateError.message || '')) {
-          console.error('papers.copyright_url column missing; run backend/papers_files_migration.sql', updateError);
+          console.error('papers.copyright_url column missing; apply backend/supabase_schema.sql', updateError);
           return res.status(409).json({
             success: false,
             code: 'MIGRATION_REQUIRED',
-            error: 'Copyright forms can’t be saved yet: run backend/papers_files_migration.sql in the Supabase SQL editor.',
+            error: 'Copyright forms can’t be saved yet: apply backend/supabase_schema.sql in the Supabase SQL editor.',
           });
         }
         console.error('Error updating paper file URLs in admin replace', updateError);
@@ -222,7 +222,7 @@ router.post('/accept-paper', async (req, res) => {
         return res.status(409).json({
           success: false,
           code: 'MIGRATION_REQUIRED',
-          error: 'The database does not support the "accepted" status yet. Run backend/accepted_status_migration.sql in the Supabase SQL editor.',
+          error: 'The database does not support the "accepted" status yet. apply backend/supabase_schema.sql in the Supabase SQL editor.',
         });
       }
       console.error('Error accepting paper', error);
@@ -431,7 +431,7 @@ router.post('/request-revisions', async (req, res) => {
         return res.status(409).json({
           success: false,
           code: 'MIGRATION_REQUIRED',
-          error: 'The database does not support the "revisions requested" status yet. Run backend/papers_files_migration.sql in the Supabase SQL editor.',
+          error: 'The database does not support the "revisions requested" status yet. apply backend/supabase_schema.sql in the Supabase SQL editor.',
         });
       }
       // Other failures: still notify the author below.

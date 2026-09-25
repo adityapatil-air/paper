@@ -34,7 +34,7 @@ const issueUploads = handleUpload(upload.fields([
   { name: 'coverImage', maxCount: 1 },
 ]));
 
-const MIGRATION_HINT = 'The issues table is missing the new content columns. Run backend/issues_content_migration.sql in the Supabase SQL editor.';
+const MIGRATION_HINT = 'The issues table is missing the new content columns. apply backend/supabase_schema.sql in the Supabase SQL editor.';
 const isMissingColumnError = (error) => Boolean(error) && (
   error.code === '42703' || error.code === 'PGRST204' || /column/i.test(error.message || '')
 );

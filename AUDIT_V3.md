@@ -12,8 +12,8 @@
 
 ### ⚠️ Three things only you can finish — the fixes are in the repo but not yet active
 
-1. **P0-02 — Run `backend/rls_migration.sql`** in the Supabase SQL editor for **both** the dev and production projects. Until then the anon key still reads every table (re-checked today: `users`/`papers`/`reviews`/`notifications` all readable). It's DDL, so it can't be applied over the API. Non-destructive.
-2. **P1-07 — Run `backend/accepted_status_migration.sql`** (adds the `accepted` enum value). Until then the Accept button returns a clear "run the migration" message and papers can't be published. Non-destructive.
+1. ~~P0-02 — RLS migration~~ **Done on dev (2026-09-26).** Anon key now returns `[]` for users/papers/notifications. Production still needs the RLS block from `backend/supabase_schema.sql`.
+2. ~~P1-07 — accepted status~~ **Done on dev (2026-09-26).** All migrations are now folded into `backend/supabase_schema.sql`.
 3. **P0-04 — Rotate `JWT_SECRET` and the Razorpay key secret**, then purge `backend/.env copy` from git history. The file is now untracked and ignored and the server fails closed without `JWT_SECRET`, but the old secret is still in past commits on `origin/main` and `origin/dev`. Rotating logs everyone out; history rewrite is destructive — both are your call.
 
 Optional data cleanup: **`backend/clear_placeholder_dois.sql`** removes the two `10.1000/example.*` DOIs already stored (P1-08).
