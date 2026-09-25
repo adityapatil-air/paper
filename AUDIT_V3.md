@@ -6,6 +6,31 @@
 
 ---
 
+## Final status (2026-09-26)
+
+**Done and verified**
+- All P0, P1, P2 and P3 issues are fixed (P1-13 email excepted, see below). RLS and every migration are applied on `xwwoinsgvxgeaksqxtdq`; `backend/supabase_schema.sql` is the single schema file.
+- **Full lifecycle, 23/23 API steps pass** (run 2026-09-26 against the local backend with the demo accounts): DOCX submission accepted and PDF rejected → reviewer assigned → anonymised reviewer view → review → revision requested → revision uploaded → accept → copyright form (PDF only, only after acceptance) → payment rules (refused before acceptance; clear 503 while keys are placeholders; USD/INR amounts set server-side) → admin marks paid → publish → public page and published list → issue assign/unassign → admin API refuses author (403) and guest (401). Test papers were deleted afterwards.
+- **Payments:** "Pay now" now opens Razorpay Checkout for the paper's own order (it used to open a fixed hosted link that could never mark a paper paid). INR 1500 / USD 50; fee default corrected from 150 to 1500.
+- **Copyright form step** for accepted papers (author upload, admin status, publish warning).
+- **Word manuscripts** on the review page now offer a download instead of a dead end.
+- **Content matches the live site:** Monthly, DOC/DOCX-only initial submission, editor@ijepa.org, CrossRef text and Call-for-Papers dates identical to live.
+- **Back catalogue:** 30 papers published across Vol 1 Issues 1–6 with PDFs, abstracts and keywords; `/p/:id` pages carry Google Scholar `citation_*` tags.
+- **Sitemap** fixed (every URL was missing `https://`) and now lists all 30 papers; regenerate with `node backend/scripts/build_sitemap.js`.
+- Production build compiles. Launch steps: `LAUNCH_CHECKLIST.md`.
+
+**Needs your decision (data)**
+1. **Issue 7 (July 2026) is the current issue but contains 5 papers that are duplicates of Issue 4 and Issue 6 papers** (the July folder held copies). Either get the real July papers, or unlink the duplicates and make Issue 6 current.
+2. **All 30 papers have placeholder DOIs** `10.5281/zenodo.IJEPA-2026-NNN`, which return 404 at doi.org and are not printed in the PDFs. They are shown publicly and sent to Google Scholar. Recommend clearing them until real DOIs are registered.
+3. **Test data to remove before launch:** users 1, 5, 6, 7, 8, 9 (test/audit accounts) and 2, 3, 4 (demo author/reviewer/admin, keep until a real admin exists); Storage folders `anonymous/`, `paper-2/`, `user-4/`, `user-5/`, `user-6/`, `user-e2e-test-author/`, `user-2/`; 8+ test notifications.
+
+**Still open (by choice)**
+- P1-13 transactional email (needs a provider such as Resend and DNS on ijepa.org).
+- Private storage bucket with signed URLs (P1-03 remainder).
+- Real Razorpay keys (test keys for local testing; live keys at launch; international payments need Razorpay KYC).
+
+---
+
 ## Phase 2 — fix status (2026-09-25)
 
 **All 8 P0, all 16 P1, and all 23 P2 issues are fixed in code**, one commit per issue (message = audit ID). Each was re-tested in the browser or with curl before its commit; evidence is in the session. P3 items are not done (you said P3 only if asked). The frontend dev server moved to **port 3005** (3000 and 3001 were taken by other local apps).

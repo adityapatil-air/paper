@@ -1,36 +1,159 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>ijepa.org/</loc>
+    <loc>https://ijepa.org/</loc>
   </url>
   <url>
-    <loc>ijepa.org/papers</loc>
+    <loc>https://ijepa.org/papers</loc>
   </url>
   <url>
-    <loc>ijepa.org/journal-issues</loc>
+    <loc>https://ijepa.org/journal-issues</loc>
   </url>
   <url>
-    <loc>ijepa.org/callforpapers</loc>
+    <loc>https://ijepa.org/callforpapers</loc>
   </url>
   <url>
-    <loc>ijepa.org/author-guidelines</loc>
+    <loc>https://ijepa.org/author-guidelines</loc>
   </url>
   <url>
-    <loc>ijepa.org/indexing</loc>
+    <loc>https://ijepa.org/indexing</loc>
   </url>
   <url>
-    <loc>ijepa.org/editorial-board</loc>
+    <loc>https://ijepa.org/editorial-board</loc>
   </url>
   <url>
-    <loc>ijepa.org/contact-us</loc>
+    <loc>https://ijepa.org/joinusedito</loc>
   </url>
   <url>
-    <loc>ijepa.org/about-us</loc>
+    <loc>https://ijepa.org/contact-us</loc>
   </url>
   <url>
-    <loc>ijepa.org/privacy-policy</loc>
+    <loc>https://ijepa.org/about-us</loc>
   </url>
   <url>
-    <loc>ijepa.org/terms-of-service</loc>
+    <loc>https://ijepa.org/privacy-policy</loc>
+  </url>
+  <url>
+    <loc>https://ijepa.org/terms-of-service</loc>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/11</loc>
+    <lastmod>2026-01-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/12</loc>
+    <lastmod>2026-01-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/13</loc>
+    <lastmod>2026-01-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/14</loc>
+    <lastmod>2026-01-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/15</loc>
+    <lastmod>2026-01-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/16</loc>
+    <lastmod>2026-02-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/17</loc>
+    <lastmod>2026-02-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/18</loc>
+    <lastmod>2026-02-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/19</loc>
+    <lastmod>2026-02-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/20</loc>
+    <lastmod>2026-02-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/21</loc>
+    <lastmod>2026-03-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/22</loc>
+    <lastmod>2026-03-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/23</loc>
+    <lastmod>2026-03-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/24</loc>
+    <lastmod>2026-03-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/25</loc>
+    <lastmod>2026-03-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/26</loc>
+    <lastmod>2026-04-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/27</loc>
+    <lastmod>2026-07-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/28</loc>
+    <lastmod>2026-07-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/29</loc>
+    <lastmod>2026-07-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/30</loc>
+    <lastmod>2026-07-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/31</loc>
+    <lastmod>2026-05-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/32</loc>
+    <lastmod>2026-05-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/33</loc>
+    <lastmod>2026-05-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/34</loc>
+    <lastmod>2026-05-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/35</loc>
+    <lastmod>2026-05-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/36</loc>
+    <lastmod>2026-07-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/37</loc>
+    <lastmod>2026-06-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/38</loc>
+    <lastmod>2026-06-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/39</loc>
+    <lastmod>2026-06-15</lastmod>
+  </url>
+  <url>
+    <loc>https://ijepa.org/p/40</loc>
+    <lastmod>2026-06-15</lastmod>
   </url>
 </urlset>
