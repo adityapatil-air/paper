@@ -62,7 +62,7 @@ const Landing = () => {
       <section className="journal-facts"><div className="journal-container facts-grid">
         <div className="fact"><JournalIcon>⚙</JournalIcon><div><strong>Peer Reviewed</strong><small>Quality research, expert evaluation</small></div></div>
         <div className="fact"><JournalIcon>♙</JournalIcon><div><strong>Open Access</strong><small>Free access to global knowledge</small></div></div>
-        <div className="fact"><JournalIcon>▣</JournalIcon><div><strong>Quarterly</strong><small>Four issues published each year</small></div></div>
+        <div className="fact"><JournalIcon>▣</JournalIcon><div><strong>Monthly</strong><small>Twelve issues published each year</small></div></div>
         <div className="fact"><JournalIcon>▤</JournalIcon><div><strong>ISSN</strong><small>ISSN: 3139-5961 (Online)</small></div></div>
         <div className="fact"><JournalIcon>↗</JournalIcon><div><strong>DOI</strong><small>Digital Object Identifier</small></div></div>
       </div></section>

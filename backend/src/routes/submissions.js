@@ -5,6 +5,8 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// New submissions accept Word only (per the Author Guidelines); revisions keep the document rule.
+const submissionUpload = makeUploader({ manuscript: 'word', copyrightForm: 'document' });
 const upload = makeUploader({ manuscript: 'document', copyrightForm: 'document' });
 
 // The journal's Aims & Scope areas; must match SUBJECT_AREAS in src/pages/SubmitForm.js.
@@ -28,7 +30,7 @@ const ensureSupabase = (res) => {
 router.post(
   '/',
   requireAuth,
-  handleUpload(upload.fields([
+  handleUpload(submissionUpload.fields([
     { name: 'manuscript', maxCount: 1 },
     { name: 'copyrightForm', maxCount: 1 },
   ])),

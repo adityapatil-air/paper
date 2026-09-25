@@ -220,7 +220,7 @@ const AdminDashboard = () => {
     e.preventDefault();
 
     if (!adminSubmitForm.manuscriptFile) {
-      setAdminFileError('Attach the manuscript PDF before submitting.');
+      setAdminFileError('Attach the manuscript (DOC or DOCX) before submitting.');
       return;
     }
 
@@ -1827,8 +1827,8 @@ const AdminDashboard = () => {
 
           <FilePicker
             id="as-manuscript"
-            label="Manuscript (PDF, DOC or DOCX)"
-            extensions={['pdf', 'doc', 'docx']}
+            label="Manuscript (DOC or DOCX)"
+            extensions={['doc', 'docx']}
             file={adminSubmitForm.manuscriptFile}
             onChange={(f) => { setAdminSubmitForm((prev) => ({ ...prev, manuscriptFile: f })); setAdminFileError(''); }}
             disabled={adminSubmittingPaper}
@@ -1853,7 +1853,7 @@ const AdminDashboard = () => {
           </>
         )}
       >
-        <FilePicker id="rf-manuscript" label="New manuscript" optional extensions={['pdf']} file={replaceManuscriptFile} onChange={setReplaceManuscriptFile} disabled={replaceFilesSubmitting} />
+        <FilePicker id="rf-manuscript" label="Final manuscript (PDF)" optional extensions={['pdf']} file={replaceManuscriptFile} onChange={setReplaceManuscriptFile} disabled={replaceFilesSubmitting} />
         <FilePicker id="rf-copyright" label="New copyright form" optional extensions={['pdf']} file={replaceCopyrightFile} onChange={setReplaceCopyrightFile} disabled={replaceFilesSubmitting} />
       </Modal>
 

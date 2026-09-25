@@ -9,6 +9,8 @@ const DOCUMENT_TYPES = {
   doc: ['application/msword'],
   docx: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
 };
+// Initial submissions are Word only (Author Guidelines: PDF is not accepted at first submission).
+const WORD_TYPES = { doc: DOCUMENT_TYPES.doc, docx: DOCUMENT_TYPES.docx };
 const IMAGE_TYPES = {
   jpg: ['image/jpeg'],
   jpeg: ['image/jpeg'],
@@ -164,13 +166,13 @@ const removeFileByUrl = async (publicUrl) => {
 };
 
 // multer instance restricting each field to its allowed extensions.
-// fieldTypes: { manuscript: 'document', coverImage: 'image' }
+// fieldTypes: { manuscript: 'document' | 'word', coverImage: 'image' }
 const makeUploader = (fieldTypes) => multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_BYTES },
   fileFilter: (_req, file, cb) => {
     const kind = fieldTypes[file.fieldname];
-    const table = kind === 'image' ? IMAGE_TYPES : DOCUMENT_TYPES;
+    const table = kind === 'image' ? IMAGE_TYPES : kind === 'word' ? WORD_TYPES : DOCUMENT_TYPES;
     const ext = extensionOf(file.originalname);
     if (!kind || !table[ext]) {
       return cb(unsupportedType(Object.keys(table)));

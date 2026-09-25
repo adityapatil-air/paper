@@ -19,7 +19,7 @@ const getApiBaseUrl = () => {
 const API_BASE_URL = getApiBaseUrl();
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
-const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx'];
+const ACCEPTED_EXTENSIONS = ['doc', 'docx'];
 const COVER_LETTER_MAX = 500;
 const ABSTRACT_MIN_WORDS = 150;
 const ABSTRACT_MAX_WORDS = 300;
@@ -128,7 +128,7 @@ const validateCoAuthorField = (field, rawValue) => {
 const validateFile = (file) => {
   if (!file) return '';
   if (!ACCEPTED_EXTENSIONS.includes(fileExtension(file.name))) {
-    return `“${file.name}” isn't a supported format. Upload a PDF, DOC or DOCX file.`;
+    return `“${file.name}” isn't a supported format. Upload a DOC or DOCX file (PDF is not accepted for initial submission).`;
   }
   if (file.size > MAX_FILE_BYTES) {
     return `“${file.name}” is ${formatBytes(file.size)}. The maximum file size is 20 MB.`;
@@ -1083,7 +1083,7 @@ const SubmitForm = () => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={handleFilePick}
                   className="sr-only"
                   tabIndex={-1}
@@ -1127,7 +1127,7 @@ const SubmitForm = () => {
                             browse files
                           </button></>}
                       </p>
-                      <p className="dropzone-hint" id="manuscript-hint">PDF, DOC or DOCX · up to 20 MB · one file</p>
+                      <p className="dropzone-hint" id="manuscript-hint">DOC or DOCX · up to 20 MB · one file</p>
                     </div>
                   )}
                 </div>
@@ -1259,11 +1259,10 @@ const SubmitForm = () => {
             <div className="aside-card">
               <h2><Icon name="file" size={18} /> Accepted formats</h2>
               <div className="format-list">
-                <span className="format-pill">PDF</span>
                 <span className="format-pill">DOC</span>
                 <span className="format-pill">DOCX</span>
               </div>
-              <p className="aside-note">One file per submission, up to 20 MB.</p>
+              <p className="aside-note">One file per submission, up to 20 MB. PDF files are not accepted for initial submission.</p>
             </div>
 
             <div className="aside-card template-card">

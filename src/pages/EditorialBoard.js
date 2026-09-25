@@ -224,7 +224,7 @@ const EditorialBoard = () => {
 
         <p style={{ textAlign: 'center', marginTop: 20 }}>
           For inquiries regarding the Editorial Board, please contact the Editorial Office at{' '}
-          <a href="mailto:editorial@ijepa.org">editorial@ijepa.org</a>.
+          <a href="mailto:editor@ijepa.org">editor@ijepa.org</a>.
         </p>
       </div>
     </div>
