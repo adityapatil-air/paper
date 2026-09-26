@@ -1,6 +1,8 @@
 # IJEPA — Launch checklist
 
-Everything needed to take the `testing` branch live on **ijepa.org**. Steps marked **(you)** need an account, a password or a business decision and can't be done from the code.
+Everything needed to take the site live on **ijepa.org**.
+
+**Branches:** `dev` is the stable branch that gets deployed (client testing, then production). `testing` is where new work happens. When a change on `testing` is ready: `git checkout dev && git merge testing && git push origin dev`, and Render and Vercel redeploy automatically. Steps marked **(you)** need an account, a password or a business decision and can't be done from the code.
 
 Stack: React build served by **Nginx**, Express API on port 4000 run by **PM2** (`ecosystem.config.js`), database and file storage in **Supabase** project `xwwoinsgvxgeaksqxtdq`.
 
@@ -12,10 +14,13 @@ Use this for the client's acceptance testing before ijepa.org goes live. **Keep 
 
 Deploy the **backend first**, because the frontend needs its URL.
 
-### A. Push the branch
+### A. Update and push `dev`
 
 ```bash
-git push origin testing
+git checkout dev
+git merge testing        # bring dev up to date with the finished work
+git push origin dev
+git checkout testing     # keep building here
 ```
 
 ### B. Backend on Render
@@ -25,7 +30,7 @@ git push origin testing
 
    | Field | Value |
    |---|---|
-   | Branch | `testing` |
+   | Branch | `dev` |
    | Root Directory | `backend` |
    | Runtime | Node (the repo pins Node 20 in `backend/package.json`) |
    | Build Command | `npm install` |
@@ -52,7 +57,7 @@ git push origin testing
 
 1. vercel.com → **Add New → Project** → import `adityapatil-air/paper`.
 2. Settings: Framework **Create React App**, Root Directory `./`. Build and output come from `vercel.json` (`npm run build` → `build`), which also rewrites every route to `index.html`, so refreshing `/admin-dashboard` works.
-3. **Production Branch:** Project → Settings → Git → set to `testing`. Otherwise Vercel builds `main`.
+3. **Production Branch:** Project → Settings → Git → set to `dev`. Otherwise Vercel builds `main`. (Pushes to `testing` then get their own preview URLs, and the client's link stays on `dev`.)
 4. **Environment Variables** (baked in at build time, so redeploy after changing any):
 
    | Key | Value |
@@ -93,7 +98,7 @@ git push origin testing
 
 ## 1. Before deploying
 
-- [ ] **(you)** Merge `testing` into `main` and push.
+- [ ] **(you)** Merge `testing` into `dev` (and `main` if you keep it) and push.
 - [ ] **(you)** Decide the open content items: the duplicate July issue and the placeholder DOIs (see `AUDIT_V3.md` → Final status).
 - [ ] **(you)** Remove test data from Supabase (demo/audit accounts, leftover test files in Storage). The list is in `AUDIT_V3.md`.
 - [ ] **(you)** Create one real admin account (register, then set `role = 'admin'` for that row in Supabase → Table editor → `users`).
