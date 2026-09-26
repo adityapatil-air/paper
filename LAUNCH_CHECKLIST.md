@@ -6,6 +6,91 @@ Stack: React build served by **Nginx**, Express API on port 4000 run by **PM2** 
 
 ---
 
+## 0. Client test deployment: Render (backend) + Vercel (frontend)
+
+Use this for the client's acceptance testing before ijepa.org goes live. **Keep the backend on Render**: Vercel functions reject request bodies over ~4.5 MB, and manuscripts can be up to 20 MB. With this split, uploads go browser → Render → Supabase Storage, and Vercel only serves the static site.
+
+Deploy the **backend first**, because the frontend needs its URL.
+
+### A. Push the branch
+
+```bash
+git push origin testing
+```
+
+### B. Backend on Render
+
+1. render.com → **New → Web Service** → connect GitHub → pick `adityapatil-air/paper`.
+2. Settings:
+
+   | Field | Value |
+   |---|---|
+   | Branch | `testing` |
+   | Root Directory | `backend` |
+   | Runtime | Node (the repo pins Node 20 in `backend/package.json`) |
+   | Build Command | `npm install` |
+   | Start Command | `npm start` |
+   | Health Check Path | `/api/health` |
+   | Instance type | **Starter ($7/mo) recommended while the client tests.** Free sleeps after 15 min idle and the next request takes ~50 s. |
+
+3. **Environment** (copy from your local `backend/.env`):
+
+   | Key | Value |
+   |---|---|
+   | `SUPABASE_URL` | `https://xwwoinsgvxgeaksqxtdq.supabase.co` |
+   | `SUPABASE_SERVICE_ROLE_KEY` | from `backend/.env` |
+   | `SUPABASE_STORAGE_BUCKET` | `manuscripts` |
+   | `JWT_SECRET` | from `backend/.env` |
+   | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Razorpay **test** keys (`rzp_test_…`) |
+   | `TRUST_PROXY` | `true` |
+   | `FRONTEND_ORIGIN` | leave for now; set to the Vercel URL in step D |
+
+   Don't set `PORT`; Render provides it.
+4. **Create Web Service**. When it's live, open `https://<name>.onrender.com/api/health`. It should return JSON. Copy this URL.
+
+### C. Frontend on Vercel
+
+1. vercel.com → **Add New → Project** → import `adityapatil-air/paper`.
+2. Settings: Framework **Create React App**, Root Directory `./`. Build and output come from `vercel.json` (`npm run build` → `build`), which also rewrites every route to `index.html`, so refreshing `/admin-dashboard` works.
+3. **Production Branch:** Project → Settings → Git → set to `testing`. Otherwise Vercel builds `main`.
+4. **Environment Variables** (baked in at build time, so redeploy after changing any):
+
+   | Key | Value |
+   |---|---|
+   | `REACT_APP_API_URL` | `https://<name>.onrender.com` (no trailing slash) |
+   | `REACT_APP_SITE_URL` | `https://<project>.vercel.app` |
+   | `REACT_APP_SUPABASE_URL` | `https://xwwoinsgvxgeaksqxtdq.supabase.co` |
+   | `REACT_APP_SUPABASE_ANON_KEY` | the publishable key from your local `.env` |
+
+5. **Deploy**, then copy the `https://<project>.vercel.app` URL.
+
+### D. Connect them
+
+- [ ] Render → Environment → `FRONTEND_ORIGIN` = the Vercel URL → **Save** (Render redeploys).
+- [ ] If `REACT_APP_SITE_URL` was a guess, correct it on Vercel → **Redeploy**.
+- [ ] Supabase → **Authentication → URL Configuration** → add `https://<project>.vercel.app/**` to Redirect URLs (needed for "Sign in with Google").
+- [ ] Google Cloud Console → OAuth client → add the Vercel URL to **Authorised JavaScript origins**.
+
+### E. Check it yourself before sending the link
+
+- [ ] Home, Journal Issues, Browse Papers and a paper page load, and the PDF opens.
+- [ ] Refresh on `/author-dashboard`: no 404.
+- [ ] Log in as each of the three client accounts.
+- [ ] Submit a **real 10–15 MB DOCX**: it uploads and appears in the admin dashboard.
+- [ ] The reviewer downloads the manuscript; the author uploads the copyright form.
+- [ ] Pay with a Razorpay test card (`4111 1111 1111 1111`, any future expiry, any CVV); the paper shows as paid.
+- [ ] On the free plan, open the site a minute before the client does so the backend is awake.
+
+### F. What to tell the client
+
+- The link and three logins (admin, reviewer, author). Send the passwords separately from the link.
+- There are **no emails yet**: every notification appears in the dashboard's bell.
+- Start test paper titles with **TEST** so they're easy to delete before launch.
+- Payments are in **test mode**: use the test card above; no real money moves.
+- The first page load can take up to a minute on the free plan.
+
+---
+
 ## 1. Before deploying
 
 - [ ] **(you)** Merge `testing` into `main` and push.
