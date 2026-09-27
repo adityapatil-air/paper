@@ -613,6 +613,40 @@ export const mockAPI = {
     }
   },
 
+  submitPaymentProof: async (paperId, file, reference) => {
+    try {
+      const formData = new FormData();
+      formData.append('proof', file);
+      if (reference) formData.append('reference', reference);
+      const response = await fetch(`${API_BASE_URL}/api/payments/proof/${paperId}`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'Failed to upload the payment proof.' };
+      }
+      return { success: true, proofUrl: data.proofUrl };
+    } catch (error) {
+      console.error('submitPaymentProof error', error);
+      return { success: false, error: 'Failed to upload the payment proof.' };
+    }
+  },
+
+  // [{ name, url, uploadedAt }] newest first
+  getPaymentProofs: async (paperId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/payments/proof/${paperId}`, { headers: authHeaders() });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) return { success: false, error: data.error || 'Failed to load payment proofs.', proofs: [] };
+      return { success: true, proofs: data.proofs || [] };
+    } catch (error) {
+      console.error('getPaymentProofs error', error);
+      return { success: false, error: 'Failed to load payment proofs.', proofs: [] };
+    }
+  },
+
   uploadCopyrightForm: async (paperId, file) => {
     try {
       const formData = new FormData();

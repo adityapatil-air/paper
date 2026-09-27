@@ -156,6 +156,7 @@ const AdminDashboard = () => {
     photo: '',
   });
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [paperProofs, setPaperProofs] = useState({ paperId: null, loading: false, items: [] });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [reviewerSortBy, setReviewerSortBy] = useState('name_az');
@@ -532,6 +533,18 @@ const AdminDashboard = () => {
       [field]: value,
     }));
   };
+
+  // Payment proofs are files in storage; load them for the paper being viewed or published.
+  const proofPaperId = managePaper?.id || quickPublishPaper?.id || null;
+  useEffect(() => {
+    if (!proofPaperId) return undefined;
+    let active = true;
+    setPaperProofs({ paperId: proofPaperId, loading: true, items: [] });
+    mockAPI.getPaymentProofs(proofPaperId).then((r) => {
+      if (active) setPaperProofs({ paperId: proofPaperId, loading: false, items: r.proofs || [] });
+    });
+    return () => { active = false; };
+  }, [proofPaperId]);
 
   const handleEditorialPhoto = async (file) => {
     if (!file) return;
@@ -1730,6 +1743,20 @@ const AdminDashboard = () => {
                 <div><dt>Assigned reviewers</dt><dd>{Array.isArray(managePaper.assignedReviewers) ? managePaper.assignedReviewers.length : 0}</dd></div>
                 {managePaper.doi && <div><dt>DOI</dt><dd>{managePaper.doi}</dd></div>}
                 {['accepted', 'published'].includes(managePaper.status) && (
+                  <div className="is-wide">
+                    <dt>Payment proof</dt>
+                    <dd>{paperProofs.loading ? 'Checking…'
+                      : paperProofs.items.length
+                        ? paperProofs.items.map((f, i) => (
+                          <span key={f.name} className="proof-link">
+                            <a href={f.url} target="_blank" rel="noopener noreferrer">{i === 0 ? 'View latest proof' : `Earlier proof ${i}`}</a>
+                            {f.uploadedAt && <> · sent {formatDate(f.uploadedAt)}</>}
+                          </span>
+                        ))
+                        : 'Not sent yet'}</dd>
+                  </div>
+                )}
+                {['accepted', 'published'].includes(managePaper.status) && (
                   <div>
                     <dt>Copyright form</dt>
                     <dd>{managePaper.copyrightUrl
@@ -2083,7 +2110,9 @@ const AdminDashboard = () => {
           </div>
         )}
         {quickPublishPaper && quickPublishPaper.paymentStatus !== 'paid' && (
-          <Alert type="warning" message="The article processing charge for this paper has not been recorded as paid." />
+          paperProofs.items.length
+            ? <p>Payment proof: <a href={paperProofs.items[0].url} target="_blank" rel="noopener noreferrer">check the author's screenshot</a> before publishing.</p>
+            : !paperProofs.loading && <Alert type="warning" message="The author hasn't sent payment proof for this paper yet." />
         )}
         {quickPublishPaper && !quickPublishPaper.copyrightUrl && (
           <Alert type="warning" message="The author has not uploaded the signed copyright form yet." />
@@ -2094,7 +2123,7 @@ const AdminDashboard = () => {
       <ConfirmDialog
         open={Boolean(markPaidPaper)}
         title="Mark the fee as paid?"
-        message="Only do this after confirming the payment in the Razorpay dashboard. The author is notified."
+        message="Check the author's payment proof (in the paper's details) against your bank or UPI statement first. The author is notified."
         confirmLabel="Yes, mark as paid"
         busyLabel="Saving…"
         busy={markingPaid}
@@ -2102,6 +2131,7 @@ const AdminDashboard = () => {
         onConfirm={confirmMarkPaid}
       >
         {markPaidPaper && <div className="paper-ref"><strong>{markPaidPaper.title}</strong><span>ID: {markPaidPaper.id}</span></div>}
+
       </ConfirmDialog>
 
       {/* Accept */}

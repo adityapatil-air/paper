@@ -167,13 +167,13 @@ const removeFileByUrl = async (publicUrl) => {
 };
 
 // multer instance restricting each field to its allowed extensions.
-// fieldTypes: { manuscript: 'document' | 'word' | 'pdf', coverImage: 'image' }
+// fieldTypes: { manuscript: 'document' | 'word' | 'pdf', coverImage: 'image', proof: 'proof' (image or PDF) }
 const makeUploader = (fieldTypes) => multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_BYTES },
   fileFilter: (_req, file, cb) => {
     const kind = fieldTypes[file.fieldname];
-    const table = kind === 'image' ? IMAGE_TYPES : kind === 'word' ? WORD_TYPES : kind === 'pdf' ? PDF_TYPES : DOCUMENT_TYPES;
+    const table = kind === 'image' ? IMAGE_TYPES : kind === 'word' ? WORD_TYPES : kind === 'pdf' ? PDF_TYPES : kind === 'proof' ? { ...IMAGE_TYPES, ...PDF_TYPES } : DOCUMENT_TYPES;
     const ext = extensionOf(file.originalname);
     if (!kind || !table[ext]) {
       return cb(unsupportedType(Object.keys(table)));
@@ -206,8 +206,25 @@ const sendStorageError = (res, err) => {
   return true;
 };
 
+// Files directly inside a folder, newest first, as { name, url, uploadedAt }.
+const listFiles = async (folder) => {
+  if (!supabase) return [];
+  const bucket = getBucketName();
+  const prefix = String(folder).replace(/^\/+|\/+$/g, '');
+  const { data, error } = await supabase.storage.from(bucket).list(prefix, { limit: 50, sortBy: { column: 'created_at', order: 'desc' } });
+  if (error) throw storageUnavailable(error);
+  return (data || [])
+    .filter((f) => f && f.id)
+    .map((f) => ({
+      name: f.name,
+      url: supabase.storage.from(bucket).getPublicUrl(`${prefix}/${f.name}`).data.publicUrl,
+      uploadedAt: f.created_at || null,
+    }));
+};
+
 module.exports = {
   MAX_FILE_BYTES,
+  listFiles,
   StorageError,
   ensureBucket,
   getBucketName,

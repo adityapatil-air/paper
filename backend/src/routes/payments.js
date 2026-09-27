@@ -3,6 +3,10 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { supabase } = require('../supabaseClient');
 const { requireAuth } = require('../middleware/auth');
+const { makeUploader, handleUpload, uploadFile, listFiles, sendStorageError } = require('../storage');
+
+const proofUpload = makeUploader({ proof: 'proof' });
+const REFERENCE_MAX = 100;
 
 const router = express.Router();
 
@@ -106,6 +110,68 @@ router.post('/create-order', requireAuth, async (req, res) => {
     } catch (error) {
         console.error("Error creating order:", error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Payment proofs live in storage only, one folder per paper: payment-proofs/paper-<id>/.
+// The author pays by bank transfer or UPI and uploads a screenshot/receipt; an admin checks it
+// and publishes the paper. Nothing about the proof is stored in the database.
+const proofFolder = (paperId) => `payment-proofs/paper-${paperId}`;
+
+// POST /api/payments/proof/:paperId - the paper's author uploads proof of payment
+router.post('/proof/:paperId', requireAuth, handleUpload(proofUpload.single('proof')), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'Attach a screenshot or receipt of your payment (JPG, PNG, WebP or PDF).' });
+        }
+        const paper = await loadPayablePaper(req, res, req.params.paperId);
+        if (!paper) return;
+
+        const reference = String(req.body?.reference || '').trim().slice(0, REFERENCE_MAX);
+        const proofUrl = await uploadFile(req.file, proofFolder(paper.id));
+
+        // Let the admins know there is a payment to check (the reference only travels here).
+        try {
+            const { data: admins } = await supabase.from('users').select('id').eq('role', 'admin');
+            const rows = (admins || []).map((a) => ({
+                user_id: a.id,
+                title: 'Payment proof received',
+                message: `The author sent payment proof for "${paper.title}" (paper #${paper.id})${reference ? `, transaction ID ${reference}` : ''}. Check it in the paper's details, then publish.`,
+                type: 'info',
+            }));
+            if (rows.length) {
+                const { error: notifError } = await supabase.from('notifications').insert(rows);
+                if (notifError) console.error('Error inserting payment proof notifications', notifError);
+            }
+        } catch (notifErr) {
+            console.error('Unexpected error while creating payment proof notifications', notifErr);
+        }
+
+        return res.json({ success: true, proofUrl });
+    } catch (err) {
+        if (sendStorageError(res, err)) return;
+        console.error('Unexpected error in POST /api/payments/proof/:paperId', err);
+        return res.status(500).json({ success: false, error: 'Failed to upload the payment proof.' });
+    }
+});
+
+// GET /api/payments/proof/:paperId - proofs sent for a paper (its author or an admin)
+router.get('/proof/:paperId', requireAuth, async (req, res) => {
+    try {
+        const paperId = parseInt(req.params.paperId, 10);
+        if (Number.isNaN(paperId)) return res.status(400).json({ success: false, error: 'Invalid paper id.' });
+        if (req.user.role !== 'admin') {
+            const { data: paper } = await supabase.from('papers').select('main_author_id').eq('id', paperId).maybeSingle();
+            if (!paper || paper.main_author_id !== req.user.id) {
+                return res.status(404).json({ success: false, error: 'Paper not found.' });
+            }
+        }
+        const proofs = await listFiles(proofFolder(paperId));
+        return res.json({ success: true, proofs });
+    } catch (err) {
+        if (sendStorageError(res, err)) return;
+        console.error('Unexpected error in GET /api/payments/proof/:paperId', err);
+        return res.status(500).json({ success: false, error: 'Failed to load payment proofs.' });
     }
 });
 

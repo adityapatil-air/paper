@@ -16,6 +16,8 @@ import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
 import copyrightTemplate from '../assets/Copyright.pdf';
 import CertificateList from '../components/ui/CertificateList';
+import { PAYMENT_ACCOUNT } from '../config/payment';
+import upiQr from '../assets/payment-upi-qr.png';
 
 const UNFINISHED_STATUSES = ['submitted', 'under_review', 'revisions_requested', 'accepted'];
 
@@ -78,6 +80,10 @@ const AuthorDashboard = () => {
   const [paymentConfig, setPaymentConfig] = useState(null);
   const [paymentCurrency, setPaymentCurrency] = useState('INR');
   const [paymentBusy, setPaymentBusy] = useState(false);
+  const [proofFile, setProofFile] = useState(null);
+  const [proofReference, setProofReference] = useState('');
+  const [proofUploading, setProofUploading] = useState(false);
+  const [sentProofs, setSentProofs] = useState([]);
   const [copyrightPaper, setCopyrightPaper] = useState(null);
   const [copyrightFile, setCopyrightFile] = useState(null);
   const [copyrightUploading, setCopyrightUploading] = useState(false);
@@ -145,13 +151,41 @@ const AuthorDashboard = () => {
   const handlePayment = async (paper) => {
     setDetailPaper(null);
     setPaymentPaper(paper);
+    setProofFile(null);
+    setProofReference('');
+    setSentProofs([]);
     setPaymentConfig(null);
+    mockAPI.getPaymentProofs(paper.id).then((r) => setSentProofs(r.proofs || []));
     setPaymentConfig(await mockAPI.getPaymentConfig());
   };
 
   const closePaymentModal = () => {
-    if (paymentBusy) return;
+    if (paymentBusy || proofUploading) return;
     setPaymentPaper(null);
+  };
+
+  const copyText = async (value, label) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied.`);
+    } catch (e) {
+      toast.error(`Couldn't copy. ${label}: ${value}`);
+    }
+  };
+
+  const handleSubmitProof = async (e) => {
+    e.preventDefault();
+    if (!paymentPaper || !proofFile) return;
+    setProofUploading(true);
+    const result = await mockAPI.submitPaymentProof(paymentPaper.id, proofFile, proofReference.trim());
+    setProofUploading(false);
+    if (result.success) {
+      toast.success('Payment proof sent. The editorial office will verify it.');
+      setPaymentPaper(null);
+      loadAuthorPapers();
+    } else {
+      toast.error(result.error);
+    }
   };
 
   const startCheckout = async () => {
@@ -818,52 +852,120 @@ const AuthorDashboard = () => {
         )}
       </Modal>
 
-      {/* Payment */}
+      {/* Payment: bank transfer / UPI, then upload proof for the admin to verify */}
       <Modal
         open={Boolean(paymentPaper)}
         onClose={closePaymentModal}
-        closeDisabled={paymentBusy}
+        closeDisabled={paymentBusy || proofUploading}
+        size="lg"
         title="Pay article processing charge"
         description={paymentPaper?.title}
         footer={(
           <>
-            <button type="button" onClick={closePaymentModal} className="button button-ghost" disabled={paymentBusy}>Cancel</button>
+            <button type="button" onClick={closePaymentModal} className="button button-ghost" disabled={paymentBusy || proofUploading}>Cancel</button>
             {paymentConfig?.configured && (
-              <button type="button" onClick={startCheckout} disabled={paymentBusy} className="button button-primary" aria-busy={paymentBusy || undefined}>
-                {paymentBusy
-                  ? <><Spinner size="sm" /> Opening payment…</>
-                  : <><Icon name="credit" size={16} /> Pay {CURRENCY_LABEL[paymentCurrency](paymentConfig.fees[paymentCurrency])}</>}
+              <button type="button" onClick={startCheckout} disabled={paymentBusy || proofUploading} className="button button-light" aria-busy={paymentBusy || undefined}>
+                {paymentBusy ? <><Spinner size="sm" /> Opening…</> : <><Icon name="credit" size={16} /> Pay online instead</>}
               </button>
             )}
+            <button type="submit" form="payment-proof-form" disabled={!proofFile || proofUploading || paymentBusy} className="button button-primary" aria-busy={proofUploading || undefined}>
+              {proofUploading ? <><Spinner size="sm" /> Sending…</> : <><Icon name="upload" size={16} /> Send payment proof</>}
+            </button>
           </>
         )}
       >
         {paymentPaper && (
           !paymentConfig ? (
-            <Spinner size="sm" label="Checking payment options" />
-          ) : !paymentConfig.configured ? (
-            <div className="callout-box is-warning">
-              <Icon name="info" size={20} />
-              <div>
-                <strong>Online payment isn't available yet</strong>
-                <p>Please email <a href={`mailto:editor@ijepa.org?subject=APC payment for paper %23${paymentPaper.id}`}>editor@ijepa.org</a> with your paper ID (#{paymentPaper.id}) and the editorial office will send payment details.</p>
-              </div>
-            </div>
+            <Spinner size="sm" label="Loading payment details" />
           ) : (
-            <>
-              <div className="paper-ref"><strong>Paper ID #{paymentPaper.id}</strong></div>
-              <p>Choose how you are paying. The amount is set by the journal (Author Guidelines §6).</p>
-              <Segmented
-                label="Author type"
-                value={paymentCurrency}
-                onChange={setPaymentCurrency}
-                options={[
-                  { value: 'INR', label: `Indian author · ${CURRENCY_LABEL.INR(paymentConfig.fees.INR)}` },
-                  { value: 'USD', label: `International author · ${CURRENCY_LABEL.USD(paymentConfig.fees.USD)}` },
-                ]}
-              />
-              <p className="form-hint">Payments are processed securely by Razorpay. You'll get a confirmation here once it's complete.</p>
-            </>
+            <form id="payment-proof-form" onSubmit={handleSubmitProof} noValidate>
+              <div className="pay-amount">
+                <Segmented
+                  label="Author type"
+                  value={paymentCurrency}
+                  onChange={setPaymentCurrency}
+                  options={[
+                    { value: 'INR', label: `Indian author · ${CURRENCY_LABEL.INR(paymentConfig.fees.INR)}` },
+                    { value: 'USD', label: `International author · ${CURRENCY_LABEL.USD(paymentConfig.fees.USD)}` },
+                  ]}
+                />
+                <p>Amount due: <strong>{CURRENCY_LABEL[paymentCurrency](paymentConfig.fees[paymentCurrency])}</strong> · Paper ID <strong>#{paymentPaper.id}</strong></p>
+              </div>
+
+              {sentProofs.length > 0 && (
+                <div className="callout-box">
+                  <Icon name="info" size={20} />
+                  <div>
+                    <strong>You already sent payment proof</strong>
+                    <p>The editorial office will check it and publish your paper. Send a new file only if they ask for one. <a href={sentProofs[0].url} target="_blank" rel="noopener noreferrer">View what you sent</a></p>
+                  </div>
+                </div>
+              )}
+
+              <div className="pay-methods">
+                <section className="pay-card" aria-labelledby="pay-upi">
+                  <h3 id="pay-upi"><Icon name="credit" size={17} /> Scan &amp; pay with UPI</h3>
+                  <img src={upiQr} alt={`UPI QR code for ${PAYMENT_ACCOUNT.upiId}`} className="pay-qr" width="220" height="220" />
+                  <div className="pay-copy-row">
+                    <span>UPI ID</span>
+                    <strong>{PAYMENT_ACCOUNT.upiId}</strong>
+                    <button type="button" className="copy-btn" onClick={() => copyText(PAYMENT_ACCOUNT.upiId, 'UPI ID')}>Copy</button>
+                  </div>
+                  <p className="form-hint">Works with any UPI app (PhonePe, Google Pay, Paytm, BHIM). Enter the amount yourself.</p>
+                </section>
+
+                <section className="pay-card" aria-labelledby="pay-bank">
+                  <h3 id="pay-bank"><Icon name="layers" size={17} /> Bank transfer (NEFT / IMPS / RTGS)</h3>
+                  <dl className="pay-details">
+                    {[
+                      ['Account name', PAYMENT_ACCOUNT.accountName],
+                      ['Account number', PAYMENT_ACCOUNT.accountNumber],
+                      ['Bank', PAYMENT_ACCOUNT.bankName],
+                      ['IFSC code', PAYMENT_ACCOUNT.ifsc],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <dt>{label}</dt>
+                        <dd>
+                          <span>{value}</span>
+                          <button type="button" className="copy-btn" onClick={() => copyText(value, label)}>Copy</button>
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              </div>
+
+              {paymentCurrency === 'USD' && (
+                <p className="form-hint">International authors: if you can't pay to this Indian account, email <a href={`mailto:editor@ijepa.org?subject=APC payment for paper %23${paymentPaper.id}`}>editor@ijepa.org</a> with your paper ID for other options.</p>
+              )}
+              <p className="pay-remark">Write <strong>IJEPA #{paymentPaper.id}</strong> in the payment remarks so we can match your payment.</p>
+
+              <div className="pay-proof">
+                <h3>After paying, send us the proof</h3>
+                <FilePicker
+                  id="payment-proof"
+                  label="Payment screenshot or receipt"
+                  extensions={['jpg', 'jpeg', 'png', 'webp', 'pdf']}
+                  maxBytes={5 * 1024 * 1024}
+                  file={proofFile}
+                  onChange={setProofFile}
+                  disabled={proofUploading}
+                />
+                <div className="field">
+                  <div className="field-label"><label htmlFor="payment-reference">Transaction ID / UTR number <span className="optional">(optional)</span></label></div>
+                  <input
+                    id="payment-reference"
+                    type="text"
+                    className="form-input"
+                    value={proofReference}
+                    onChange={(e) => setProofReference(e.target.value.slice(0, 100))}
+                    placeholder="e.g. 427812345678"
+                    disabled={proofUploading}
+                  />
+                </div>
+                <p className="form-hint">The editorial office checks your payment and then publishes your paper.</p>
+              </div>
+            </form>
           )
         )}
       </Modal>
