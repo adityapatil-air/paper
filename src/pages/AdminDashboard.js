@@ -10,6 +10,7 @@ import Alert from '../components/Alert';
 import EmptyState from '../components/ui/EmptyState';
 import FilePicker from '../components/ui/FilePicker';
 import IssueEditor from '../components/admin/IssueEditor';
+import ReviewerManager from '../components/admin/ReviewerManager';
 import Spinner from '../components/ui/Spinner';
 import StatusBadge, { Badge } from '../components/ui/StatusBadge';
 import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
@@ -1138,6 +1139,9 @@ const AdminDashboard = () => {
       { id: 'important_dates', label: 'Important dates', icon: 'calendar' },
       { id: 'editorial_board', label: 'Editorial board', icon: 'users' },
     ] },
+    { group: 'People', items: [
+      { id: 'reviewers', label: 'Reviewers', icon: 'user', count: reviewers.length },
+    ] },
   ];
 
   // "Revised manuscript received" only matters while that revision is back with reviewers.
@@ -1587,6 +1591,9 @@ const AdminDashboard = () => {
                 )}
               </section>
             )}
+
+            {/* ---------------- Reviewers ---------------- */}
+            {activeTab === 'reviewers' && <ReviewerManager onChange={loadAdminData} />}
 
             {/* ---------------- Editorial board ---------------- */}
             {activeTab === 'editorial_board' && (

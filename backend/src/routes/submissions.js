@@ -2,6 +2,9 @@ const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
 const { requireAuth } = require('../middleware/auth');
+const {
+  later, sendEmail, sendToMany, templates, getAdminRecipients, getUserRecipients, getAssignedReviewerIds, notifyInApp,
+} = require('../email');
 
 const router = express.Router();
 
@@ -217,6 +220,18 @@ router.post(
         }
       }
 
+      // Confirmation to the corresponding author, and a heads-up to the editorial office.
+      const submitted = { id: data.id, title: data.title };
+      later(async () => {
+        await sendEmail({ to: { email: String(email).trim(), name: fullName }, ...templates.submissionReceivedAuthor({ name: fullName, paper: submitted }) });
+        const admins = await getAdminRecipients();
+        await notifyInApp(admins.map((a) => a.id), {
+          title: 'New submission',
+          message: `"${submitted.title}" (paper #${submitted.id}) was submitted by ${String(fullName).trim()}. Assign a reviewer to start the review.`,
+        });
+        await sendToMany(admins, () => templates.submissionReceivedAdmin({ paper: submitted, authorName: fullName, authorEmail: email }));
+      });
+
       return res.json({
         success: true,
         paper: {
@@ -381,6 +396,16 @@ router.post(
       } catch (notifErr) {
         console.error('Unexpected error while creating revision notifications', notifErr);
       }
+
+      // Email the same people: admins and the reviewers assigned to the paper.
+      later(async () => {
+        const { data: revised } = await supabase.from('papers').select('id, title').eq('id', paperId).maybeSingle();
+        if (!revised) return;
+        const admins = await getAdminRecipients();
+        const reviewers = await getUserRecipients(await getAssignedReviewerIds(paperId));
+        await sendToMany(admins, (r) => templates.revisionUploaded({ name: r.name, paper: revised, forReviewer: false }));
+        await sendToMany(reviewers, (r) => templates.revisionUploaded({ name: r.name, paper: revised, forReviewer: true }));
+      });
 
       return res.json({ success: true, manuscriptUrl });
     } catch (err) {

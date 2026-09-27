@@ -5,6 +5,7 @@ import { mockAPI } from '../data/mockData';
 import { useToast } from '../components/ui/Toast';
 import Icon from '../components/ui/Icon';
 import Modal from '../components/ui/Modal';
+import Alert from '../components/Alert';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import EmptyState from '../components/ui/EmptyState';
 import FilePicker from '../components/ui/FilePicker';
@@ -16,7 +17,6 @@ import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
 import copyrightTemplate from '../assets/Copyright.pdf';
 import CertificateList from '../components/ui/CertificateList';
-import { PAYMENT_ACCOUNT } from '../config/payment';
 import upiQr from '../assets/payment-upi-qr.png';
 
 const UNFINISHED_STATUSES = ['submitted', 'under_review', 'revisions_requested', 'accepted'];
@@ -902,14 +902,15 @@ const AuthorDashboard = () => {
                 </div>
               )}
 
+              {paymentConfig.account ? (
               <div className="pay-methods">
                 <section className="pay-card" aria-labelledby="pay-upi">
                   <h3 id="pay-upi"><Icon name="credit" size={17} /> Scan &amp; pay with UPI</h3>
-                  <img src={upiQr} alt={`UPI QR code for ${PAYMENT_ACCOUNT.upiId}`} className="pay-qr" width="372" height="363" />
+                  <img src={upiQr} alt={`UPI QR code for ${paymentConfig.account.upiId}`} className="pay-qr" width="372" height="363" />
                   <div className="pay-copy-row">
                     <span>UPI ID</span>
-                    <strong>{PAYMENT_ACCOUNT.upiId}</strong>
-                    <button type="button" className="copy-btn" onClick={() => copyText(PAYMENT_ACCOUNT.upiId, 'UPI ID')}>Copy</button>
+                    <strong>{paymentConfig.account.upiId}</strong>
+                    <button type="button" className="copy-btn" onClick={() => copyText(paymentConfig.account.upiId, 'UPI ID')}>Copy</button>
                   </div>
                   <p className="form-hint">Works with any UPI app (PhonePe, Google Pay, Paytm, BHIM). Enter the amount yourself.</p>
                 </section>
@@ -918,10 +919,10 @@ const AuthorDashboard = () => {
                   <h3 id="pay-bank"><Icon name="layers" size={17} /> Bank transfer (NEFT / IMPS / RTGS)</h3>
                   <dl className="pay-details">
                     {[
-                      ['Account name', PAYMENT_ACCOUNT.accountName],
-                      ['Account number', PAYMENT_ACCOUNT.accountNumber],
-                      ['Bank', PAYMENT_ACCOUNT.bankName],
-                      ['IFSC code', PAYMENT_ACCOUNT.ifsc],
+                      ['Account name', paymentConfig.account.accountName],
+                      ['Account number', paymentConfig.account.accountNumber],
+                      ['Bank', paymentConfig.account.bankName],
+                      ['IFSC code', paymentConfig.account.ifsc],
                     ].map(([label, value]) => (
                       <div key={label}>
                         <dt>{label}</dt>
@@ -934,6 +935,9 @@ const AuthorDashboard = () => {
                   </dl>
                 </section>
               </div>
+              ) : (
+                <Alert type="warning" message="Payment details couldn't be loaded. Refresh the page, or email editor@ijepa.org for the account details." />
+              )}
 
               {paymentCurrency === 'USD' && (
                 <p className="form-hint">International authors: if you can't pay to this Indian account, email <a href={`mailto:editor@ijepa.org?subject=APC payment for paper %23${paymentPaper.id}`}>editor@ijepa.org</a> with your paper ID for other options.</p>

@@ -2,6 +2,9 @@ const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/requireAdmin');
+const {
+  later, sendEmail, sendToMany, templates, getAdminRecipients, getPaperAuthorRecipient, notifyInApp,
+} = require('../email');
 
 const router = express.Router();
 
@@ -243,6 +246,28 @@ router.post('/', requireRole('reviewer'), async (req, res) => {
     }
 
     const review = mapReviewRow(data);
+
+    // The author hears that a review is in (never who wrote it: review is double-blind);
+    // the editorial office gets the reviewer and recommendation.
+    later(async () => {
+      const { data: reviewed } = await supabase.from('papers').select('id, title, main_author_id').eq('id', paperId).maybeSingle();
+      if (!reviewed) return;
+      if (reviewed.main_author_id) {
+        await notifyInApp([reviewed.main_author_id], {
+          title: 'Review completed',
+          message: `A reviewer has completed their review of "${reviewed.title}". The editor will let you know the decision.`,
+        });
+      }
+      const author = await getPaperAuthorRecipient(reviewed);
+      if (author) await sendEmail({ to: author, ...templates.reviewCompletedAuthor({ name: author.name, paper: reviewed }) });
+      const admins = await getAdminRecipients();
+      await notifyInApp(admins.map((a) => a.id), {
+        title: 'Review submitted',
+        message: `${reviewer?.name || 'A reviewer'} submitted a review for "${reviewed.title}" (paper #${reviewed.id}).`,
+      });
+      await sendToMany(admins, () => templates.reviewCompletedAdmin({ paper: reviewed, reviewerName: reviewer?.name, recommendation }));
+    });
+
     return res.json({ success: true, review });
   } catch (err) {
     console.error('Unexpected error in POST /api/reviews', err);

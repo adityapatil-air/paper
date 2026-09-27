@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { supabase } = require('../supabaseClient');
 const { requireAuth } = require('../middleware/auth');
 const { makeUploader, handleUpload, uploadFile, listFiles, sendStorageError } = require('../storage');
+const { PAYMENT_ACCOUNT, APC } = require('../config/paymentAccount');
+const { later, sendToMany, templates, getAdminRecipients } = require('../email');
 
 const proofUpload = makeUploader({ proof: 'proof' });
 const REFERENCE_MAX = 100;
@@ -44,12 +46,8 @@ const loadPayablePaper = async (req, res, rawPaperId) => {
 
  const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-// Article processing charges (Author Guidelines section 6). Set on the server only;
-// the client picks the currency, never the amount.
-const APC = {
-    INR: Number(process.env.APC_INR || 1500),
-    USD: Number(process.env.APC_USD || 50),
-};
+// Article processing charges (Author Guidelines section 6) come from config/paymentAccount.js.
+// They are set on the server only; the client picks the currency, never the amount.
 
 const paymentsConfigured = () => {
     const id = process.env.RAZORPAY_KEY_ID || '';
@@ -69,10 +67,10 @@ const getRazorpay = () => {
     return razorpayClient;
 };
 
-// GET /api/payments/key - public key id, whether online payment is available, and the fees
+// GET /api/payments/key - fees, the account authors pay into, and whether online checkout is on
 router.get('/key', (req, res) => {
     const configured = paymentsConfigured();
-    res.json({ key: configured ? process.env.RAZORPAY_KEY_ID : null, configured, fees: APC });
+    res.json({ key: configured ? process.env.RAZORPAY_KEY_ID : null, configured, fees: APC, account: PAYMENT_ACCOUNT });
 });
 
 // POST /api/payments/create-order  body: { paperId, currency: 'INR' | 'USD' }
@@ -146,6 +144,11 @@ router.post('/proof/:paperId', requireAuth, handleUpload(proofUpload.single('pro
         } catch (notifErr) {
             console.error('Unexpected error while creating payment proof notifications', notifErr);
         }
+
+        later(async () => {
+            const admins = await getAdminRecipients();
+            await sendToMany(admins, () => templates.paymentProofReceived({ paper, reference, proofUrl }));
+        });
 
         return res.json({ success: true, proofUrl });
     } catch (err) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Alert from '../components/Alert';
@@ -6,6 +6,7 @@ import logo from '../assets/logo.png';
 
 // Must match MIN_PASSWORD_LENGTH in backend/src/routes/auth.js.
 const MIN_PASSWORD_LENGTH = 8;
+const RESEND_SECONDS = 60;
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -18,8 +19,14 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Email verification step: set once the code has been sent.
+  const [pending, setPending] = useState(null); // { verifyToken, email }
+  const [code, setCode] = useState('');
+  const [notice, setNotice] = useState('');
+  const [cooldown, setCooldown] = useState(0);
+  const codeRef = useRef(null);
 
-  const { register, loginWithGoogle } = useAuth();
+  const { startRegistration, completeRegistration, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -54,6 +61,29 @@ const Register = () => {
     return true;
   };
 
+  useEffect(() => {
+    if (!cooldown) return undefined;
+    const t = setTimeout(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  useEffect(() => {
+    if (pending) codeRef.current?.focus();
+  }, [pending]);
+
+  // Step 1: send the verification code.
+  const sendCode = async () => {
+    const { confirmPassword, ...userData } = formData;
+    const result = await startRegistration(userData);
+    if (!result.success) {
+      setError(result.error);
+      return false;
+    }
+    setPending({ verifyToken: result.verifyToken, email: result.email });
+    setCooldown(RESEND_SECONDS);
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -63,20 +93,58 @@ const Register = () => {
 
     setLoading(true);
     setError('');
-
+    setNotice('');
     try {
-      const { confirmPassword, ...userData } = formData;
-      const result = await register(userData);
-      if (result.success) {
-        navigate('/author-dashboard');
-      } else {
-        setError(result.error);
-      }
+      await sendCode();
     } catch (err) {
       setError('Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Step 2: check the code; this creates the account and signs in.
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(code)) {
+      setError('Enter the 6-digit code from the email.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setNotice('');
+    try {
+      const result = await completeRegistration(pending.verifyToken, code);
+      if (result.success) {
+        navigate(result.user?.role === 'reviewer' ? '/reviewer-dashboard' : '/author-dashboard');
+      } else {
+        setError(result.error);
+        if (result.code === 'CODE_EXPIRED') setCode('');
+      }
+    } catch (err) {
+      setError('Verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLoading(true);
+    setError('');
+    setNotice('');
+    setCode('');
+    try {
+      if (await sendCode()) setNotice(`We sent a new code to ${formData.email.trim()}.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeEmail = () => {
+    setPending(null);
+    setCode('');
+    setError('');
+    setNotice('');
   };
 
   const handleGoogleLogin = async () => {
@@ -117,7 +185,42 @@ const Register = () => {
             </p>
 
             {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+            {notice && <Alert type="success" message={notice} onClose={() => setNotice('')} />}
 
+            {pending ? (
+              <form onSubmit={handleVerify} className="verify-step" noValidate>
+                <h2>Check your email</h2>
+                <p>We sent a 6-digit code to <strong>{pending.email}</strong>. Enter it below to create your account. It expires in 15 minutes.</p>
+                <div className="form-group">
+                  <label htmlFor="code">Verification code</label>
+                  <input
+                    ref={codeRef}
+                    id="code"
+                    name="code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setError(''); }}
+                    className="form-input code-input"
+                    placeholder="000000"
+                    aria-describedby="code-hint"
+                  />
+                  <p id="code-hint" className="form-hint">Can’t find it? Check your spam or promotions folder.</p>
+                </div>
+                <button type="submit" disabled={loading || code.length !== 6} className="button button-primary" style={{ width: '100%' }}>
+                  {loading ? 'Verifying…' : 'Verify and create account →'}
+                </button>
+                <div className="verify-actions">
+                  <button type="button" className="link-button is-neutral" onClick={handleResend} disabled={loading || cooldown > 0}>
+                    {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+                  </button>
+                  <button type="button" className="link-button is-neutral" onClick={changeEmail} disabled={loading}>Use a different email</button>
+                </div>
+              </form>
+            ) : (
+            <>
             <form onSubmit={handleSubmit} style={{ marginTop: 18 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div className="form-group">
@@ -225,8 +328,9 @@ const Register = () => {
               </div>
 
               <button type="submit" disabled={loading} className="button button-primary" style={{ width: '100%' }}>
-                {loading ? 'Creating Account...' : 'Create Account →'}
+                {loading ? 'Sending code…' : 'Continue →'}
               </button>
+              <p className="form-hint" style={{ textAlign: 'center', marginTop: 10 }}>We’ll email you a code to confirm your address.</p>
             </form>
 
             <div className="auth-divider">or continue with</div>
@@ -240,9 +344,11 @@ const Register = () => {
               </svg>
               Sign up with Google
             </button>
+            </>
+            )}
 
             <p className="auth-footer-link">
-              New accounts are author accounts. Want to review or edit for IJEPA? <Link to="/joinusedito">Join the editorial team</Link>.
+              New accounts are author accounts. Invited to review? Register with the email address the invitation was sent to and you’ll get reviewer access automatically. Want to review for IJEPA? <Link to="/joinusedito">Join the editorial team</Link>.
             </p>
           </div>
         </div>

@@ -63,23 +63,132 @@ export const mockAPI = {
     }
   },
 
-  register: async (userData) => {
+  // Registration step 1: the server emails a 6-digit code. Returns { verifyToken, email }.
+  registerStart: async (userData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
       });
-      const data = await response.json();
-
-      if (!data.success || !data.user) {
-        return { success: false, error: data.error || 'Registration failed. Please try again.' };
+      const data = await readJson(response);
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'Registration failed. Please try again.', code: data.code };
       }
+      return { success: true, verifyToken: data.verifyToken, email: data.email };
+    } catch (error) {
+      console.error('registerStart error', error);
+      return { success: false, error: 'Registration failed. Check your connection and try again.' };
+    }
+  },
 
+  // Registration step 2: the code from the email creates the account.
+  registerVerify: async (verifyToken, code) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verifyToken, code })
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data.success || !data.user) {
+        return { success: false, error: data.error || 'Verification failed. Please try again.', code: data.code };
+      }
       return { success: true, user: data.user, token: data.token || null };
     } catch (error) {
-      console.error('register error', error);
-      return { success: false, error: 'Registration failed. Please try again.' };
+      console.error('registerVerify error', error);
+      return { success: false, error: 'Verification failed. Check your connection and try again.' };
+    }
+  },
+
+  // Exchanges a Google (Supabase) session for an IJEPA account and session.
+  googleExchange: async (accessToken) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken })
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data.success || !data.user) {
+        return { success: false, error: data.error || 'Google sign-in failed.' };
+      }
+      return { success: true, user: data.user, token: data.token || null };
+    } catch (error) {
+      console.error('googleExchange error', error);
+      return { success: false, error: 'Google sign-in failed.' };
+    }
+  },
+
+  // ---- Reviewer invites (admin) ----
+  getReviewerInvites: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reviewer-invites`, { headers: authHeaders() });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) return { success: false, error: data.error || 'Failed to load reviewers.', invites: [], reviewers: [] };
+      return { success: true, invites: data.invites || [], reviewers: data.reviewers || [] };
+    } catch (error) {
+      console.error('getReviewerInvites error', error);
+      return { success: false, error: 'Failed to load reviewers.', invites: [], reviewers: [] };
+    }
+  },
+
+  inviteReviewer: async (email, name) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reviewer-invites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ email, name })
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) return { success: false, error: data.error || 'Failed to invite the reviewer.' };
+      return { success: true, status: data.status };
+    } catch (error) {
+      console.error('inviteReviewer error', error);
+      return { success: false, error: 'Failed to invite the reviewer.' };
+    }
+  },
+
+  resendReviewerInvite: async (email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reviewer-invites/resend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ email })
+      });
+      const data = await readJson(response);
+      return response.ok && data.success ? { success: true } : { success: false, error: data.error || 'Failed to resend the invite.' };
+    } catch (error) {
+      console.error('resendReviewerInvite error', error);
+      return { success: false, error: 'Failed to resend the invite.' };
+    }
+  },
+
+  cancelReviewerInvite: async (email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reviewer-invites/${encodeURIComponent(email)}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      const data = await readJson(response);
+      return response.ok && data.success ? { success: true } : { success: false, error: data.error || 'Failed to cancel the invite.' };
+    } catch (error) {
+      console.error('cancelReviewerInvite error', error);
+      return { success: false, error: 'Failed to cancel the invite.' };
+    }
+  },
+
+  revokeReviewer: async (userId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reviewers/${userId}/revoke`, {
+        method: 'POST',
+        headers: authHeaders()
+      });
+      const data = await readJson(response);
+      return response.ok && data.success ? { success: true } : { success: false, error: data.error || 'Failed to remove reviewer access.' };
+    } catch (error) {
+      console.error('revokeReviewer error', error);
+      return { success: false, error: 'Failed to remove reviewer access.' };
     }
   },
 
@@ -606,10 +715,15 @@ export const mockAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/payments/key`);
       const data = await response.json();
-      return { configured: Boolean(data.configured && data.key), key: data.key || null, fees: data.fees || { INR: 1500, USD: 50 } };
+      return {
+        configured: Boolean(data.configured && data.key),
+        key: data.key || null,
+        fees: data.fees || { INR: 1500, USD: 50 },
+        account: data.account || null,
+      };
     } catch (error) {
       console.error('getPaymentConfig error', error);
-      return { configured: false, key: null, fees: { INR: 1500, USD: 50 } };
+      return { configured: false, key: null, fees: { INR: 1500, USD: 50 }, account: null };
     }
   },
 

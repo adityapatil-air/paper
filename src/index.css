@@ -1127,3 +1127,23 @@ ol.content-list.is-ordered>li::before{content:counter(content-list);left:0;top:.
 .proof-link{display:block}
 .page-body .issue-heading{margin:32px 0 18px}
 .page-body .issue-heading h2{margin:0}
+
+/* register: email verification step */
+.verify-step{margin-top:18px}
+.verify-step h2{margin:0 0 6px;font-size:20px;color:var(--navy)}
+.verify-step>p{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.6}
+.code-input{font:700 26px/1.2 'Courier New',monospace;letter-spacing:10px;text-align:center;padding:14px 12px}
+.verify-actions{display:flex;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap}
+.link-button.is-neutral{color:var(--blue);margin-top:0}
+.link-button:disabled{color:var(--muted);cursor:default;text-decoration:none}
+
+/* admin: reviewer invites */
+.invite-form{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:14px;align-items:end;margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.invite-form .field{margin:0}
+.reviewer-lists{display:grid;gap:22px}
+.reviewer-lists h3{margin:0 0 10px;font-size:15px;color:var(--navy)}
+.people-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.people-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:#fff}
+.people-item strong{display:block;color:var(--navy);font-size:14px}
+.people-item span{font-size:12.5px;color:var(--muted);word-break:break-word}
+@media(max-width:760px){.invite-form{grid-template-columns:1fr}.people-item{flex-direction:column;align-items:flex-start}}

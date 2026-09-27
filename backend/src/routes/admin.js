@@ -2,6 +2,18 @@ const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { makeUploader, handleUpload, uploadFile, removeFileByUrl, sendStorageError } = require('../storage');
 const { requireAdmin } = require('../middleware/requireAdmin');
+const {
+  later, sendEmail, sendToMany, templates, getUserRecipient, getUserRecipients, getPaperReviewerIds, getPaperAuthorRecipient, notifyInApp,
+} = require('../email');
+const {
+  normalizeEmail, isValidEmail, getInvites, addInvite, removeInvite, findUserByEmail,
+} = require('../reviewerInvites');
+
+// Email the paper's author (account email, or the corresponding author from the form).
+const emailAuthor = (paper, build) => later(async () => {
+  const author = await getPaperAuthorRecipient(paper);
+  if (author) await sendEmail({ to: author, ...build(author) });
+});
 
 const router = express.Router();
 
@@ -126,6 +138,106 @@ router.get('/reviewers', async (req, res) => {
   }
 });
 
+// ---------- Reviewer invites ----------
+// Admins add a reviewer by email. An existing account is upgraded straight away; otherwise the
+// email is remembered and becomes a reviewer when that person registers or signs in with Google.
+
+// GET /api/admin/reviewer-invites - pending invites and current reviewer accounts
+router.get('/reviewer-invites', async (req, res) => {
+  try {
+    if (!ensureSupabase(res)) return;
+    const invites = await getInvites();
+    const { data: reviewers, error } = await supabase
+      .from('users')
+      .select('id, name, email, affiliation, created_at')
+      .eq('role', 'reviewer')
+      .order('name', { ascending: true });
+    if (error) throw error;
+    return res.json({ success: true, invites, reviewers: reviewers || [] });
+  } catch (err) {
+    console.error('Error loading reviewer invites', err);
+    return res.status(500).json({ success: false, error: 'Failed to load reviewers.' });
+  }
+});
+
+// POST /api/admin/reviewer-invites  { email, name? }
+router.post('/reviewer-invites', async (req, res) => {
+  try {
+    if (!ensureSupabase(res)) return;
+    const email = normalizeEmail(req.body?.email);
+    const name = String(req.body?.name || '').trim().slice(0, 120);
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, error: 'Enter a valid email address.' });
+    }
+
+    const existing = await findUserByEmail(email, 'id, name, email, role');
+    if (existing) {
+      if (existing.role === 'reviewer') {
+        return res.status(409).json({ success: false, error: 'This person is already a reviewer.' });
+      }
+      if (existing.role === 'admin' || existing.role === 'editor') {
+        return res.status(409).json({ success: false, error: 'This account is an administrator and already has full access.' });
+      }
+      const { error } = await supabase.from('users').update({ role: 'reviewer' }).eq('id', existing.id);
+      if (error) throw error;
+      await removeInvite(email);
+      later(async () => {
+        await notifyInApp([existing.id], { title: 'Reviewer access granted', message: 'You now have reviewer access. Sign out and sign in again to open your reviewer dashboard.', type: 'success' });
+        await sendEmail({ to: { email: existing.email, name: existing.name }, ...templates.reviewerAccessGranted({ name: existing.name || name }) });
+      });
+      return res.json({ success: true, status: 'granted', user: { id: existing.id, name: existing.name, email: existing.email } });
+    }
+
+    const invite = await addInvite({ email, name, invitedBy: req.user?.id || null });
+    later(() => sendEmail({ to: { email, name }, ...templates.reviewerInvite({ name }) }));
+    return res.json({ success: true, status: 'invited', invite });
+  } catch (err) {
+    console.error('Error inviting reviewer', err);
+    return res.status(500).json({ success: false, error: 'Failed to invite the reviewer.' });
+  }
+});
+
+// POST /api/admin/reviewer-invites/resend  { email }
+router.post('/reviewer-invites/resend', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const invite = (await getInvites()).find((i) => normalizeEmail(i.email) === email);
+    if (!invite) return res.status(404).json({ success: false, error: 'No pending invite for this email.' });
+    const sent = await sendEmail({ to: { email, name: invite.name }, ...templates.reviewerInvite({ name: invite.name }) });
+    return sent ? res.json({ success: true }) : res.status(502).json({ success: false, error: 'The invitation email could not be sent.' });
+  } catch (err) {
+    console.error('Error resending reviewer invite', err);
+    return res.status(500).json({ success: false, error: 'Failed to resend the invite.' });
+  }
+});
+
+// DELETE /api/admin/reviewer-invites/:email - cancel a pending invite
+router.delete('/reviewer-invites/:email', async (req, res) => {
+  try {
+    const removed = await removeInvite(req.params.email);
+    return removed ? res.json({ success: true }) : res.status(404).json({ success: false, error: 'No pending invite for this email.' });
+  } catch (err) {
+    console.error('Error cancelling reviewer invite', err);
+    return res.status(500).json({ success: false, error: 'Failed to cancel the invite.' });
+  }
+});
+
+// POST /api/admin/reviewers/:id/revoke - turn a reviewer back into an author
+router.post('/reviewers/:id/revoke', async (req, res) => {
+  try {
+    if (!ensureSupabase(res)) return;
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid user id.' });
+    const { data, error } = await supabase.from('users').update({ role: 'author' }).eq('id', id).eq('role', 'reviewer').select('id');
+    if (error) throw error;
+    if (!data || !data.length) return res.status(404).json({ success: false, error: 'Reviewer not found.' });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Error revoking reviewer access', err);
+    return res.status(500).json({ success: false, error: 'Failed to remove reviewer access.' });
+  }
+});
+
 // POST /api/admin/assign-reviewer
 router.post('/assign-reviewer', async (req, res) => {
   try {
@@ -164,6 +276,17 @@ router.post('/assign-reviewer', async (req, res) => {
       console.error('Error updating paper status to under_review', updateError);
       // Do not fail the whole request, assignment itself succeeded
     }
+
+    later(async () => {
+      const { data: assigned } = await supabase.from('papers').select('id, title').eq('id', paperId).maybeSingle();
+      const reviewer = await getUserRecipient(parseInt(reviewerId, 10));
+      if (!assigned || !reviewer) return;
+      await notifyInApp([reviewer.id], {
+        title: 'New paper to review',
+        message: `You have been assigned "${assigned.title}" (paper #${assigned.id}) for review.`,
+      });
+      await sendEmail({ to: reviewer, ...templates.reviewerAssigned({ name: reviewer.name, paper: assigned }) });
+    });
 
     return res.json({ success: true });
   } catch (err) {
@@ -244,6 +367,8 @@ router.post('/accept-paper', async (req, res) => {
       }
     }
 
+    emailAuthor(paper, (a) => templates.paperAccepted({ name: a.name, paper }));
+
     return res.json({ success: true });
   } catch (err) {
     console.error('Unexpected error in POST /api/admin/accept-paper', err);
@@ -306,6 +431,8 @@ router.post('/mark-paid', async (req, res) => {
         console.error('Error creating payment notification', notifError);
       }
     }
+
+    emailAuthor(paper, (a) => templates.paymentMarkedPaid({ name: a.name, paper }));
 
     return res.json({ success: true });
   } catch (err) {
@@ -385,6 +512,17 @@ router.post('/publish-paper', async (req, res) => {
       }
     }
 
+    emailAuthor(paper, (a) => templates.paperPublishedAuthor({ name: a.name, paper }));
+    later(async () => {
+      const reviewers = await getUserRecipients(await getPaperReviewerIds(paper.id));
+      await notifyInApp(reviewers.map((r) => r.id), {
+        title: 'A paper you reviewed is published',
+        message: `"${paper.title}" (paper #${paper.id}) is published. Your Certificate of Reviewing is ready in the Certificates tab.`,
+        type: 'success',
+      });
+      await sendToMany(reviewers, (r) => templates.paperPublishedReviewer({ name: r.name, paper }));
+    });
+
     return res.json({ success: true });
   } catch (err) {
     console.error('Unexpected error in POST /api/admin/publish-paper', err);
@@ -456,6 +594,8 @@ router.post('/request-revisions', async (req, res) => {
       }
     }
 
+    emailAuthor(paper, (a) => templates.revisionsRequested({ name: a.name, paper, note }));
+
     return res.json({ success: true });
   } catch (err) {
     console.error('Unexpected error in POST /api/admin/request-revisions', err);
@@ -517,6 +657,8 @@ router.post('/reject-paper', async (req, res) => {
         console.error('Error creating rejection notification', notifError);
       }
     }
+
+    emailAuthor(paper, (a) => templates.paperRejected({ name: a.name, paper, note }));
 
     return res.json({ success: true });
   } catch (err) {

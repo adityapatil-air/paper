@@ -14,6 +14,45 @@ const isTokenExpired = (token) => {
   }
 };
 
+const safeStorageGet = (key) => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    return window.localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+};
+
+const safeStorageSet = (key, value) => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    window.localStorage.setItem(key, value);
+  } catch (e) {
+    // storage unavailable (private mode): the session lasts for this tab only
+  }
+};
+
+const safeStorageRemove = (key) => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    window.localStorage.removeItem(key);
+  } catch (e) {
+    // ignore
+  }
+};
+
+// The backend session (user + JWT) kept in localStorage, if it is still valid.
+const readStoredSession = () => {
+  const storedUser = safeStorageGet('user');
+  const token = safeStorageGet('authToken');
+  if (!storedUser || !token || isTokenExpired(token)) return null;
+  try {
+    return { user: JSON.parse(storedUser), token };
+  } catch (e) {
+    return null;
+  }
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -26,72 +65,50 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const safeStorageGet = (key) => {
-    try {
-      if (typeof window === 'undefined' || !window.localStorage) return null;
-      return window.localStorage.getItem(key);
-    } catch (e) {
-      return null;
-    }
+  const storeSession = (nextUser, token) => {
+    setUser(nextUser);
+    safeStorageSet('user', JSON.stringify(nextUser));
+    if (token) safeStorageSet('authToken', token);
   };
 
-  const safeStorageSet = (key, value) => {
-    try {
-      if (typeof window === 'undefined' || !window.localStorage) return;
-      window.localStorage.setItem(key, value);
-    } catch (e) {
-      return;
-    }
-  };
-
-  const safeStorageRemove = (key) => {
-    try {
-      if (typeof window === 'undefined' || !window.localStorage) return;
-      window.localStorage.removeItem(key);
-    } catch (e) {
-      return;
-    }
+  const clearSession = () => {
+    setUser(null);
+    safeStorageRemove('user');
+    safeStorageRemove('authToken');
   };
 
   useEffect(() => {
     let isMounted = true;
+    let exchanging = null;
 
-    const setUserFromSession = (session) => {
+    // A Google sign-in (Supabase session) is exchanged once for an IJEPA account and backend
+    // session, so Google users can use every protected feature like password users.
+    const adoptGoogleSession = async (session) => {
+      const stored = readStoredSession();
+      if (stored && String(stored.user?.email || '').toLowerCase() === String(session.user?.email || '').toLowerCase()) {
+        if (isMounted) setUser(stored.user);
+        return;
+      }
+      if (!exchanging) exchanging = mockAPI.googleExchange(session.access_token).finally(() => { exchanging = null; });
+      const result = await exchanging;
       if (!isMounted) return;
-      if (session?.user) {
-        const mappedUser = {
-          id: session.user.id,
-          email: session.user.email,
-          name:
-            session.user.user_metadata?.full_name ||
-            session.user.user_metadata?.name ||
-            session.user.email,
-          role: 'author'
-        };
-        setUser(mappedUser);
-        safeStorageSet('user', JSON.stringify(mappedUser));
+      if (result.success) {
+        storeSession(result.user, result.token);
       } else {
-        setUser(null);
-        safeStorageRemove('user');
+        clearSession();
+        supabase.auth.signOut();
       }
     };
 
     const init = async () => {
-      let storedUser = safeStorageGet('user');
-      const storedToken = safeStorageGet('authToken');
-
-      // An expired backend session is signed out up front instead of showing a user
-      // whose every request is rejected.
-      if (storedUser && storedToken && isTokenExpired(storedToken)) {
+      const stored = readStoredSession();
+      if (!stored) {
         safeStorageRemove('user');
         safeStorageRemove('authToken');
-        storedUser = null;
       }
 
       if (!isSupabaseConfigured) {
-        if (storedUser && isMounted) {
-          setUser(JSON.parse(storedUser));
-        }
+        if (stored && isMounted) setUser(stored.user);
         if (isMounted) setLoading(false);
         return;
       }
@@ -99,39 +116,26 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.getSession();
 
       // StrictMode runs this effect twice; the first run is cleaned up before getSession
-      // resolves. Its late result must not touch state or storage, or a refresh signs the
-      // user out.
+      // resolves. Its late result must not touch state or storage.
       if (!isMounted) return;
 
-      if (!error && data?.session) {
-        setUserFromSession(data.session);
-      } else if (storedUser) {
-        setUser(JSON.parse(storedUser));
+      if (!error && data?.session?.user) {
+        await adoptGoogleSession(data.session);
+      } else if (stored) {
+        setUser(stored.user);
       } else {
         setUser(null);
-        safeStorageRemove('user');
       }
 
-      setLoading(false);
+      if (isMounted) setLoading(false);
     };
 
     init();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        // If you're logged in via backend mockAPI (stored in localStorage), Supabase can still
-        // emit a null session on refresh; don't wipe the local session in that case.
-        if (session?.user) {
-          setUserFromSession(session);
-          return;
-        }
-
-        const storedUser = safeStorageGet('user');
-        if (!storedUser) {
-          setUserFromSession(session);
-        }
-      }
-    );
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      // Password users have no Supabase session, so a null session must not sign them out.
+      if (event === 'SIGNED_IN' && session?.user) adoptGoogleSession(session);
+    });
 
     return () => {
       isMounted = false;
@@ -141,42 +145,32 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      // Simulate API call
       const response = await mockAPI.login(email, password);
       if (response.success) {
-        setUser(response.user);
-        safeStorageSet('user', JSON.stringify(response.user));
-        if (response.token) safeStorageSet('authToken', response.token);
+        storeSession(response.user, response.token);
         return { success: true, user: response.user };
-      } else {
-        return { success: false, error: response.error };
       }
+      return { success: false, error: response.error };
     } catch (error) {
       return { success: false, error: 'Login failed. Please try again.' };
     }
   };
 
-  const register = async (userData) => {
-    try {
-      // Simulate API call
-      const response = await mockAPI.register(userData);
-      if (response.success) {
-        setUser(response.user);
-        safeStorageSet('user', JSON.stringify(response.user));
-        if (response.token) safeStorageSet('authToken', response.token);
-        return { success: true, user: response.user };
-      } else {
-        return { success: false, error: response.error };
-      }
-    } catch (error) {
-      return { success: false, error: 'Registration failed. Please try again.' };
+  // Step 1 of registration: emails a verification code. Returns { success, verifyToken, email }.
+  const startRegistration = (userData) => mockAPI.registerStart(userData);
+
+  // Step 2: checks the code, creates the account and signs in.
+  const completeRegistration = async (verifyToken, code) => {
+    const response = await mockAPI.registerVerify(verifyToken, code);
+    if (response.success) {
+      storeSession(response.user, response.token);
+      return { success: true, user: response.user };
     }
+    return { success: false, error: response.error, code: response.code };
   };
 
   const logout = () => {
-    setUser(null);
-    safeStorageRemove('user');
-    safeStorageRemove('authToken');
+    clearSession();
     if (isSupabaseConfigured) {
       supabase.auth.signOut();
     }
@@ -200,7 +194,8 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     loginWithGoogle,
-    register,
+    startRegistration,
+    completeRegistration,
     logout,
     loading
   };
@@ -211,4 +206,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
