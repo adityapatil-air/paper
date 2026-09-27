@@ -905,7 +905,7 @@ const AuthorDashboard = () => {
               <div className="pay-methods">
                 <section className="pay-card" aria-labelledby="pay-upi">
                   <h3 id="pay-upi"><Icon name="credit" size={17} /> Scan &amp; pay with UPI</h3>
-                  <img src={upiQr} alt={`UPI QR code for ${PAYMENT_ACCOUNT.upiId}`} className="pay-qr" width="220" height="220" />
+                  <img src={upiQr} alt={`UPI QR code for ${PAYMENT_ACCOUNT.upiId}`} className="pay-qr" width="372" height="363" />
                   <div className="pay-copy-row">
                     <span>UPI ID</span>
                     <strong>{PAYMENT_ACCOUNT.upiId}</strong>
