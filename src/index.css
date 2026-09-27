@@ -1125,3 +1125,5 @@ ol.content-list.is-ordered>li::before{content:counter(content-list);left:0;top:.
 .pay-proof h3{margin:0;font-size:15px;color:var(--navy)}
 @media(max-width:700px){.pay-methods{grid-template-columns:1fr}}
 .proof-link{display:block}
+.page-body .issue-heading{margin:32px 0 18px}
+.page-body .issue-heading h2{margin:0}

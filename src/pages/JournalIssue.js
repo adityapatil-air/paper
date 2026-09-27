@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { mockAPI } from '../data/mockData';
 import CurrentIssue from '../components/CurrentIssue';
+import ArticleCard from '../components/ArticleCard';
 
 const JournalIssues = () => {
   const [issues, setIssues] = useState([]);
@@ -194,12 +195,28 @@ const JournalIssues = () => {
           The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> publishes regular issues featuring high-quality research articles, reviews, and case studies across diverse engineering domains. Our issues provide a global platform for disseminating knowledge and fostering innovation in engineering practices and applications.
         </p>
 
-        <h2>Current Issue</h2>
+        <div className="section-heading issue-heading">
+          <div>
+            <h2>Current Issue</h2>
+            {currentIssue && (
+              <p className="issue-subline">
+                {currentIssue.title || `Volume ${currentIssue.volume}, Issue ${currentIssue.issue} · ${[currentIssue.month, currentIssue.year].filter(Boolean).join(' ')}`}
+              </p>
+            )}
+          </div>
+          {currentIssue?.fileUrl && (
+            <a href={currentIssue.fileUrl} target="_blank" rel="noopener noreferrer" className="button button-primary button-small">↓&nbsp; Download full issue</a>
+          )}
+        </div>
 
-        {loading ? (
+        {loading || (currentIssue && papersLoading) ? (
           <div className="loading-state">Loading current issue…</div>
-        ) : (
+        ) : !currentIssue || currentIssuePapers.length === 0 ? (
           <CurrentIssue issue={currentIssue} papers={currentIssuePapers} papersLoading={papersLoading} hasIssues={issues.length > 0} />
+        ) : (
+          <div className="article-grid">
+            {currentIssuePapers.map((paper) => <ArticleCard key={paper.id} paper={paper} />)}
+          </div>
         )}
 
         <h2>Archives</h2>
