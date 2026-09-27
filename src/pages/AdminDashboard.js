@@ -18,6 +18,26 @@ import { DashHeader, StatCard, FilterBar, Segmented, SORT_OPTIONS, formatDate, j
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+// Important dates are stored as display text ("20 December 2024" or "To be announced") so the
+// Call for Papers page shows them as-is; the admin picks them with a date input.
+const TBA = 'To be announced';
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const isTba = (value) => !value || /^\s*to be announced\s*$/i.test(value);
+const isoToDisplayDate = (iso) => {
+  const [y, m, d] = String(iso).split('-').map(Number);
+  return y && m && d ? `${d} ${MONTH_NAMES[m - 1]} ${y}` : TBA;
+};
+const displayToIsoDate = (value) => {
+  if (isTba(value)) return '';
+  const match = String(value).trim().match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  if (match) {
+    const mi = MONTH_NAMES.findIndex((m) => m.toLowerCase().startsWith(match[2].toLowerCase().slice(0, 3)));
+    if (mi >= 0) return `${match[3]}-${String(mi + 1).padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+};
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const toast = useToast();
@@ -133,7 +153,9 @@ const AdminDashboard = () => {
     affiliation: '',
     email: '',
     profileUrl: '',
+    photo: '',
   });
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [reviewerSortBy, setReviewerSortBy] = useState('name_az');
@@ -480,6 +502,7 @@ const AdminDashboard = () => {
       affiliation: '',
       email: '',
       profileUrl: '',
+      photo: '',
     });
     setShowEditorialModal(true);
   };
@@ -493,6 +516,7 @@ const AdminDashboard = () => {
       affiliation: member?.affiliation || '',
       email: member?.email || '',
       profileUrl: member?.profileUrl || '',
+      photo: member?.photo || '',
     });
     setShowEditorialModal(true);
   };
@@ -509,6 +533,19 @@ const AdminDashboard = () => {
     }));
   };
 
+  const handleEditorialPhoto = async (file) => {
+    if (!file) return;
+    setPhotoUploading(true);
+    const result = await mockAPI.uploadEditorialPhoto(file);
+    setPhotoUploading(false);
+    if (result.success) {
+      setEditorialDraft((prev) => ({ ...prev, photo: result.url }));
+      toast.success('Photo uploaded. Select Done, then Save on the board.');
+    } else {
+      toast.error(result.error);
+    }
+  };
+
   const handleSaveEditorialDraft = () => {
     const trimmed = {
       section: String(editorialDraft.section || '').trim(),
@@ -517,7 +554,13 @@ const AdminDashboard = () => {
       affiliation: String(editorialDraft.affiliation || '').trim(),
       email: String(editorialDraft.email || '').trim(),
       profileUrl: String(editorialDraft.profileUrl || '').trim(),
+      photo: String(editorialDraft.photo || '').trim(),
     };
+
+    if (photoUploading) {
+      toast.error('Wait for the photo to finish uploading.');
+      return;
+    }
 
     if (!trimmed.section || !trimmed.name) {
       toast.error('Section and Name are required.');
@@ -1508,7 +1551,23 @@ const AdminDashboard = () => {
                     {Object.entries(importantDates).map(([label, value], i) => (
                       <div key={label} className="date-field field">
                         <div className="field-label"><label htmlFor={`date-${i}`}>{label}</label></div>
-                        <input id={`date-${i}`} type="text" value={value} onChange={(e) => handleImportantDateChange(label, e.target.value)} className="form-input" />
+                        <input
+                          id={`date-${i}`}
+                          type="date"
+                          value={displayToIsoDate(value)}
+                          onChange={(e) => handleImportantDateChange(label, e.target.value ? isoToDisplayDate(e.target.value) : TBA)}
+                          disabled={isTba(value)}
+                          className="form-input"
+                        />
+                        <label className="tba-toggle">
+                          <input
+                            type="checkbox"
+                            checked={isTba(value)}
+                            onChange={(e) => handleImportantDateChange(label, e.target.checked ? TBA : isoToDisplayDate(new Date().toISOString().slice(0, 10)))}
+                          />
+                          To be announced
+                        </label>
+                        <p className="form-hint">Shown as: <strong>{value || TBA}</strong></p>
                       </div>
                     ))}
                   </div>
@@ -1912,10 +1971,31 @@ const AdminDashboard = () => {
               </button>
             )}
             <button type="button" onClick={closeEditorialModal} className="button button-ghost">Cancel</button>
-            <button type="button" onClick={handleSaveEditorialDraft} className="button button-primary">Done</button>
+            <button type="button" onClick={handleSaveEditorialDraft} disabled={photoUploading} className="button button-primary">Done</button>
           </>
         )}
       >
+        <div className="member-photo-field">
+          {editorialDraft.photo
+            ? <img className="member-avatar member-photo" src={editorialDraft.photo} alt="" />
+            : <div className="member-avatar" aria-hidden="true">{initials(editorialDraft.name || '?')}</div>}
+          <div className="member-photo-controls">
+            <FilePicker
+              id="ed-photo"
+              label="Profile photo"
+              optional
+              extensions={['jpg', 'jpeg', 'png', 'webp']}
+              maxBytes={5 * 1024 * 1024}
+              file={null}
+              onChange={handleEditorialPhoto}
+              disabled={photoUploading}
+            />
+            {photoUploading && <p className="form-hint"><Spinner size="sm" /> Uploading photo…</p>}
+            {editorialDraft.photo && !photoUploading && (
+              <button type="button" className="link-button" onClick={() => handleEditorialDraftChange('photo', '')}>Remove photo</button>
+            )}
+          </div>
+        </div>
         <div className="field-grid-2">
           {[
             ['section', 'Section', 'text', 'e.g. Editor-in-Chief', true],

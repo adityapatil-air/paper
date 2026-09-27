@@ -685,6 +685,51 @@ export const mockAPI = {
     }
   },
 
+  // Certificates for the signed-in user (reviewers and authors of published papers).
+  getMyCertificates: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/certificates/mine`, { headers: authHeaders() });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) return { success: false, error: data.error || 'Failed to load certificates.', certificates: [] };
+      return { success: true, certificates: data.certificates || [] };
+    } catch (error) {
+      console.error('getMyCertificates error', error);
+      return { success: false, error: 'Failed to load certificates.', certificates: [] };
+    }
+  },
+
+  getCertificate: async (type, paperId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/certificates/${encodeURIComponent(type)}/${encodeURIComponent(paperId)}`, { headers: authHeaders() });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) return { success: false, error: data.error || 'Failed to load the certificate.' };
+      return { success: true, certificate: data.certificate };
+    } catch (error) {
+      console.error('getCertificate error', error);
+      return { success: false, error: 'Failed to load the certificate.' };
+    }
+  },
+
+  uploadEditorialPhoto: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      const response = await fetch(`${API_BASE_URL}/api/settings/editorial-board/photo`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'Failed to upload the photo.' };
+      }
+      return { success: true, url: data.url };
+    } catch (error) {
+      console.error('uploadEditorialPhoto error', error);
+      return { success: false, error: 'Failed to upload the photo.' };
+    }
+  },
+
   saveEditorialBoard: async (board) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/settings/editorial-board`, {

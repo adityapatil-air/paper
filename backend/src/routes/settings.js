@@ -1,6 +1,9 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { requireAdmin } = require('../middleware/requireAdmin');
+const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
+
+const photoUpload = makeUploader({ photo: 'image' });
 
 const router = express.Router();
 
@@ -90,6 +93,22 @@ router.get('/editorial-board', async (req, res) => {
   } catch (err) {
     console.error('Unexpected error in GET /api/settings/editorial-board', err);
     return res.status(500).json({ success: false, error: 'Failed to load editorial board.' });
+  }
+});
+
+// POST /api/settings/editorial-board/photo - upload a member's profile picture; returns its URL.
+// The URL is saved on the member when the admin saves the board.
+router.post('/editorial-board/photo', requireAdmin, handleUpload(photoUpload.single('photo')), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Choose a JPG, PNG or WebP image.' });
+    }
+    const url = await uploadFile(req.file, 'editorial-board');
+    return res.json({ success: true, url });
+  } catch (err) {
+    if (sendStorageError(res, err)) return;
+    console.error('Unexpected error in POST /api/settings/editorial-board/photo', err);
+    return res.status(500).json({ success: false, error: 'Failed to upload the photo.' });
   }
 });
 

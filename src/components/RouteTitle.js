@@ -32,6 +32,8 @@ const RouteTitle = () => {
     const path = pathname.toLowerCase().replace(/\/+$/, '') || '/';
     if (path === '/') {
       document.title = SITE_TITLE;
+    } else if (path.startsWith('/certificate/')) {
+      document.title = 'Certificate | IJEPA';
     } else if (path.startsWith('/review/paper/')) {
       document.title = 'Review manuscript | IJEPA';
     } else if (TITLES[path]) {

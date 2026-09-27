@@ -2,8 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { mockAPI } from '../data/mockData';
 import CurrentIssue from '../components/CurrentIssue';
+import heroIllustration from '../assets/hero-illustration.webp';
 
 const JournalIcon = ({ children }) => <span className="fact-icon" aria-hidden="true">{children}</span>;
+
+const ArticleCard = ({ paper, formatDate }) => (
+  <article className="article-card">
+    <span className="article-tag">{paper.category || 'Research Article'}</span>
+    <h3>{paper.title}</h3>
+    <p className="article-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
+    <small>Published: {formatDate(paper.publicationDate)}</small>
+    {paper.doi && <small>DOI: {paper.doi}</small>}
+    <div className="article-actions">
+      <Link to={`/p/${paper.id}`} className="button button-small button-light">Read Abstract</Link>
+      {paper.pdfUrl && <a href={paper.pdfUrl} className="button button-small button-dark" target="_blank" rel="noreferrer">↓&nbsp; Download PDF</a>}
+    </div>
+  </article>
+);
 
 const Landing = () => {
   const [papers, setPapers] = useState([]);
@@ -42,6 +57,10 @@ const Landing = () => {
     loadIssue();
   }, []);
 
+  // The archive leaves out papers already shown under the current issue.
+  const currentIds = new Set(issuePapers.map((p) => p.id));
+  const archivePapers = papers.filter((p) => !currentIds.has(p.id));
+
   const formatDate = (value) => value ? new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : 'Publication date pending';
 
   return (
@@ -55,7 +74,7 @@ const Landing = () => {
             <p className="hero-description">A peer-reviewed, open-access journal advancing research, innovation, and real-world applications across engineering disciplines.</p>
             <div className="hero-actions"><Link to="/submitform" className="button button-primary">Submit Manuscript <span>→</span></Link><Link to="/journal-issues" className="button button-outline">View Current Issue</Link></div>
           </div>
-          <div className="hero-visual" aria-hidden="true"><div className="visual-orbit orbit-one" /><div className="visual-orbit orbit-two" /><div className="visual-globe">◌</div><div className="visual-grid" /><span className="node node-one" /><span className="node node-two" /><span className="node node-three" /><span className="node node-four" /></div>
+          <div className="hero-visual"><img src={heroIllustration} alt="" className="hero-illustration" width="708" height="482" /></div>
         </div>
       </section>
 
@@ -68,14 +87,31 @@ const Landing = () => {
       </div></section>
 
       <main className="journal-container">
-        <section className="content-section articles-section">
-          <div className="section-heading"><div><p className="eyebrow blue">RESEARCH & PUBLICATION</p><h2>Latest Articles</h2></div><Link to="/papers" className="section-link">View All Articles →</Link></div>
-          {loading ? <div className="loading-state">Loading published papers...</div> : papers.length === 0 ? <div className="empty-state">No published papers are available at this time.</div> : <div className="article-grid">{papers.slice(0, 3).map((paper) => <article className="article-card" key={paper.id}><span className="article-tag">{paper.category || 'Research Article'}</span><h3>{paper.title}</h3><p className="article-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p><small>Published: {formatDate(paper.publicationDate)}</small>{paper.doi && <small>DOI: {paper.doi}</small>}<div className="article-actions"><Link to={`/p/${paper.id}`} className="button button-small button-light">Read Abstract</Link>{paper.pdfUrl && <a href={paper.pdfUrl} className="button button-small button-dark" target="_blank" rel="noreferrer">↓&nbsp; Download PDF</a>}</div></article>)}</div>}
+        <section className="content-section current-issue-section" aria-labelledby="home-current-issue">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow blue">LATEST RELEASE</p>
+              <h2 id="home-current-issue">Current Issue</h2>
+              {currentIssue && (
+                <p className="issue-subline">
+                  {currentIssue.title || `Volume ${currentIssue.volume}, Issue ${currentIssue.issue} · ${[currentIssue.month, currentIssue.year].filter(Boolean).join(' ')}`}
+                </p>
+              )}
+            </div>
+            <Link to="/journal-issues" className="section-link">View All Issues →</Link>
+          </div>
+          {issueLoading ? (
+            <div className="loading-state">Loading current issue...</div>
+          ) : !currentIssue || issuePapers.length === 0 ? (
+            <CurrentIssue issue={currentIssue} papers={issuePapers} showIssuesLink hasIssues={issueCount > 0} />
+          ) : (
+            <div className="article-grid">{issuePapers.map((paper) => <ArticleCard key={paper.id} paper={paper} formatDate={formatDate} />)}</div>
+          )}
         </section>
 
-        <section className="content-section current-issue-section" aria-labelledby="home-current-issue">
-          <div className="section-heading"><div><p className="eyebrow blue">LATEST RELEASE</p><h2 id="home-current-issue">Current Issue</h2></div><Link to="/journal-issues" className="section-link">View All Issues →</Link></div>
-          {issueLoading ? <div className="loading-state">Loading current issue...</div> : <CurrentIssue issue={currentIssue} papers={issuePapers} maxPapers={3} showIssuesLink hasIssues={issueCount > 0} />}
+        <section className="content-section articles-section" aria-labelledby="home-archive">
+          <div className="section-heading"><div><p className="eyebrow blue">RESEARCH & PUBLICATION</p><h2 id="home-archive">Archive</h2></div><Link to="/papers" className="section-link">View All Articles →</Link></div>
+          {loading ? <div className="loading-state">Loading published papers...</div> : archivePapers.length === 0 ? <div className="empty-state">No archived papers are available yet.</div> : <div className="article-grid">{archivePapers.slice(0, 3).map((paper) => <ArticleCard key={paper.id} paper={paper} formatDate={formatDate} />)}</div>}
         </section>
 
         <section className="content-section about-scope"><div className="about-copy"><p className="eyebrow blue">ABOUT THE JOURNAL</p><h2>About IJEPA</h2><p>The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> is an international, peer-reviewed, open-access journal dedicated to publishing high-quality research, innovative methodologies, and practical applications in engineering, computing, information technology, and interdisciplinary technology domains.</p><Link to="/about-us" className="button button-primary button-small">Learn More&nbsp; →</Link></div><div className="scope-panel"><p className="eyebrow blue">OUR FOCUS</p><h2>Aims &amp; Scope</h2><ul><li>Civil, Mechanical, Electrical, and Electronics Engineering</li><li>Computer Science, Information Technology, and Artificial Intelligence</li><li>Industrial, Manufacturing, and Materials Engineering</li><li>Communication, Control, and Instrumentation Systems</li><li>Sustainable, Green, and Emerging Engineering Practices</li></ul><Link to="/about-us" className="button button-dark button-small">View Full Scope&nbsp; →</Link></div></section>

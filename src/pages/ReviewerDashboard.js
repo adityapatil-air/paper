@@ -11,6 +11,7 @@ import Spinner from '../components/ui/Spinner';
 import { Badge } from '../components/ui/StatusBadge';
 import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
+import CertificateList from '../components/ui/CertificateList';
 import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, paperAuthorsLabel } from '../components/ui/DashHeader';
 
 const RATING_LABELS = { 1: 'Poor', 2: 'Below average', 3: 'Average', 4: 'Good', 5: 'Excellent' };
@@ -272,6 +273,7 @@ const ReviewerDashboard = () => {
           tabs={[
             { id: 'assigned', label: 'Assigned papers', count: stats.assigned },
             { id: 'completed', label: 'Completed reviews', count: stats.completed },
+            { id: 'certificates', label: 'Certificates' },
           ]}
         />
 
@@ -418,6 +420,17 @@ const ReviewerDashboard = () => {
                 </table>
               </div>
             )}
+          </TabPanel>
+        )}
+
+        {activeTab === 'certificates' && (
+          <TabPanel id="certificates">
+            <p className="panel-intro">You receive a Certificate of Reviewing for every paper you reviewed once it is published.</p>
+            <CertificateList
+              type="review"
+              emptyTitle="No certificates yet"
+              emptyText="Certificates appear here when a paper you reviewed is published."
+            />
           </TabPanel>
         )}
         </>)}

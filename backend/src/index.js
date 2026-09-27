@@ -15,6 +15,7 @@ const submissionsRoutes = require('./routes/submissions');
 const issuesRoutes = require('./routes/issues');
 const paymentsRoutes = require('./routes/payments');
 const settingsRoutes = require('./routes/settings');
+const certificatesRoutes = require('./routes/certificates');
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/submissions', submissionsRoutes);
 app.use('/api/issues', issuesRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/certificates', certificatesRoutes);
 
 app.listen(PORT, () => {
   console.log(`Backend API listening on port ${PORT}`);

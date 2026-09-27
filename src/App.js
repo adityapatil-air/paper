@@ -34,6 +34,7 @@ const ReviewerDashboard = lazy(() => import('./pages/ReviewerDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const ReviewPaper = lazy(() => import('./pages/ReviewPaper'));
 const SubmitForm = lazy(() => import('./pages/SubmitForm'));
+const Certificate = lazy(() => import('./pages/Certificate'));
 const PaperRedirect = lazy(() => import('./pages/PaperRedirect'));
 
 
@@ -97,6 +98,15 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/certificate/:type/:paperId"
+                element={
+                  <ProtectedRoute>
+                    <Certificate />
                   </ProtectedRoute>
                 }
               />

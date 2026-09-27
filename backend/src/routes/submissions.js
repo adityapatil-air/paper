@@ -10,14 +10,18 @@ const submissionUpload = makeUploader({ manuscript: 'word', copyrightForm: 'docu
 const upload = makeUploader({ manuscript: 'document', copyrightForm: 'document' });
 const copyrightUpload = makeUploader({ copyrightForm: 'pdf' });
 
-// The journal's Aims & Scope areas; must match SUBJECT_AREAS in src/pages/SubmitForm.js.
+// The journal's subject areas; must match SUBJECT_AREAS in src/pages/SubmitForm.js.
+// Authors who pick "Other" send their own text instead, which is accepted up to 120 characters.
 const SUBJECT_AREAS = [
   'Civil, Mechanical, Electrical, and Electronics Engineering',
-  'Computer Science, Information Technology, and Artificial Intelligence',
-  'Industrial, Manufacturing, and Materials Engineering',
-  'Communication, Control, and Instrumentation Systems',
-  'Sustainable, Green, and Emerging Engineering Practices',
+  'Computer Science, Artificial Intelligence, and Information Technology',
+  'Industrial and Manufacturing Engineering',
+  'Materials Science and Engineering Applications',
+  'Communication, Signal Processing, and Control Systems',
+  'Renewable Energy, Green Technologies, and Sustainable Engineering',
+  'Emerging Trends and Interdisciplinary Engineering Practices',
 ];
+const CATEGORY_MAX = 120;
 
 const ensureSupabase = (res) => {
   if (!supabase) {
@@ -51,8 +55,8 @@ router.post(
         category,
       } = req.body || {};
 
-      if (category && !SUBJECT_AREAS.includes(category)) {
-        return res.status(400).json({ success: false, error: 'Choose a subject area from the list.' });
+      if (category && !SUBJECT_AREAS.includes(category) && String(category).trim().length > CATEGORY_MAX) {
+        return res.status(400).json({ success: false, error: `Keep the subject area under ${CATEGORY_MAX} characters.` });
       }
 
       // The submitting author is the signed-in user, never a client-supplied id. When an

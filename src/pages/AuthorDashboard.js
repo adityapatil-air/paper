@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mockAPI } from '../data/mockData';
 import { useToast } from '../components/ui/Toast';
@@ -15,6 +15,7 @@ import { recommendationLabel } from '../components/ui/Stars';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
 import copyrightTemplate from '../assets/Copyright.pdf';
+import CertificateList from '../components/ui/CertificateList';
 
 const UNFINISHED_STATUSES = ['submitted', 'under_review', 'revisions_requested', 'accepted'];
 
@@ -452,6 +453,9 @@ const AuthorDashboard = () => {
             <strong>Congratulations! Your paper has been published.</strong>
             {paper.doi && <p>DOI: {paper.doi}</p>}
           </div>
+          <div className="callout-actions">
+            <Link to={`/certificate/author/${paper.id}`} className="button button-primary button-small">View certificate</Link>
+          </div>
         </div>
       );
     }
@@ -518,6 +522,7 @@ const AuthorDashboard = () => {
               tabs={[
                 { id: 'submissions', label: 'All submissions', count: papers.length },
                 { id: 'pending', label: 'Pending payment', count: pendingPaymentPapers.length },
+                { id: 'certificates', label: 'Certificates' },
               ]}
             />
 
@@ -638,6 +643,17 @@ const AuthorDashboard = () => {
                     </table>
                   </div>
                 )}
+              </TabPanel>
+            )}
+
+            {activeTab === 'certificates' && (
+              <TabPanel id="certificates">
+                <p className="panel-intro">You receive a Certificate of Publication for each of your papers once it is published.</p>
+                <CertificateList
+                  type="author"
+                  emptyTitle="No certificates yet"
+                  emptyText="Your certificate appears here as soon as your paper is published."
+                />
               </TabPanel>
             )}
           </>

@@ -26,16 +26,22 @@ const ABSTRACT_MAX_WORDS = 300;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DRAFT_KEY_PREFIX = 'ijepa.submissionDraft.v1';
 
-const EMPTY_FORM = { fullName: '', email: '', affiliation: '', paperTitle: '', category: '', abstract: '', comments: '' };
+const EMPTY_FORM = { fullName: '', email: '', affiliation: '', paperTitle: '', category: '', categoryOther: '', abstract: '', comments: '' };
 
-// The journal's Aims & Scope areas (home page); the backend accepts the same list.
+// The journal's subject areas (Call for Papers scope). "Other" lets the author type their own.
 const SUBJECT_AREAS = [
   'Civil, Mechanical, Electrical, and Electronics Engineering',
-  'Computer Science, Information Technology, and Artificial Intelligence',
-  'Industrial, Manufacturing, and Materials Engineering',
-  'Communication, Control, and Instrumentation Systems',
-  'Sustainable, Green, and Emerging Engineering Practices',
+  'Computer Science, Artificial Intelligence, and Information Technology',
+  'Industrial and Manufacturing Engineering',
+  'Materials Science and Engineering Applications',
+  'Communication, Signal Processing, and Control Systems',
+  'Renewable Energy, Green Technologies, and Sustainable Engineering',
+  'Emerging Trends and Interdisciplinary Engineering Practices',
 ];
+const OTHER_AREA = 'Other';
+const CATEGORY_OTHER_MAX = 120;
+// The subject area sent with the submission: the chosen option, or the typed one for "Other".
+const effectiveCategory = (form) => (form.category === OTHER_AREA ? form.categoryOther.trim() : form.category);
 const COAUTHOR_FIELDS = ['fullName', 'affiliation', 'email'];
 
 const SECTIONS = [
@@ -103,6 +109,8 @@ const validateField = (name, rawValue) => {
       return value ? '' : 'Enter the title of your paper.';
     case 'category':
       return value ? '' : 'Choose the subject area of your paper.';
+    case 'categoryOther':
+      return value ? '' : 'Enter the subject area of your paper.';
     case 'abstract': {
       const words = countWords(value);
       if (!words) return 'Add an abstract for your paper.';
@@ -305,7 +313,6 @@ const SubmitForm = () => {
 
   const [touched, setTouched] = useState({});
   const [showAllErrors, setShowAllErrors] = useState(false);
-  const [locked, setLocked] = useState({ fullName: false, email: false });
 
   const [initialized, setInitialized] = useState(false);
   const [draftNotice, setDraftNotice] = useState(null);
@@ -348,10 +355,6 @@ const SubmitForm = () => {
       setLastSaved(draft.savedAt || null);
     }
     setForm(next);
-    setLocked({
-      fullName: Boolean(profile.fullName) && next.fullName === profile.fullName,
-      email: Boolean(profile.email) && next.email === profile.email && !validateField('email', profile.email),
-    });
     setInitialized(true);
   }, [user, initialized, profile]);
 
@@ -409,6 +412,10 @@ const SubmitForm = () => {
       const msg = validateField(name, form[name]);
       if (msg) next[name] = msg;
     });
+    if (form.category === OTHER_AREA) {
+      const msg = validateField('categoryOther', form.categoryOther);
+      if (msg) next.categoryOther = msg;
+    }
     coAuthors.forEach((c) => {
       if (!coAuthorHasContent(c)) return;
       COAUTHOR_FIELDS.forEach((f) => {
@@ -429,21 +436,21 @@ const SubmitForm = () => {
   const fieldOrder = useMemo(() => [
     'fullName', 'email', 'affiliation',
     ...coAuthors.flatMap((c) => COAUTHOR_FIELDS.map((f) => coKey(c.id, f))),
-    'paperTitle', 'category', 'abstract', 'manuscript', 'comments',
+    'paperTitle', 'category', 'categoryOther', 'abstract', 'manuscript', 'comments',
   ], [coAuthors]);
 
   const sectionErrors = (keys) => keys.some((k) => visibleError(k));
   const coAuthorKeys = coAuthors.flatMap((c) => COAUTHOR_FIELDS.map((f) => coKey(c.id, f)));
   const authorDone = !errors.fullName && !errors.email && !errors.affiliation;
   const coAuthorsDone = coAuthorKeys.every((k) => !errors[k]);
-  const detailsDone = !errors.paperTitle && !errors.category && !errors.abstract;
+  const detailsDone = !errors.paperTitle && !errors.category && !errors.categoryOther && !errors.abstract;
   const manuscriptDone = Boolean(manuscript) && !fileError;
   const readyToReview = authorDone && coAuthorsDone && detailsDone && manuscriptDone && !errors.comments;
 
   const sectionState = {
     author: { done: authorDone, error: sectionErrors(['fullName', 'email', 'affiliation']) },
     coauthors: { done: coAuthorsDone && coAuthors.some(coAuthorHasContent), error: sectionErrors(coAuthorKeys) },
-    details: { done: detailsDone, error: sectionErrors(['paperTitle', 'category', 'abstract']) },
+    details: { done: detailsDone, error: sectionErrors(['paperTitle', 'category', 'categoryOther', 'abstract']) },
     manuscript: { done: manuscriptDone, error: Boolean(visibleError('manuscript')) },
     cover: { done: Boolean(form.comments.trim()) && !errors.comments, error: sectionErrors(['comments']) },
     review: { done: false, error: false },
@@ -460,35 +467,19 @@ const SubmitForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: name === 'comments' ? value.slice(0, COVER_LETTER_MAX) : value }));
+    setForm((prev) => ({ ...prev, [name]: name === 'comments' ? value.slice(0, COVER_LETTER_MAX) : name === 'categoryOther' ? value.slice(0, CATEGORY_OTHER_MAX) : value }));
   };
 
   const handleBlur = (e) => markTouched(e.target.name);
 
-  const unlockField = (name) => {
-    setLocked((prev) => ({ ...prev, [name]: false }));
-    setTimeout(() => {
-      const el = document.getElementById(name);
-      if (el) { el.focus(); el.select?.(); }
-    }, 0);
-  };
-
-  const relockField = (name) => {
-    setForm((prev) => ({ ...prev, [name]: profile[name] }));
-    setLocked((prev) => ({ ...prev, [name]: true }));
-  };
-
   const focusField = useCallback((key) => {
-    if ((key === 'fullName' || key === 'email') && locked[key]) {
-      setLocked((prev) => ({ ...prev, [key]: false }));
-    }
     setTimeout(() => {
       const el = document.getElementById(domIdFor(key));
       if (!el) return;
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.focus({ preventScroll: true });
     }, 0);
-  }, [locked]);
+  }, []);
 
   const focusSection = (id) => {
     setReviewOpen(false);
@@ -633,7 +624,6 @@ const SubmitForm = () => {
   const discardDraft = () => {
     if (user) clearDraft(user.id);
     setForm({ ...EMPTY_FORM, fullName: profile.fullName, email: profile.email, affiliation: profile.affiliation });
-    setLocked({ fullName: Boolean(profile.fullName), email: Boolean(profile.email) && !validateField('email', profile.email) });
     setCoAuthors([]);
     setKeywords([]);
     setKeywordDraft('');
@@ -667,7 +657,7 @@ const SubmitForm = () => {
     data.append('email', form.email.trim());
     data.append('affiliation', form.affiliation.trim());
     data.append('paperTitle', form.paperTitle.trim());
-    data.append('category', form.category);
+    data.append('category', effectiveCategory(form));
     data.append('abstract', form.abstract.trim());
     data.append('keywords', keywords.join(', '));
     data.append('comments', form.comments.trim());
@@ -720,7 +710,6 @@ const SubmitForm = () => {
   const resetForAnother = () => {
     setSubmission(null);
     setForm({ ...EMPTY_FORM, fullName: profile.fullName, email: profile.email, affiliation: profile.affiliation });
-    setLocked({ fullName: Boolean(profile.fullName), email: Boolean(profile.email) && !validateField('email', profile.email) });
     setCoAuthors([]);
     setKeywords([]);
     setKeywordDraft('');
@@ -781,25 +770,14 @@ const SubmitForm = () => {
   const manuscriptError = visibleError('manuscript');
   const filledCoAuthors = coAuthors.filter(coAuthorHasContent);
 
+  // Prefilled from the account; the author can type over them directly.
   const identityField = (name, label, type, autoComplete, placeholder) => {
-    const isLocked = locked[name];
-    const canRelock = !isLocked && Boolean(profile[name]) && (name !== 'email' || !validateField('email', profile.email));
     return (
       <Field
         id={name}
         label={label}
         required
         error={visibleError(name)}
-        hint={isLocked ? 'From your account. Select Edit to change it for this submission.' : undefined}
-        action={isLocked ? (
-          <button type="button" className="edit-toggle" onClick={() => unlockField(name)} aria-label={`Edit ${label.toLowerCase()}`}>
-            <Icon name="edit" size={14} /> Edit
-          </button>
-        ) : canRelock ? (
-          <button type="button" className="edit-toggle" onClick={() => relockField(name)}>
-            Use account {name === 'email' ? 'email' : 'name'}
-          </button>
-        ) : null}
       >
         {(a11y) => (
           <input
@@ -809,7 +787,6 @@ const SubmitForm = () => {
             value={form[name]}
             onChange={handleChange}
             onBlur={handleBlur}
-            readOnly={isLocked}
             required
             autoComplete={autoComplete}
             placeholder={placeholder}
@@ -1003,9 +980,30 @@ const SubmitForm = () => {
                   >
                     <option value="">Choose the area that fits best…</option>
                     {SUBJECT_AREAS.map((area) => <option key={area} value={area}>{area}</option>)}
+                    <option value={OTHER_AREA}>Other (type your own)</option>
                   </select>
                 )}
               </Field>
+
+              {form.category === OTHER_AREA && (
+                <Field id="categoryOther" label="Your subject area" required error={visibleError('categoryOther')}>
+                  {(a11y) => (
+                    <input
+                      {...a11y}
+                      type="text"
+                      name="categoryOther"
+                      value={form.categoryOther}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      required
+                      maxLength={CATEGORY_OTHER_MAX}
+                      autoFocus
+                      placeholder="e.g. Biomedical Engineering"
+                      className={`form-input${visibleError('categoryOther') ? ' is-invalid' : ''}`}
+                    />
+                  )}
+                </Field>
+              )}
 
               <Field
                 id="abstract"
@@ -1190,7 +1188,7 @@ const SubmitForm = () => {
               <div className="review-grid">
                 {[
                   { label: 'Author information', ok: authorDone && coAuthorsDone, value: authorDone ? `${form.fullName} · ${form.email}${filledCoAuthors.length ? ` · ${filledCoAuthors.length} co-author${filledCoAuthors.length === 1 ? '' : 's'}` : ''}` : 'Name, email and affiliation are required', section: 'author' },
-                  { label: 'Paper details', ok: detailsDone, value: detailsDone ? `${form.paperTitle} · ${form.category} · ${abstractWords}-word abstract${keywords.length ? ` · ${keywords.length} keyword${keywords.length === 1 ? '' : 's'}` : ''}` : 'Title and a 150–300 word abstract are required', section: 'details' },
+                  { label: 'Paper details', ok: detailsDone, value: detailsDone ? `${form.paperTitle} · ${effectiveCategory(form)} · ${abstractWords}-word abstract${keywords.length ? ` · ${keywords.length} keyword${keywords.length === 1 ? '' : 's'}` : ''}` : 'Title and a 150–300 word abstract are required', section: 'details' },
                   { label: 'Manuscript', ok: manuscriptDone, value: manuscript ? `${manuscript.name} (${formatBytes(manuscript.size)})` : 'No file attached yet', section: 'manuscript' },
                   { label: 'Cover letter', ok: Boolean(form.comments.trim()), optional: true, value: form.comments.trim() ? `${coverLength} characters` : 'Not added (optional)', section: 'cover' },
                 ].map((row) => (
