@@ -135,6 +135,10 @@ export const AuthProvider = ({ children }) => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       // Password users have no Supabase session, so a null session must not sign them out.
       if (event === 'SIGNED_IN' && session?.user) adoptGoogleSession(session);
+      // Supabase strips its token fragment from the OAuth redirect but leaves a bare "#" in the URL.
+      if (typeof window !== 'undefined' && window.location.href.endsWith('#')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
     });
 
     return () => {

@@ -221,8 +221,8 @@ const Register = () => {
               </form>
             ) : (
             <>
-            <form onSubmit={handleSubmit} style={{ marginTop: 18 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="field-grid-2">
                 <div className="form-group">
                   <label htmlFor="name">Full Name</label>
                   <input
@@ -279,7 +279,7 @@ const Register = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="field-grid-2">
                 <div className="form-group">
                   <label htmlFor="password">Password</label>
                   <input
@@ -312,22 +312,22 @@ const Register = () => {
                     style={formData.confirmPassword && formData.password !== formData.confirmPassword ? { borderColor: 'var(--danger)' } : undefined}
                   />
                   {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                    <p className="form-hint" style={{ color: 'var(--danger)' }}>Passwords don't match yet.</p>
+                    <p className="field-error">Passwords don’t match yet.</p>
                   )}
                 </div>
               </div>
 
               <div className="terms-row">
-                <input id="terms" name="terms" type="checkbox" required style={{ marginTop: 3 }} />
+                <input id="terms" name="terms" type="checkbox" required />
                 <label htmlFor="terms" className="terms-label">
                   I agree to the{' '}
-                  <a href="/terms-of-service" style={{ color: 'var(--blue)', fontWeight: 600 }}>Terms of Service</a>{' '}
+                  <a href="/terms-of-service" className="form-link">Terms of Service</a>{' '}
                   and{' '}
-                  <a href="/privacy-policy" style={{ color: 'var(--blue)', fontWeight: 600 }}>Privacy Policy</a>
+                  <a href="/privacy-policy" className="form-link">Privacy Policy</a>
                 </label>
               </div>
 
-              <button type="submit" disabled={loading} className="button button-primary" style={{ width: '100%' }}>
+              <button type="submit" disabled={loading} className="button button-primary button-block">
                 {loading ? 'Sending code…' : 'Continue →'}
               </button>
               <p className="form-hint" style={{ textAlign: 'center', marginTop: 10 }}>We’ll email you a code to confirm your address.</p>

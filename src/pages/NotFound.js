@@ -14,7 +14,7 @@ const NotFound = ({ title = 'Page not found', message = 'The page you were looki
       <div className="journal-container">
         <div className="page-card" role="alert">
           <p className="eyebrow blue">Error 404</p>
-          <h1 style={{ margin: '0 0 8px', color: 'var(--navy)' }}>{title}</h1>
+          <h1 className="page-card-title">{title}</h1>
           <p>{message}</p>
           <div className="row-actions">
             <Link to="/" className="button button-primary button-small">Go to the home page</Link>

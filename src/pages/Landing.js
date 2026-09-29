@@ -115,7 +115,7 @@ const Landing = () => {
             <Link to="/journal-issues" className="section-link">View All Issues →</Link>
           </div>
           {issueLoading ? (
-            <div className="loading-state">Loading current issue...</div>
+            <div className="loading-state" role="status">Loading current issue…</div>
           ) : !currentIssue || issuePapers.length === 0 ? (
             <CurrentIssue issue={currentIssue} papers={issuePapers} showIssuesLink hasIssues={issueCount > 0} />
           ) : (

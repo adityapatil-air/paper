@@ -186,7 +186,7 @@ const EditorialBoard = () => {
 
       <div className="page-body journal-container">
         {loading ? (
-          <div className="loading-state">Loading editorial board...</div>
+          <div className="loading-state" role="status">Loading editorial board…</div>
         ) : Object.keys(sections).length === 0 ? (
           <div className="empty-state">{error || 'No editorial board members found.'}</div>
         ) : (

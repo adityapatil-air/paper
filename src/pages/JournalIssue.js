@@ -179,7 +179,7 @@ const JournalIssues = () => {
         </div>
 
         {loading || (currentIssue && papersLoading) ? (
-          <div className="loading-state">Loading current issue…</div>
+          <div className="loading-state" role="status">Loading current issue…</div>
         ) : !currentIssue || currentIssuePapers.length === 0 ? (
           <CurrentIssue issue={currentIssue} papers={currentIssuePapers} papersLoading={papersLoading} hasIssues={issues.length > 0} />
         ) : (
@@ -195,7 +195,7 @@ const JournalIssues = () => {
         </p>
 
         {loading ? (
-          <div className="loading-state">Loading archives…</div>
+          <div className="loading-state" role="status">Loading archives…</div>
         ) : archiveVolumeKeys.length === 0 ? (
           <div className="empty-state">No archived issues yet. Earlier issues will be listed here once a newer issue becomes current.</div>
         ) : (
@@ -217,6 +217,7 @@ const JournalIssues = () => {
                       type="button"
                       onClick={() => setExpandedVolumeKey((prev) => (prev === volume ? null : volume))}
                       className="volume-toggle"
+                      aria-expanded={isVolumeExpanded}
                     >
                       <span>{volume}</span>
                       <svg

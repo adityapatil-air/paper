@@ -110,6 +110,7 @@ const FilePicker = ({
                   className="link-btn"
                   onClick={() => inputRef.current?.click()}
                   disabled={disabled}
+                  aria-label={`Browse files: ${label}`}
                   aria-describedby={[`${id}-label`, hintId, error ? errorId : null].filter(Boolean).join(' ')}
                 >
                   browse files

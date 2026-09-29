@@ -226,7 +226,7 @@ const BrowsePapers = () => {
     return (
       <div className="page-body">
         <div className="journal-container">
-          <div className="loading-state" style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className="loading-state is-centered" role="status">
             <LoadingSpinner size="lg" text="Loading published papers..." />
           </div>
         </div>
@@ -357,9 +357,9 @@ const BrowsePapers = () => {
 
                   {numPages && (
                     <div className="viewer-controls is-on-dark">
-                      <button type="button" onClick={handleZoomOut} className="button button-small button-outline" disabled={zoom <= 0.5}>-</button>
+                      <button type="button" onClick={handleZoomOut} className="button button-small button-outline" disabled={zoom <= 0.5} aria-label="Zoom out">-</button>
                       <span>{Math.round(zoom * 100)}%</span>
-                      <button type="button" onClick={handleZoomIn} className="button button-small button-outline" disabled={zoom >= 2}>+</button>
+                      <button type="button" onClick={handleZoomIn} className="button button-small button-outline" disabled={zoom >= 2} aria-label="Zoom in">+</button>
                       <button type="button" onClick={handleResetZoom} className="button button-small button-outline">Reset</button>
                       <button type="button" onClick={handlePrevPage} disabled={pageNumber <= 1} className="button button-small button-outline">Previous</button>
                       <span>Page {pageNumber} of {numPages}</span>

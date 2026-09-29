@@ -30,8 +30,8 @@ export const DashboardSkeleton = ({ stats = 4, label = 'Loading dashboard' }) =>
       <div className="dash-header" aria-hidden="true">
         <div className="skeleton-stack">
           <Skeleton width={110} height={12} />
-          <Skeleton width={280} height={30} />
-          <Skeleton width={360} height={14} />
+          <Skeleton width="min(280px, 100%)" height={30} />
+          <Skeleton width="min(360px, 100%)" height={14} />
         </div>
         <Skeleton width={170} height={44} radius={8} />
       </div>

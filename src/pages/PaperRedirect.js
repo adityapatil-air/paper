@@ -192,8 +192,8 @@ const PaperRedirect = () => {
         )}
 
         <div className="page-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="viewer-toolbar">
+            <div className="viewer-toolbar-group">
               <Link to="/journal-issues" className="crumb-link">
                 Back to Journal Issues
               </Link>
@@ -210,8 +210,8 @@ const PaperRedirect = () => {
             )}
           </div>
 
-          <div className="viewer-controls" style={{ color: 'var(--muted)', justifyContent: 'space-between', marginTop: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="viewer-toolbar viewer-controls">
+            <div className="viewer-toolbar-group">
               <button type="button" onClick={handlePrevPage} disabled={loading || pageNumber <= 1} className="button button-small button-light">
                 Prev
               </button>
@@ -221,14 +221,14 @@ const PaperRedirect = () => {
               <span>{numPages ? `Page ${pageNumber} of ${numPages}` : loading ? 'Loading…' : 'Page'}</span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button type="button" onClick={handleZoomOut} disabled={zoom <= 0.5} className="button button-small button-light">
+            <div className="viewer-toolbar-group">
+              <button type="button" onClick={handleZoomOut} disabled={zoom <= 0.5} className="button button-small button-light" aria-label="Zoom out">
                 -
               </button>
               <button type="button" onClick={handleResetZoom} className="button button-small button-light">
                 {Math.round(zoom * 100)}%
               </button>
-              <button type="button" onClick={handleZoomIn} disabled={zoom >= 2.5} className="button button-small button-light">
+              <button type="button" onClick={handleZoomIn} disabled={zoom >= 2.5} className="button button-small button-light" aria-label="Zoom in">
                 +
               </button>
             </div>
@@ -237,7 +237,7 @@ const PaperRedirect = () => {
 
         <div className="page-card" style={{ padding: 0, marginTop: 16, overflow: 'hidden' }}>
           {loading ? (
-            <div className="loading-state">Loading paper... Please wait.</div>
+            <div className="loading-state" role="status">Loading paper… Please wait.</div>
           ) : !file ? (
             <div className="empty-state">Paper not found. The paper file link may be missing.</div>
           ) : (

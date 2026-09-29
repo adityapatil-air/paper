@@ -90,7 +90,7 @@ const Login = () => {
             {contextMessage && !error && <Alert type="info" message={contextMessage} />}
             {error && <Alert type="error" message={error} onClose={() => setError('')} />}
 
-            <form onSubmit={handleSubmit} style={{ marginTop: 18 }}>
+            <form onSubmit={handleSubmit} className="auth-form">
               <div className="form-group">
                 <label htmlFor="email">Email address</label>
                 <input
@@ -106,7 +106,7 @@ const Login = () => {
 
               <div className="form-group">
                 <label htmlFor="password">Password</label>
-                <div style={{ position: 'relative' }}>
+                <div className="password-field">
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
@@ -115,7 +115,6 @@ const Login = () => {
                     required
                     className="form-input"
                     placeholder="••••••••"
-                    style={{ paddingRight: 66 }}
                   />
                   <button
                     type="button"
@@ -127,15 +126,15 @@ const Login = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
+              <div className="auth-links-row">
                 {/* No self-service reset yet (the backend sends no email); the editorial office resets passwords. */}
                 <a href="mailto:editor@ijepa.org?subject=Password%20reset%20request" className="form-link">
                   Forgot your password? Email editor@ijepa.org
                 </a>
               </div>
 
-              <button type="submit" disabled={loading} className="button button-primary" style={{ width: '100%' }}>
-                {loading ? 'Signing In...' : 'Sign In →'}
+              <button type="submit" disabled={loading} className="button button-primary button-block">
+                {loading ? 'Signing in…' : 'Sign In →'}
               </button>
             </form>
 
