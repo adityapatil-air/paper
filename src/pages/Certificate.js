@@ -1,10 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mockAPI } from '../data/mockData';
 import Icon from '../components/ui/Icon';
 import Spinner from '../components/ui/Spinner';
 import logo from '../assets/logo.png';
+import signature from '../assets/eic-signature.png';
+
+// The certificate is laid out at the exact A4-landscape size (297 x 210 mm = 1123 x 794 CSS px)
+// and scaled down to fit the screen, so the saved PDF is one page and matches what is shown.
+const SHEET_W = 1123;
+const SHEET_H = 794;
+
+const EDITOR_IN_CHIEF = { name: 'Dr. Navnath D. Kale', role: 'Editor-in-Chief, IJEPA' };
 
 const longDate = (value) => {
   if (!value) return '';
@@ -20,11 +28,12 @@ const issueText = (issue) => {
 
 const dashboardFor = (role) => (role === 'reviewer' ? '/reviewer-dashboard' : role === 'admin' ? '/admin-dashboard' : '/author-dashboard');
 
-// Printable certificate (A4 landscape). "Download PDF" uses the browser's Save as PDF.
 const Certificate = () => {
   const { type, paperId } = useParams();
   const { user } = useAuth();
   const [state, setState] = useState({ loading: true, error: '', cert: null });
+  const [scale, setScale] = useState(1);
+  const frameRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -34,6 +43,17 @@ const Certificate = () => {
     });
     return () => { active = false; };
   }, [type, paperId]);
+
+  // Fit the fixed-size sheet to the available width.
+  useLayoutEffect(() => {
+    const el = frameRef.current;
+    if (!el) return undefined;
+    const fit = () => setScale(Math.min(1, el.clientWidth / SHEET_W));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [state.cert]);
 
   const { loading, error, cert } = state;
   const backTo = dashboardFor(user?.role);
@@ -57,7 +77,8 @@ const Certificate = () => {
 
   const isReview = cert.type === 'review';
   const where = issueText(cert.issue);
-  const issuedOn = longDate(isReview ? (cert.publicationDate || cert.reviewDate) : cert.publicationDate);
+  const issuedOn = longDate(cert.publicationDate || cert.reviewDate);
+  const kind = isReview ? 'Reviewing' : 'Publication';
 
   return (
     <div className="cert-page">
@@ -67,71 +88,67 @@ const Certificate = () => {
           <Icon name="download" size={16} /> Download PDF
         </button>
       </div>
-      <p className="cert-print-tip no-print">In the print window, choose <strong>Save as PDF</strong>, set the layout to <strong>Landscape</strong> and turn on <strong>Background graphics</strong>.</p>
+      <p className="cert-print-tip no-print">In the print window choose <strong>Save as PDF</strong>. The certificate is set to one A4 landscape page; if colours look faded, turn on <strong>Background graphics</strong>.</p>
 
-      <article className="certificate" aria-label={isReview ? 'Certificate of reviewing' : 'Certificate of publication'}>
-        <div className="cert-frame">
-          <span className="cert-corner is-tl" aria-hidden="true" />
-          <span className="cert-corner is-tr" aria-hidden="true" />
-          <span className="cert-corner is-bl" aria-hidden="true" />
-          <span className="cert-corner is-br" aria-hidden="true" />
+      <div className="cert-frame-outer" ref={frameRef}>
+        <div className="cert-scale" style={{ height: SHEET_H * scale }}>
+          <article
+            className="cert-sheet"
+            style={{ width: SHEET_W, height: SHEET_H, transform: `scale(${scale})` }}
+            aria-label={`Certificate of ${kind.toLowerCase()}`}
+          >
+            <aside className="cert-side">
+              <div className="cert-side-brand">
+                <img src={logo} alt="" className="cert-side-logo" />
+                <strong>IJEPA</strong>
+                <span>International Journal of Engineering Practices and Applications</span>
+              </div>
+              <dl className="cert-side-ids">
+                <div><dt>Certificate ID</dt><dd>{cert.number}</dd></div>
+                <div><dt>Paper ID</dt><dd>{cert.paperCode}</dd></div>
+                <div><dt>ISSN</dt><dd>3139-5961 (Online)</dd></div>
+              </dl>
+            </aside>
 
-          <header className="cert-head">
-            <img src={logo} alt="" className="cert-logo" />
-            <p className="cert-journal">International Journal of Engineering Practices and Applications</p>
-            <p className="cert-issn">IJEPA · ISSN 3139-5961 (Online) · Peer-reviewed · Open access</p>
-          </header>
+            <div className="cert-main">
+              <p className="cert-kicker">Peer-reviewed · Open access</p>
+              <h1 className="cert-heading">Certificate<span>of {kind}</span></h1>
 
-          <div className="cert-title">
-            <span className="cert-rule" aria-hidden="true" />
-            <h1>{isReview ? 'Certificate of Reviewing' : 'Certificate of Publication'}</h1>
-            <span className="cert-rule" aria-hidden="true" />
-          </div>
+              <p className="cert-lead">This certificate is presented to</p>
+              <p className="cert-name">{cert.recipientName}</p>
+              {cert.recipientAffiliation && <p className="cert-affiliation">{cert.recipientAffiliation}</p>}
 
-          <p className="cert-lead">This is to certify that</p>
-          <p className="cert-name">{cert.recipientName}</p>
-          {cert.recipientAffiliation && <p className="cert-affiliation">{cert.recipientAffiliation}</p>}
+              <span className="cert-divider" aria-hidden="true" />
 
-          <p className="cert-body">
-            {isReview
-              ? 'has served as a peer reviewer for the manuscript entitled'
-              : 'has authored the research paper entitled'}
-          </p>
-          <p className="cert-paper">“{cert.paperTitle}”</p>
-          {!isReview && Array.isArray(cert.authors) && cert.authors.length > 1 && (
-            <p className="cert-authors">Authors: {cert.authors.join(', ')}</p>
-          )}
-          <p className="cert-body">
-            {isReview
-              ? <>published in IJEPA{where ? `, ${where}` : ''}. We gratefully acknowledge this valuable contribution to the quality and integrity of the peer-review process.</>
-              : <>published in IJEPA{where ? `, ${where}` : ''}{cert.publicationDate ? ` on ${longDate(cert.publicationDate)}` : ''}, after double-blind peer review.</>}
-          </p>
-          {!isReview && cert.doi && <p className="cert-doi">DOI: {cert.doi}</p>}
+              <p className="cert-body">
+                {isReview ? 'in recognition of serving as a peer reviewer for the manuscript' : 'for the publication of the research paper'}
+              </p>
+              <p className="cert-paper">{cert.paperTitle}</p>
+              {!isReview && Array.isArray(cert.authors) && cert.authors.length > 1 && (
+                <p className="cert-authors">Authors: {cert.authors.join(', ')}</p>
+              )}
+              <p className="cert-body">
+                {isReview
+                  ? <>published in IJEPA{where ? `, ${where}` : ''}. We sincerely thank you for your contribution to the quality and integrity of our peer-review process.</>
+                  : <>published in IJEPA{where ? `, ${where}` : ''}{cert.publicationDate ? ` on ${longDate(cert.publicationDate)}` : ''}, following double-blind peer review.</>}
+              </p>
 
-          <footer className="cert-foot">
-            <div className="cert-meta">
-              <span>Date of issue</span>
-              <strong>{issuedOn}</strong>
+              <footer className="cert-foot">
+                <div className="cert-date">
+                  <span>Date of issue</span>
+                  <strong>{issuedOn}</strong>
+                </div>
+                <div className="cert-sign">
+                  <img src={signature} alt={`Signature of ${EDITOR_IN_CHIEF.name}`} className="cert-signature" />
+                  <span className="cert-sign-line" aria-hidden="true" />
+                  <strong>{EDITOR_IN_CHIEF.name}</strong>
+                  <span>{EDITOR_IN_CHIEF.role}</span>
+                </div>
+              </footer>
             </div>
-            <svg className="cert-seal" viewBox="0 0 120 120" aria-hidden="true">
-              <defs>
-                <path id="seal-circle" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0" />
-              </defs>
-              <circle cx="60" cy="60" r="57" className="seal-outer" />
-              <circle cx="60" cy="60" r="33" className="seal-inner" />
-              <text className="seal-ring-text"><textPath href="#seal-circle" startOffset="0">PEER REVIEWED · OPEN ACCESS · IJEPA ·</textPath></text>
-              <text x="60" y="58" textAnchor="middle" className="seal-core">IJEPA</text>
-              <text x="60" y="74" textAnchor="middle" className="seal-year">{String(cert.publicationDate || '').slice(0, 4)}</text>
-            </svg>
-            <div className="cert-sign">
-              <span className="cert-sign-line" aria-hidden="true" />
-              <strong>Editor-in-Chief</strong>
-              <span>IJEPA</span>
-            </div>
-          </footer>
-          <p className="cert-number">Certificate No. {cert.number}</p>
+          </article>
         </div>
-      </article>
+      </div>
     </div>
   );
 };
