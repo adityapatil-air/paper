@@ -10,9 +10,7 @@ const JournalIcon = ({ name }) => <span className="fact-icon" aria-hidden="true"
 
 
 const Landing = () => {
-  const [papers, setPapers] = useState([]);
   const [board, setBoard] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [currentIssue, setCurrentIssue] = useState(null);
   const [issueCount, setIssueCount] = useState(0);
   const [issuePapers, setIssuePapers] = useState([]);
@@ -20,11 +18,8 @@ const Landing = () => {
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
-      const [published, editorial] = await Promise.all([mockAPI.getPublishedPapers(), mockAPI.getEditorialBoard()]);
-      setPapers(Array.isArray(published) ? published : []);
+      const editorial = await mockAPI.getEditorialBoard();
       setBoard(editorial?.success && Array.isArray(editorial.board) ? editorial.board : []);
-      setLoading(false);
     };
     load();
   }, []);
@@ -46,9 +41,6 @@ const Landing = () => {
     loadIssue();
   }, []);
 
-  // The archive leaves out papers already shown under the current issue.
-  const currentIds = new Set(issuePapers.map((p) => p.id));
-  const archivePapers = papers.filter((p) => !currentIds.has(p.id));
 
 
   return (
@@ -95,11 +87,6 @@ const Landing = () => {
           ) : (
             <div className="article-grid">{issuePapers.map((paper) => <ArticleCard key={paper.id} paper={paper} />)}</div>
           )}
-        </section>
-
-        <section className="content-section articles-section" aria-labelledby="home-archive">
-          <div className="section-heading"><div><p className="eyebrow blue">RESEARCH & PUBLICATION</p><h2 id="home-archive">Archive</h2></div><Link to="/papers" className="section-link">View All Articles →</Link></div>
-          {loading ? <div className="loading-state">Loading published papers...</div> : archivePapers.length === 0 ? <div className="empty-state">No archived papers are available yet.</div> : <div className="article-grid">{archivePapers.slice(0, 3).map((paper) => <ArticleCard key={paper.id} paper={paper} />)}</div>}
         </section>
 
         <section className="content-section about-scope"><div className="about-copy"><p className="eyebrow blue">ABOUT THE JOURNAL</p><h2>About IJEPA</h2><p>The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> is an international, peer-reviewed, open-access journal dedicated to publishing high-quality research, innovative methodologies, and practical applications in engineering, computing, information technology, and interdisciplinary technology domains.</p><Link to="/about-us" className="button button-primary button-small">Learn More&nbsp; →</Link></div><div className="scope-panel"><p className="eyebrow blue">OUR FOCUS</p><h2>Aims &amp; Scope</h2><ul><li>Civil, Mechanical, Electrical, and Electronics Engineering</li><li>Computer Science, Information Technology, and Artificial Intelligence</li><li>Industrial, Manufacturing, and Materials Engineering</li><li>Communication, Control, and Instrumentation Systems</li><li>Sustainable, Green, and Emerging Engineering Practices</li></ul><Link to="/about-us" className="button button-dark button-small">View Full Scope&nbsp; →</Link></div></section>

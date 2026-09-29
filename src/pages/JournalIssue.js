@@ -78,85 +78,6 @@ const JournalIssues = () => {
     if (activeArchiveVolumeKey) setExpandedVolumeKey(activeArchiveVolumeKey);
   }, [activeArchiveVolumeKey, expandedVolumeKey]);
 
-  const formatPaperId = (paper, serial, year) => {
-    if (paper && paper.doi && paper.doi.includes('IJEPA-')) {
-      const match = paper.doi.match(/IJEPA-\d+-\d+/);
-      if (match) return match[0];
-    }
-    const normalizedYear = year || 2026;
-    const raw = String(serial ?? '').trim();
-    const parsed = parseInt(raw, 10);
-    const normalizedSerial = Number.isNaN(parsed) ? raw : String(parsed);
-    const paddedSerial = String(normalizedSerial || '').padStart(2, '0');
-    return `IJEPA-${normalizedYear}-${paddedSerial}`;
-  };
-
-  const mapBackendPaperToIssueCard = (paper, issueYear) => ({
-    id: paper.id,
-    title: paper.title,
-    authors: paper.authors || [],
-    doi: paper.doi || 'N/A',
-    abstract: paper.abstract || '',
-    pdfUrl: paper.pdfUrl || null,
-    issueYear,
-  });
-
-  const getAuthorsText = (authors) => {
-    if (Array.isArray(authors)) {
-      const normalized = authors
-        .map((a) => {
-          if (typeof a === 'string') return a.trim();
-          if (a && typeof a === 'object') return String(a.fullName || a.name || '').trim();
-          return '';
-        })
-        .filter(Boolean);
-
-      if (normalized.length === 1) {
-        const maybeCsv = normalized[0];
-        const parts = maybeCsv
-          .split(/[,;\n]/g)
-          .map((p) => p.trim())
-          .filter(Boolean);
-        if (parts.length > 1) return parts.join(', ');
-      }
-
-      return normalized.length ? normalized.join(', ') : 'N/A';
-    }
-
-    const raw = String(authors || '').trim();
-    if (!raw) return 'N/A';
-
-    const parts = raw
-      .split(/[,;\n]/g)
-      .map((p) => p.trim())
-      .filter(Boolean);
-    return parts.length ? parts.join(', ') : 'N/A';
-  };
-
-  const PaperCard = ({ paper, serial }) => (
-    <div className="paper-mini">
-      <p className="paper-mini-line">Paper ID: {formatPaperId(paper, serial, paper.issueYear)}</p>
-      <p className="paper-mini-line">
-        <strong>Title:</strong>{' '}
-        {paper.pdfUrl ? (
-          <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer">{paper.title}</a>
-        ) : (
-          <span>{paper.title}</span>
-        )}
-      </p>
-      <p className="flush">
-        <strong>Authors:</strong> {getAuthorsText(paper.authors)}
-      </p>
-      {paper.pdfUrl && (
-        <p className="flush" style={{ marginTop: 4 }}>
-          <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer" className="archive-file-link">
-            ↓ Download PDF
-          </a>
-        </p>
-      )}
-    </div>
-  );
-
   const handleArchiveIssueClick = async (issue) => {
     if (!issue) return;
     if (expandedIssueId === issue.id) {
@@ -296,13 +217,9 @@ const JournalIssues = () => {
                               ) : (archiveIssuePapers[issue.id] || []).length === 0 ? (
                                 <p className="flush">No papers available.</p>
                               ) : (
-                                (archiveIssuePapers[issue.id] || []).map((paper, idx) => (
-                                  <PaperCard
-                                    key={paper.id}
-                                    serial={idx + 1}
-                                    paper={mapBackendPaperToIssueCard(paper, issue?.year)}
-                                  />
-                                ))
+                                <div className="article-grid">
+                                  {(archiveIssuePapers[issue.id] || []).map((paper) => <ArticleCard key={paper.id} paper={paper} />)}
+                                </div>
                               )}
                             </div>
                           )}

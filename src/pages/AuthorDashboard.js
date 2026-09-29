@@ -40,7 +40,8 @@ const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
 });
 
 // Short, status-driven hint shown in the table's "Next step" column.
-const nextStep = (paper) => {
+const nextStep = (paper, proofSent) => {
+  if (needsPayment(paper) && proofSent) return { text: 'Payment proof sent · awaiting verification' };
   if (needsPayment(paper)) return { text: 'Send payment proof', tone: 'warning' };
   if (paper.status === 'accepted') return { text: 'Awaiting publication' };
   if (paper.status === 'submitted') return { text: 'Awaiting reviewer assignment' };
@@ -84,6 +85,8 @@ const AuthorDashboard = () => {
   const [proofReference, setProofReference] = useState('');
   const [proofUploading, setProofUploading] = useState(false);
   const [sentProofs, setSentProofs] = useState([]);
+  // Latest payment proof per accepted-but-unpaid paper, so the dashboard stops asking once one is sent.
+  const [proofsByPaper, setProofsByPaper] = useState({});
   const [copyrightPaper, setCopyrightPaper] = useState(null);
   const [copyrightFile, setCopyrightFile] = useState(null);
   const [copyrightUploading, setCopyrightUploading] = useState(false);
@@ -148,6 +151,16 @@ const AuthorDashboard = () => {
     }
   };
 
+  const payablePaperIds = papers.filter(needsPayment).map((p) => p.id).join(',');
+  useEffect(() => {
+    if (!payablePaperIds) return undefined;
+    let active = true;
+    Promise.all(payablePaperIds.split(',').map((id) => mockAPI.getPaymentProofs(id).then((r) => [id, r.proofs || []])))
+      .then((entries) => { if (active) setProofsByPaper(Object.fromEntries(entries)); });
+    return () => { active = false; };
+  }, [payablePaperIds]);
+  const latestProof = (paper) => proofsByPaper[paper.id]?.[0] || null;
+
   const handlePayment = async (paper) => {
     setDetailPaper(null);
     setPaymentPaper(paper);
@@ -181,6 +194,7 @@ const AuthorDashboard = () => {
     setProofUploading(false);
     if (result.success) {
       toast.success('Payment proof sent. The editorial office will verify it.');
+      setProofsByPaper((prev) => ({ ...prev, [paymentPaper.id]: [{ name: 'new', url: result.proofUrl, uploadedAt: new Date().toISOString() }, ...(prev[paymentPaper.id] || [])] }));
       setPaymentPaper(null);
       loadAuthorPapers();
     } else {
@@ -383,7 +397,7 @@ const AuthorDashboard = () => {
   }
 
   const primaryAction = (paper) => {
-    if (needsPayment(paper)) {
+    if (needsPayment(paper) && !latestProof(paper)) {
       return (
         <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">
           <Icon name="upload" size={15} /> Upload payment proof
@@ -435,6 +449,21 @@ const AuthorDashboard = () => {
   };
 
   const statusCallout = (paper) => {
+    if (needsPayment(paper) && latestProof(paper)) {
+      const proof = latestProof(paper);
+      return (
+        <div className="callout-box is-success">
+          <Icon name="checkCircle" size={20} />
+          <div>
+            <strong>Payment proof sent</strong>
+            <p>The editorial office will verify your payment and publish the paper.{proof.uploadedAt ? ` Sent ${formatDate(proof.uploadedAt)}.` : ''} <a href={proof.url} target="_blank" rel="noopener noreferrer" className="view-link">View payment proof</a></p>
+          </div>
+          <div className="callout-actions">
+            <button type="button" onClick={() => handlePayment(paper)} className="button button-light button-small">Send a new file</button>
+          </div>
+        </div>
+      );
+    }
     if (needsPayment(paper)) {
       return (
         <div className="callout-box is-warning">
@@ -607,7 +636,7 @@ const AuthorDashboard = () => {
                       </thead>
                       <tbody>
                         {visibleAuthorPapers.map(paper => {
-                          const step = nextStep(paper);
+                          const step = nextStep(paper, Boolean(latestProof(paper)));
                           return (
                             <tr key={paper.id}>
                               <td className="cell-primary">
@@ -660,15 +689,21 @@ const AuthorDashboard = () => {
                           <tr key={paper.id}>
                             <td className="cell-primary">
                               <button type="button" className="cell-title-btn" onClick={() => setDetailPaper(paper)}>{paper.title}</button>
-                              <span className="cell-sub">Accepted. Pay the article processing charge, then upload your payment proof so the paper can be published (paper ID #{paper.id}).</span>
+                              <span className="cell-sub">{latestProof(paper)
+                                ? <>Payment proof sent. The editorial office is verifying it. <a href={latestProof(paper).url} target="_blank" rel="noopener noreferrer" className="view-link">View payment proof</a></>
+                                : `Accepted. Pay the article processing charge, then upload your payment proof so the paper can be published (paper ID #${paper.id}).`}</span>
                             </td>
                             <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
                             <td data-label="Fee" className="nowrap"><strong>INR 1500</strong> / USD 50</td>
                             <td className="col-actions">
                               <div className="row-actions">
-                                <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">
-                                  <Icon name="upload" size={15} /> Upload payment proof
-                                </button>
+                                {latestProof(paper)
+                                  ? <span className="status-note"><Icon name="clock" size={15} /> Awaiting verification</span>
+                                  : (
+                                    <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">
+                                      <Icon name="upload" size={15} /> Upload payment proof
+                                    </button>
+                                  )}
                               </div>
                             </td>
                           </tr>

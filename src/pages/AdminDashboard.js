@@ -158,6 +158,7 @@ const AdminDashboard = () => {
   });
   const [photoUploading, setPhotoUploading] = useState(false);
   const [paperProofs, setPaperProofs] = useState({ paperId: null, loading: false, items: [] });
+  const [proofsByPaper, setProofsByPaper] = useState({});
 
   const [searchTerm, setSearchTerm] = useState('');
   const [reviewerSortBy, setReviewerSortBy] = useState('name_az');
@@ -560,6 +561,16 @@ const AdminDashboard = () => {
     });
     return () => { active = false; };
   }, [proofPaperId]);
+
+  // Latest proof for every accepted, unpaid paper, so the submissions list shows who has paid.
+  const unpaidAcceptedIds = papers.filter((p) => p.status === 'accepted' && p.paymentStatus !== 'paid').map((p) => p.id).join(',');
+  useEffect(() => {
+    if (!unpaidAcceptedIds) return undefined;
+    let active = true;
+    Promise.all(unpaidAcceptedIds.split(',').map((id) => mockAPI.getPaymentProofs(id).then((r) => [id, r.proofs || []])))
+      .then((entries) => { if (active) setProofsByPaper(Object.fromEntries(entries)); });
+    return () => { active = false; };
+  }, [unpaidAcceptedIds]);
 
   const handleEditorialPhoto = async (file) => {
     if (!file) return;
@@ -1170,9 +1181,25 @@ const AdminDashboard = () => {
     )
   );
 
-  const paymentBadge = (paper) => (paper.paymentStatus === 'paid'
-    ? <Badge tone="accepted" icon="check">Paid</Badge>
-    : <Badge tone="neutral" icon="clock">Pending</Badge>);
+  const listProof = (paper) => proofsByPaper[paper.id]?.[0] || null;
+  const hasProof = (paper) => Boolean(listProof(paper) || (managePaper?.id === paper.id && paperProofs.items.length));
+
+  const paymentBadge = (paper) => {
+    if (paper.paymentStatus === 'paid') return <Badge tone="accepted" icon="check">Fee paid</Badge>;
+    if (paper.status !== 'accepted') return null;
+    return hasProof(paper)
+      ? <Badge tone="review" icon="checkCircle">Payment proof sent</Badge>
+      : <Badge tone="neutral" icon="clock">Awaiting payment</Badge>;
+  };
+
+  const paymentLine = (paper) => {
+    if (paper.paymentStatus === 'paid') return <span className="cell-sub">Fee paid</span>;
+    if (paper.status !== 'accepted') return null;
+    const proof = listProof(paper);
+    return proof
+      ? <span className="cell-sub">Proof sent · <a href={proof.url} target="_blank" rel="noopener noreferrer" className="view-link">View proof</a></span>
+      : <span className="cell-sub">Awaiting payment proof</span>;
+  };
 
   const manageButton = (paper) => (
     <button type="button" className="icon-btn" onClick={() => setManagePaper(paper)} aria-label={`Manage ${paper.title}`}>
@@ -1298,7 +1325,7 @@ const AdminDashboard = () => {
                             <td data-label="Status">
                               <span className="badge-stack">
                                 <StatusBadge status={paper.status} />
-                                <span className="cell-sub">Payment: {paper.paymentStatus === 'paid' ? 'paid' : 'pending'}</span>
+                                {paymentLine(paper)}
                               </span>
                             </td>
                             <td data-label="Reviewers">{Array.isArray(paper.assignedReviewers) ? paper.assignedReviewers.length : 0}</td>
@@ -1356,7 +1383,7 @@ const AdminDashboard = () => {
                             </td>
                             <td data-label="Category">{paper.category || '—'}</td>
                             <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
-                            <td data-label="Payment">{paymentBadge(paper)}</td>
+                            <td data-label="Payment">{paymentBadge(paper) || '—'}</td>
                             <td className="col-actions">
                               <div className="row-actions">
                                 <button type="button" onClick={() => openAssignReviewer(paper)} className="button button-primary button-small">
@@ -1756,40 +1783,55 @@ const AdminDashboard = () => {
               {paymentBadge(managePaper)}
               {paperFlags(managePaper)}
             </div>
-            <div className="detail-section">
-              <dl className="meta-list">
-                <div className="is-wide"><dt>Authors</dt><dd>{joinAuthors(managePaper.authors) || '—'}</dd></div>
-                <div><dt>Category</dt><dd>{managePaper.category || '—'}</dd></div>
-                <div><dt>Submitted</dt><dd>{formatDate(managePaper.submissionDate)}</dd></div>
-                <div><dt>Assigned reviewers</dt><dd>{Array.isArray(managePaper.assignedReviewers) ? managePaper.assignedReviewers.length : 0}</dd></div>
-                {managePaper.doi && <div><dt>DOI</dt><dd>{managePaper.doi}</dd></div>}
-                {['accepted', 'published'].includes(managePaper.status) && (
-                  <div className="is-wide">
-                    <dt>Payment proof</dt>
-                    <dd>{paperProofs.loading ? 'Checking…'
-                      : paperProofs.items.length
-                        ? paperProofs.items.map((f, i) => (
-                          <span key={f.name} className="proof-link">
-                            <a href={f.url} target="_blank" rel="noopener noreferrer">{i === 0 ? 'View latest proof' : `Earlier proof ${i}`}</a>
-                            {f.uploadedAt && <> · sent {formatDate(f.uploadedAt)}</>}
-                          </span>
-                        ))
-                        : 'Not sent yet'}</dd>
+            <dl className="manage-facts">
+              <div><dt>Author</dt><dd>{joinAuthors(managePaper.authors) || '—'}</dd></div>
+              <div><dt>Category</dt><dd>{managePaper.category || '—'}</dd></div>
+              <div><dt>Assigned reviewers</dt><dd>{Array.isArray(managePaper.assignedReviewers) ? managePaper.assignedReviewers.length : 0}</dd></div>
+              <div><dt>Submitted</dt><dd>{formatDate(managePaper.submissionDate)}</dd></div>
+              {managePaper.assignedIssue && (
+                <div><dt>Journal issue</dt><dd>Vol. {managePaper.assignedIssue.volume}, Issue {managePaper.assignedIssue.issue}</dd></div>
+              )}
+              {managePaper.doi && <div><dt>DOI</dt><dd>{managePaper.doi}</dd></div>}
+            </dl>
+            {['accepted', 'published'].includes(managePaper.status) && (
+              <div className="detail-section">
+                <h3>Payment &amp; copyright</h3>
+                <div className="doc-cards">
+                  <div className={`doc-card ${paperProofs.items.length || managePaper.paymentStatus === 'paid' ? 'is-done' : 'is-missing'}`}>
+                    <span className="doc-card-icon"><Icon name="credit" size={20} /></span>
+                    <div className="doc-card-body">
+                      <strong>Payment proof</strong>
+                      <span className="doc-card-meta">
+                        {paperProofs.loading ? 'Checking…'
+                          : paperProofs.items.length
+                            ? `Sent${paperProofs.items[0].uploadedAt ? ` ${formatDate(paperProofs.items[0].uploadedAt)}` : ''}${managePaper.paymentStatus === 'paid' ? ' · fee marked paid' : ' · waiting for your check'}`
+                            : managePaper.paymentStatus === 'paid' ? 'Fee marked paid · no file uploaded' : 'Not sent yet'}
+                      </span>
+                      {paperProofs.items.length > 0 && (
+                        <a href={paperProofs.items[0].url} target="_blank" rel="noopener noreferrer" className="view-link">View payment proof</a>
+                      )}
+                      {paperProofs.items.length > 1 && (
+                        <span className="doc-card-older">
+                          Earlier: {paperProofs.items.slice(1).map((f, i) => (
+                            <a key={f.name} href={f.url} target="_blank" rel="noopener noreferrer">file {i + 1}</a>
+                          ))}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-                {['accepted', 'published'].includes(managePaper.status) && (
-                  <div>
-                    <dt>Copyright form</dt>
-                    <dd>{managePaper.copyrightUrl
-                      ? <a href={managePaper.copyrightUrl} target="_blank" rel="noopener noreferrer">Received · view</a>
-                      : 'Not received yet'}</dd>
+                  <div className={`doc-card ${managePaper.copyrightUrl ? 'is-done' : 'is-missing'}`}>
+                    <span className="doc-card-icon"><Icon name="fileText" size={20} /></span>
+                    <div className="doc-card-body">
+                      <strong>Copyright form</strong>
+                      <span className="doc-card-meta">{managePaper.copyrightUrl ? 'Received' : 'Not received yet'}</span>
+                      {managePaper.copyrightUrl && (
+                        <a href={managePaper.copyrightUrl} target="_blank" rel="noopener noreferrer" className="view-link">View copyright form</a>
+                      )}
+                    </div>
                   </div>
-                )}
-                {managePaper.assignedIssue && (
-                  <div><dt>Journal issue</dt><dd>Volume {managePaper.assignedIssue.volume}, Issue {managePaper.assignedIssue.issue}</dd></div>
-                )}
-              </dl>
-            </div>
+                </div>
+              </div>
+            )}
             <div className="detail-section">
               <h3>Actions</h3>
               <div className="row-actions">
