@@ -612,6 +612,38 @@ export const mockAPI = {
     }
   },
 
+  // Special issues: the admin publishes papers straight into them (formData: manuscript, title, authors, ...).
+  addSpecialIssuePaper: async (issueId, formData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/issues/${issueId}/special-papers`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) return { success: false, error: data.error || 'Failed to add the paper.', code: data.code };
+      return { success: true, paper: data.paper };
+    } catch (error) {
+      console.error('addSpecialIssuePaper error', error);
+      return { success: false, error: 'Failed to add the paper.' };
+    }
+  },
+
+  deleteSpecialIssuePaper: async (issueId, paperId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/issues/${issueId}/special-papers/${paperId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) return { success: false, error: data.error || 'Failed to remove the paper.' };
+      return { success: true };
+    } catch (error) {
+      console.error('deleteSpecialIssuePaper error', error);
+      return { success: false, error: 'Failed to remove the paper.' };
+    }
+  },
+
   // Notifications
   getNotifications: async (userId) => {
     try {

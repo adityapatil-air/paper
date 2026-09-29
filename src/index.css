@@ -1191,3 +1191,22 @@ select.form-select{-webkit-appearance:none;-moz-appearance:none;appearance:none;
   background-repeat:no-repeat!important;background-position:right 14px center!important;background-size:18px 18px!important}
 select.form-select:focus{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a6acb' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")!important}
 select.form-select::-ms-expand{display:none}
+
+/* special issues */
+.special-issue-section{padding-bottom:8px}
+.special-issue-head{display:flex;gap:24px;align-items:flex-start;margin-bottom:22px;padding:22px 24px;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:var(--r-md);background:linear-gradient(180deg,var(--sky-2),#fff)}
+.special-issue-cover{flex:none;width:130px;border-radius:var(--r-sm);box-shadow:0 6px 18px rgba(6,47,80,.15)}
+.special-issue-copy{min-width:0}
+.special-issue-copy h2{margin:4px 0 4px}
+.special-issue-desc{margin:8px 0 14px;color:var(--ink);font-size:15px;line-height:1.7;white-space:pre-line}
+.special-issue-list{margin-bottom:28px}
+.issue-card.is-special{border-left:4px solid var(--blue)}
+.special-papers{grid-column:1/-1;width:100%;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.special-papers h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+.special-paper-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.special-paper-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff}
+.special-paper-list li>div:first-child{min-width:0}
+.special-paper-list strong{display:block;font-size:14px;color:var(--navy)}
+.special-paper-list span{display:block;font-size:13px;color:var(--muted)}
+.issue-editor-grid.is-special{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:700px){.special-issue-head{flex-direction:column;padding:18px}.special-issue-cover{width:110px}.special-paper-list li{flex-direction:column;align-items:flex-start}}

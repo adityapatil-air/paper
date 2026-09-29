@@ -11,6 +11,7 @@ import EmptyState from '../components/ui/EmptyState';
 import FilePicker from '../components/ui/FilePicker';
 import IssueEditor from '../components/admin/IssueEditor';
 import ReviewerManager from '../components/admin/ReviewerManager';
+import SpecialIssues from '../components/admin/SpecialIssues';
 import Spinner from '../components/ui/Spinner';
 import StatusBadge, { Badge } from '../components/ui/StatusBadge';
 import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
@@ -190,7 +191,7 @@ const AdminDashboard = () => {
       });
       setPaperReviews(reviewsMap);
       setReviewers(reviewerUsers);
-      setIssues(loadedIssues);
+      setIssues(loadedIssues.filter((i) => !i.isSpecial));
       // Admin notifications are used to detect revised manuscripts
       setAdminNotifications(Array.isArray(notifResult) ? notifResult : []);
 
@@ -823,7 +824,7 @@ const AdminDashboard = () => {
     toast.success(wasEdit ? 'Issue updated.' : 'New issue added successfully.');
     try {
       const loadedIssues = await mockAPI.getIssues();
-      setIssues(loadedIssues);
+      setIssues(loadedIssues.filter((i) => !i.isSpecial));
     } catch (err) {
       setIssues((prev) => [savedIssue, ...prev.filter((i) => i.id !== savedIssue.id)]);
     }
@@ -1161,6 +1162,7 @@ const AdminDashboard = () => {
     ] },
     { group: 'Journal', items: [
       { id: 'issues', label: 'Journal issues', icon: 'book', count: issues.length },
+      { id: 'special_issues', label: 'Special issues', icon: 'star' },
       { id: 'important_dates', label: 'Important dates', icon: 'calendar' },
       { id: 'editorial_board', label: 'Editorial board', icon: 'users' },
     ] },
@@ -1589,6 +1591,8 @@ const AdminDashboard = () => {
             )}
 
             {/* ---------------- Important dates ---------------- */}
+            {activeTab === 'special_issues' && <SpecialIssues />}
+
             {activeTab === 'important_dates' && (
               <section className="dash-panel" aria-labelledby="sec-dates">
                 <div className="dash-panel-head">

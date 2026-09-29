@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { mockAPI } from '../data/mockData';
 import CurrentIssue from '../components/CurrentIssue';
 import ArticleCard from '../components/ArticleCard';
+import { sortSpecialIssues } from '../config/specialIssues';
 
 const JournalIssues = () => {
   const [issues, setIssues] = useState([]);
@@ -28,12 +29,13 @@ const JournalIssues = () => {
     loadIssues();
   }, []);
 
-  const currentIssue = issues.find(issue => issue.isCurrent);
-  const archives = issues.filter(issue => !issue.isCurrent);
+  const currentIssue = issues.find(issue => issue.isCurrent && !issue.isSpecial);
+  const archives = issues.filter(issue => !issue.isCurrent && !issue.isSpecial);
+  const specialIssues = sortSpecialIssues(issues);
 
   useEffect(() => {
     const loadCurrentIssuePapers = async () => {
-      const issue = issues.find((i) => i.isCurrent);
+      const issue = issues.find((i) => i.isCurrent && !i.isSpecial);
       if (!issue) {
         setCurrentIssuePapers([]);
         return;
@@ -115,6 +117,52 @@ const JournalIssues = () => {
         <p>
           The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> publishes regular issues featuring high-quality research articles, reviews, and case studies across diverse engineering domains. Our issues provide a global platform for disseminating knowledge and fostering innovation in engineering practices and applications.
         </p>
+
+        {specialIssues.length > 0 && (
+          <>
+            <h2>Special Issues</h2>
+            <div className="archive-issue-grid special-issue-list">
+              {specialIssues.map((issue) => (
+                <div key={issue.id} className="issue-card is-special">
+                  <button
+                    type="button"
+                    className="issue-card-head issue-card-toggle"
+                    onClick={() => handleArchiveIssueClick(issue)}
+                    aria-expanded={expandedIssueId === issue.id}
+                  >
+                    <span>
+                      <strong>{issue.title}</strong>
+                      <span className="archive-issue-title">Special issue{issue.month || issue.year ? ` · ${[issue.month, issue.year].filter(Boolean).join(' ')}` : ''}</span>
+                    </span>
+                    <span>
+                      {expandedIssueId === issue.id ? 'Hide' : 'View'}
+                      <svg className="chevron chevron-inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </button>
+                  {expandedIssueId === issue.id && (
+                    <div className="issue-card-body">
+                      {issue.description && <p className="ci-desc">{issue.description}</p>}
+                      {issue.fileUrl && (
+                        <a href={issue.fileUrl} target="_blank" rel="noopener noreferrer" className="archive-file-link">↓ Download / View special issue PDF</a>
+                      )}
+                      {archivePapersLoadingId === issue.id ? (
+                        <p className="flush">Loading papers…</p>
+                      ) : (archiveIssuePapers[issue.id] || []).length === 0 ? (
+                        <p className="flush">No papers available.</p>
+                      ) : (
+                        <div className="article-grid">
+                          {(archiveIssuePapers[issue.id] || []).map((paper) => <ArticleCard key={paper.id} paper={paper} />)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="section-heading issue-heading">
           <div>

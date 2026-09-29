@@ -2,6 +2,7 @@ const express = require('express');
 const { supabase } = require('../supabaseClient');
 const { requireAdmin } = require('../middleware/requireAdmin');
 const { makeUploader, handleUpload, uploadFile, removeFileByUrl, sendStorageError } = require('../storage');
+const { getSetting, setSetting } = require('../siteSettings');
 
 const router = express.Router();
 
@@ -13,7 +14,16 @@ const ensureSupabase = (res) => {
   return true;
 };
 
-const mapIssueRow = (row) => ({
+// Special issues are ordinary issue rows whose ids are listed in site_settings, so no schema change is
+// needed. They are never the current issue and hold papers the admin publishes directly.
+const SPECIAL_KEY = 'special_issues';
+const getSpecialIds = async () => {
+  const value = await getSetting(SPECIAL_KEY, []);
+  return new Set((Array.isArray(value) ? value : []).map(Number).filter(Boolean));
+};
+const saveSpecialIds = (ids) => setSetting(SPECIAL_KEY, [...ids]);
+
+const mapIssueRow = (row, specialIds) => ({
   id: row.id,
   volume: row.volume,
   issue: row.issue,
@@ -26,6 +36,8 @@ const mapIssueRow = (row) => ({
   fileUrl: row.file_url || null,
   fileName: row.file_name || null,
   publishedAt: row.published_at || null,
+  isSpecial: Boolean(specialIds && specialIds.has(Number(row.id))),
+  createdAt: row.created_at || null,
 });
 
 const upload = makeUploader({ file: 'document', coverImage: 'image' });
@@ -91,7 +103,8 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch issues.' });
     }
 
-    const issues = (data || []).map(mapIssueRow);
+    const specialIds = await getSpecialIds();
+    const issues = (data || []).map((row) => mapIssueRow(row, specialIds));
     return res.json({ success: true, issues });
   } catch (err) {
     console.error('Unexpected error in GET /api/issues', err);
@@ -106,13 +119,20 @@ router.post('/', requireAdmin, issueUploads, async (req, res) => {
     if (!ensureSupabase(res)) return;
 
     const fields = readIssueFields(req.body);
-    if (!fields.volume || !fields.issue || !fields.year) {
+    const isSpecial = toBool(req.body?.isSpecial);
+    if (isSpecial) {
+      if (!fields.title) return res.status(400).json({ success: false, error: 'Give the special issue a title.' });
+      if (!fields.year) return res.status(400).json({ success: false, error: 'Year is required.' });
+      // The table needs numbers; special issues never show them.
+      fields.volume = fields.volume || 1;
+      fields.issue = 0;
+    } else if (!fields.volume || !fields.issue || !fields.year) {
       return res.status(400).json({ success: false, error: 'Volume, issue number and year are required whole numbers.' });
     }
 
     const file = req.files?.file?.[0] || null;
     const cover = req.files?.coverImage?.[0] || null;
-    const folder = issueFolder(fields);
+    const folder = isSpecial ? `special-issues/${Date.now()}` : issueFolder(fields);
 
     // Omit empty optional fields so a plain issue still saves before the content migration is applied.
     const payload = Object.fromEntries(Object.entries({ ...fields, month: fields.month ?? null })
@@ -126,7 +146,7 @@ router.post('/', requireAdmin, issueUploads, async (req, res) => {
       payload.cover_image_url = await uploadFile(cover, `${folder}/cover`);
       uploaded.push(payload.cover_image_url);
     }
-    const makeCurrent = toBool(req.body?.isCurrent);
+    const makeCurrent = !isSpecial && toBool(req.body?.isCurrent);
     if (makeCurrent) payload.is_current = true;
 
     const { data, error } = await supabase.from('issues').insert(payload).select('*').single();
@@ -143,7 +163,21 @@ router.post('/', requireAdmin, issueUploads, async (req, res) => {
 
     if (makeCurrent) await clearCurrentIssue(data.id);
 
-    return res.json({ success: true, issue: mapIssueRow(data) });
+    let specialIds = null;
+    if (isSpecial) {
+      try {
+        specialIds = await getSpecialIds();
+        specialIds.add(Number(data.id));
+        await saveSpecialIds(specialIds);
+      } catch (settingErr) {
+        console.error('Error saving special issue flag', settingErr);
+        await supabase.from('issues').delete().eq('id', data.id);
+        await Promise.all(uploaded.map(removeFileByUrl));
+        return res.status(500).json({ success: false, error: 'Failed to create the special issue.' });
+      }
+    }
+
+    return res.json({ success: true, issue: mapIssueRow(data, specialIds) });
   } catch (err) {
     await Promise.all(uploaded.map(removeFileByUrl));
     if (sendStorageError(res, err)) return;
@@ -173,7 +207,14 @@ router.put('/:id', requireAdmin, issueUploads, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Issue not found.' });
     }
 
+    const specialIds = await getSpecialIds();
+    const isSpecial = specialIds.has(id);
     const fields = readIssueFields(req.body);
+    if (isSpecial) {
+      delete fields.volume;
+      delete fields.issue;
+      if ('title' in fields && !fields.title) return res.status(400).json({ success: false, error: 'Give the special issue a title.' });
+    }
     for (const key of ['volume', 'issue', 'year']) {
       if (key in fields && !fields[key]) {
         return res.status(400).json({ success: false, error: 'Volume, issue number and year must be whole numbers.' });
@@ -183,7 +224,7 @@ router.put('/:id', requireAdmin, issueUploads, async (req, res) => {
     const update = { ...fields };
     const file = req.files?.file?.[0] || null;
     const cover = req.files?.coverImage?.[0] || null;
-    const folder = issueFolder({ volume: update.volume ?? existing.volume, issue: update.issue ?? existing.issue });
+    const folder = isSpecial ? `special-issues/issue-${id}` : issueFolder({ volume: update.volume ?? existing.volume, issue: update.issue ?? existing.issue });
 
     if (file) {
       update.file_url = await uploadFile(file, folder);
@@ -200,11 +241,11 @@ router.put('/:id', requireAdmin, issueUploads, async (req, res) => {
       update.cover_image_url = null;
     }
 
-    const makeCurrent = 'isCurrent' in (req.body || {}) ? toBool(req.body.isCurrent) : null;
+    const makeCurrent = !isSpecial && 'isCurrent' in (req.body || {}) ? toBool(req.body.isCurrent) : null;
     if (makeCurrent !== null) update.is_current = makeCurrent;
 
     if (Object.keys(update).length === 0) {
-      return res.json({ success: true, issue: mapIssueRow(existing) });
+      return res.json({ success: true, issue: mapIssueRow(existing, specialIds) });
     }
 
     const { data, error } = await supabase.from('issues').update(update).eq('id', id).select('*').single();
@@ -221,7 +262,7 @@ router.put('/:id', requireAdmin, issueUploads, async (req, res) => {
 
     if (makeCurrent) await clearCurrentIssue(id);
 
-    return res.json({ success: true, issue: mapIssueRow(data) });
+    return res.json({ success: true, issue: mapIssueRow(data, specialIds) });
   } catch (err) {
     await Promise.all(uploaded.map(removeFileByUrl));
     if (sendStorageError(res, err)) return;
@@ -238,6 +279,10 @@ router.post('/:id/set-current', requireAdmin, async (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) {
       return res.status(400).json({ success: false, error: 'Invalid issue id.' });
+    }
+
+    if ((await getSpecialIds()).has(id)) {
+      return res.status(400).json({ success: false, error: 'A special issue can’t be the current issue.' });
     }
 
     // Clear any existing current issue
@@ -284,11 +329,24 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid issue id.' });
     }
 
+    // A special issue's papers exist only there, so they go with it.
+    const specialIds = await getSpecialIds();
+    const isSpecial = specialIds.has(id);
+    let specialPapers = [];
+    if (isSpecial) {
+      const { data: links } = await supabase.from('issue_papers').select('paper_id').eq('issue_id', id);
+      const ids = (links || []).map((l) => l.paper_id);
+      if (ids.length) {
+        const { data: rows } = await supabase.from('papers').select('id, pdf_url').in('id', ids);
+        specialPapers = rows || [];
+      }
+    }
+
     const { data, error } = await supabase
       .from('issues')
       .delete()
       .eq('id', id)
-      .select('id')
+      .select('id, file_url, cover_image_url')
       .maybeSingle();
 
     if (error) {
@@ -298,6 +356,17 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 
     if (!data) {
       return res.status(404).json({ success: false, error: 'Issue not found.' });
+    }
+
+    if (isSpecial) {
+      if (specialPapers.length) {
+        const { error: papersError } = await supabase.from('papers').delete().in('id', specialPapers.map((p) => p.id));
+        if (papersError) console.error('Error deleting special issue papers', papersError);
+        else await Promise.all(specialPapers.filter((p) => p.pdf_url).map((p) => removeFileByUrl(p.pdf_url)));
+      }
+      await Promise.all([data.file_url, data.cover_image_url].filter(Boolean).map(removeFileByUrl));
+      specialIds.delete(id);
+      await saveSpecialIds(specialIds).catch((e) => console.error('Error clearing special issue flag', e));
     }
 
     return res.json({ success: true });
@@ -499,6 +568,102 @@ router.delete('/:id/assign-paper/:paperId', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Unexpected error in DELETE /api/issues/:id/assign-paper/:paperId', err);
     return res.status(500).json({ success: false, error: 'Failed to unassign paper from issue.' });
+  }
+});
+
+const specialPaperUpload = handleUpload(makeUploader({ manuscript: 'pdf' }).single('manuscript'));
+const splitList = (value) => String(value || '').split(/[,;\n]/).map((v) => v.trim()).filter(Boolean);
+
+const loadSpecialIssue = async (res, rawId) => {
+  const id = parseInt(rawId, 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ success: false, error: 'Invalid issue id.' });
+    return null;
+  }
+  if (!(await getSpecialIds()).has(id)) {
+    res.status(404).json({ success: false, error: 'Special issue not found.' });
+    return null;
+  }
+  return id;
+};
+
+// POST /api/issues/:id/special-papers - admin publishes a paper straight into a special issue
+// (no author account, review, fee or emails). Multipart: manuscript (PDF), title, authors, abstract, keywords, category.
+router.post('/:id/special-papers', requireAdmin, specialPaperUpload, async (req, res) => {
+  let pdfUrl = null;
+  try {
+    if (!ensureSupabase(res)) return;
+    const issueId = await loadSpecialIssue(res, req.params.id);
+    if (!issueId) return;
+
+    const title = cleanText(req.body?.title);
+    const authors = splitList(req.body?.authors);
+    if (!title) return res.status(400).json({ success: false, error: 'Enter the paper title.' });
+    if (!authors.length) return res.status(400).json({ success: false, error: 'Enter at least one author name.' });
+    if (!req.file) return res.status(400).json({ success: false, error: 'Attach the paper as a PDF.' });
+
+    pdfUrl = await uploadFile(req.file, `special-issues/issue-${issueId}`);
+    const today = new Date().toISOString().split('T')[0];
+    const { data: paper, error } = await supabase.from('papers').insert({
+      main_author_id: req.user.id,
+      title,
+      authors,
+      abstract: cleanText(req.body?.abstract),
+      keywords: splitList(req.body?.keywords),
+      category: cleanText(req.body?.category),
+      status: 'published',
+      submission_date: today,
+      publication_date: today,
+      submission_fee: 0,
+      payment_status: 'paid',
+      pdf_url: pdfUrl,
+    }).select('*').single();
+
+    if (error) {
+      console.error('Error creating special issue paper', error);
+      await removeFileByUrl(pdfUrl);
+      return res.status(500).json({ success: false, error: 'Failed to add the paper.' });
+    }
+
+    const { error: linkError } = await supabase.from('issue_papers').insert({ issue_id: issueId, paper_id: paper.id });
+    if (linkError) {
+      console.error('Error linking special issue paper', linkError);
+      await supabase.from('papers').delete().eq('id', paper.id);
+      await removeFileByUrl(pdfUrl);
+      return res.status(500).json({ success: false, error: 'Failed to add the paper.' });
+    }
+
+    return res.json({ success: true, paper: { id: paper.id, title: paper.title, authors: paper.authors, pdfUrl: paper.pdf_url } });
+  } catch (err) {
+    if (pdfUrl) await removeFileByUrl(pdfUrl);
+    if (sendStorageError(res, err)) return;
+    console.error('Unexpected error in POST /api/issues/:id/special-papers', err);
+    return res.status(500).json({ success: false, error: 'Failed to add the paper.' });
+  }
+});
+
+// DELETE /api/issues/:id/special-papers/:paperId - delete a paper from a special issue
+router.delete('/:id/special-papers/:paperId', requireAdmin, async (req, res) => {
+  try {
+    if (!ensureSupabase(res)) return;
+    const issueId = await loadSpecialIssue(res, req.params.id);
+    if (!issueId) return;
+    const paperId = parseInt(req.params.paperId, 10);
+    if (Number.isNaN(paperId)) return res.status(400).json({ success: false, error: 'Invalid paper id.' });
+
+    const { data: link } = await supabase.from('issue_papers').select('id').eq('issue_id', issueId).eq('paper_id', paperId).maybeSingle();
+    if (!link) return res.status(404).json({ success: false, error: 'This paper is not in the special issue.' });
+
+    const { data: paper, error } = await supabase.from('papers').delete().eq('id', paperId).select('pdf_url').maybeSingle();
+    if (error) {
+      console.error('Error deleting special issue paper', error);
+      return res.status(500).json({ success: false, error: 'Failed to remove the paper.' });
+    }
+    if (paper?.pdf_url) await removeFileByUrl(paper.pdf_url);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Unexpected error in DELETE /api/issues/:id/special-papers/:paperId', err);
+    return res.status(500).json({ success: false, error: 'Failed to remove the paper.' });
   }
 });
 

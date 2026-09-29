@@ -5,6 +5,7 @@ import CurrentIssue from '../components/CurrentIssue';
 import heroIllustration from '../assets/hero-illustration.webp';
 import ArticleCard from '../components/ArticleCard';
 import Icon from '../components/ui/Icon';
+import { sortSpecialIssues } from '../config/specialIssues';
 
 const JournalIcon = ({ name }) => <span className="fact-icon" aria-hidden="true"><Icon name={name} size={22} /></span>;
 
@@ -15,6 +16,8 @@ const Landing = () => {
   const [issueCount, setIssueCount] = useState(0);
   const [issuePapers, setIssuePapers] = useState([]);
   const [issueLoading, setIssueLoading] = useState(true);
+  const [specialIssue, setSpecialIssue] = useState(null);
+  const [specialPapers, setSpecialPapers] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -28,10 +31,17 @@ const Landing = () => {
     const loadIssue = async () => {
       try {
         const issues = await mockAPI.getIssues();
-        const current = (issues || []).find((i) => i.isCurrent) || null;
-        setIssueCount((issues || []).length);
+        const current = (issues || []).find((i) => i.isCurrent && !i.isSpecial) || null;
+        const special = sortSpecialIssues(issues)[0] || null;
+        setIssueCount((issues || []).filter((i) => !i.isSpecial).length);
         setCurrentIssue(current);
-        if (current) setIssuePapers((await mockAPI.getIssuePapers(current.id)) || []);
+        setSpecialIssue(special);
+        const [currentPapers, specialIssuePapers] = await Promise.all([
+          current ? mockAPI.getIssuePapers(current.id) : [],
+          special ? mockAPI.getIssuePapers(special.id) : [],
+        ]);
+        setIssuePapers(currentPapers || []);
+        setSpecialPapers(specialIssuePapers || []);
       } catch (error) {
         console.error('Error loading current issue', error);
       } finally {
@@ -67,6 +77,30 @@ const Landing = () => {
       </div></section>
 
       <main className="journal-container">
+        {specialIssue && (
+          <section className="content-section special-issue-section" aria-labelledby="home-special-issue">
+            <div className="special-issue-head">
+              {specialIssue.coverImageUrl && <img src={specialIssue.coverImageUrl} alt={`Cover of ${specialIssue.title}`} className="special-issue-cover" />}
+              <div className="special-issue-copy">
+                <p className="eyebrow blue">SPECIAL ISSUE</p>
+                <h2 id="home-special-issue">{specialIssue.title}</h2>
+                {(specialIssue.month || specialIssue.year) && (
+                  <p className="issue-subline">{[specialIssue.month, specialIssue.year].filter(Boolean).join(' ')}</p>
+                )}
+                {specialIssue.description && <p className="special-issue-desc">{specialIssue.description}</p>}
+                {specialIssue.fileUrl && (
+                  <a href={specialIssue.fileUrl} target="_blank" rel="noopener noreferrer" className="button button-primary button-small">
+                    <Icon name="download" size={16} /> Download special issue
+                  </a>
+                )}
+              </div>
+            </div>
+            {specialPapers.length > 0 && (
+              <div className="article-grid">{specialPapers.map((paper) => <ArticleCard key={paper.id} paper={paper} />)}</div>
+            )}
+          </section>
+        )}
+
         <section className="content-section current-issue-section" aria-labelledby="home-current-issue">
           <div className="section-heading">
             <div>

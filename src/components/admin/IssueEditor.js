@@ -30,17 +30,22 @@ const fromIssue = (issue) => ({
   isCurrent: Boolean(issue?.isCurrent),
 });
 
-const validate = (form) => {
+const validate = (form, special) => {
   const errors = {};
   const positiveInt = (v) => /^\d+$/.test(String(v).trim()) && parseInt(v, 10) > 0;
-  if (!positiveInt(form.volume)) errors.volume = 'Enter the volume number.';
-  if (!positiveInt(form.issue)) errors.issue = 'Enter the issue number.';
+  if (special) {
+    if (!form.title.trim()) errors.title = 'Give the special issue a title.';
+  } else {
+    if (!positiveInt(form.volume)) errors.volume = 'Enter the volume number.';
+    if (!positiveInt(form.issue)) errors.issue = 'Enter the issue number.';
+  }
   if (!/^\d{4}$/.test(String(form.year).trim())) errors.year = 'Enter a four-digit year.';
   return errors;
 };
 
 // Create / edit a journal issue: text fields, optional issue file (PDF/DOC/DOCX) and cover image.
-const IssueEditor = ({ open, issue, onClose, onSaved }) => {
+// `special` edits a special issue: no volume/issue numbers, title required, never the current issue.
+const IssueEditor = ({ open, issue, onClose, onSaved, special = false }) => {
   const isEdit = Boolean(issue);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
@@ -85,23 +90,27 @@ const IssueEditor = ({ open, issue, onClose, onSaved }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (saving) return;
-    const nextErrors = validate(form);
+    const nextErrors = validate(form, special);
     setErrors(nextErrors);
-    const first = ['volume', 'issue', 'year'].find((k) => nextErrors[k]);
+    const first = ['title', 'volume', 'issue', 'year'].find((k) => nextErrors[k]);
     if (first) {
       setTimeout(() => document.getElementById(`issue-${first}`)?.focus(), 0);
       return;
     }
 
     const data = new FormData();
-    data.append('volume', form.volume.trim());
-    data.append('issue', form.issue.trim());
+    if (special) {
+      if (!isEdit) data.append('isSpecial', 'true');
+    } else {
+      data.append('volume', form.volume.trim());
+      data.append('issue', form.issue.trim());
+      data.append('isCurrent', form.isCurrent ? 'true' : 'false');
+    }
     data.append('month', form.month);
     data.append('year', form.year.trim());
     data.append('title', form.title.trim());
     data.append('description', form.description.trim());
     data.append('publishedAt', form.publishedAt);
-    data.append('isCurrent', form.isCurrent ? 'true' : 'false');
     if (file) data.append('file', file);
     else if (isEdit && removeExistingFile) data.append('removeFile', 'true');
     if (cover) data.append('coverImage', cover);
@@ -149,8 +158,12 @@ const IssueEditor = ({ open, issue, onClose, onSaved }) => {
       onClose={close}
       closeDisabled={saving}
       size="lg"
-      title={isEdit ? `Edit Volume ${issue.volume}, Issue ${issue.issue}` : 'Add journal issue'}
-      description="The current issue is featured on the home page and the Journal Issues page."
+      title={special
+        ? (isEdit ? 'Edit special issue' : 'Create special issue')
+        : (isEdit ? `Edit Volume ${issue.volume}, Issue ${issue.issue}` : 'Add journal issue')}
+      description={special
+        ? 'The newest special issue is featured at the top of the home page, above the current issue.'
+        : 'The current issue is featured on the home page and the Journal Issues page.'}
       footer={(
         <>
           <button type="button" className="button button-ghost" onClick={close} disabled={saving}>Cancel</button>
@@ -163,9 +176,9 @@ const IssueEditor = ({ open, issue, onClose, onSaved }) => {
       <form id="issue-editor-form" onSubmit={handleSubmit} noValidate>
         {serverError && <Alert type="error" title="The issue wasn’t saved" message={serverError} onClose={() => setServerError('')} />}
 
-        <div className="issue-editor-grid">
-          {numberField('volume', 'Volume', 'e.g. 2')}
-          {numberField('issue', 'Issue number', 'e.g. 3')}
+        <div className={`issue-editor-grid${special ? ' is-special' : ''}`}>
+          {!special && numberField('volume', 'Volume', 'e.g. 2')}
+          {!special && numberField('issue', 'Issue number', 'e.g. 3')}
           <div className="field">
             <div className="field-label"><label htmlFor="issue-month">Month</label></div>
             <select id="issue-month" value={form.month} onChange={(e) => setField('month', e.target.value)} className="form-select">
@@ -178,8 +191,21 @@ const IssueEditor = ({ open, issue, onClose, onSaved }) => {
         </div>
 
         <div className="field">
-          <div className="field-label"><label htmlFor="issue-title">Title<span className="optional">(optional)</span></label></div>
-          <input id="issue-title" type="text" value={form.title} onChange={(e) => setField('title', e.target.value)} className="form-input" placeholder="e.g. Special issue on sustainable infrastructure" maxLength={200} />
+          <div className="field-label">
+            <label htmlFor="issue-title">Title{special ? <span className="req" aria-hidden="true">*</span> : <span className="optional">(optional)</span>}</label>
+          </div>
+          <input
+            id="issue-title"
+            type="text"
+            value={form.title}
+            onChange={(e) => setField('title', e.target.value)}
+            className={`form-input${errors.title ? ' is-invalid' : ''}`}
+            placeholder="e.g. Special issue on sustainable infrastructure"
+            maxLength={200}
+            aria-invalid={errors.title ? true : undefined}
+            aria-describedby={errors.title ? 'issue-title-error' : undefined}
+          />
+          {errors.title && <p className="field-error" id="issue-title-error"><Icon name="alert" size={15} />{errors.title}</p>}
         </div>
 
         <div className="field">
@@ -259,6 +285,7 @@ const IssueEditor = ({ open, issue, onClose, onSaved }) => {
           </>
         )}
 
+        {!special && (
         <label className="switch-row" htmlFor="issue-current">
           <span className="switch">
             <input id="issue-current" type="checkbox" role="switch" checked={form.isCurrent} onChange={(e) => setField('isCurrent', e.target.checked)} />
@@ -269,6 +296,7 @@ const IssueEditor = ({ open, issue, onClose, onSaved }) => {
             <small>Replaces the issue currently featured on the site.</small>
           </span>
         </label>
+        )}
       </form>
     </Modal>
   );
