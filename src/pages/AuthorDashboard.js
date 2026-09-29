@@ -41,7 +41,7 @@ const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
 
 // Short, status-driven hint shown in the table's "Next step" column.
 const nextStep = (paper) => {
-  if (needsPayment(paper)) return { text: 'Payment pending', tone: 'warning' };
+  if (needsPayment(paper)) return { text: 'Send payment proof', tone: 'warning' };
   if (paper.status === 'accepted') return { text: 'Awaiting publication' };
   if (paper.status === 'submitted') return { text: 'Awaiting reviewer assignment' };
   if (paper.status === 'under_review') {
@@ -386,7 +386,7 @@ const AuthorDashboard = () => {
     if (needsPayment(paper)) {
       return (
         <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">
-          <Icon name="credit" size={15} /> Pay now
+          <Icon name="upload" size={15} /> Upload payment proof
         </button>
       );
     }
@@ -440,11 +440,11 @@ const AuthorDashboard = () => {
         <div className="callout-box is-warning">
           <Icon name="credit" size={20} />
           <div>
-            <strong>Accepted: article processing charge due</strong>
-            <p>INR 1500 for Indian authors or USD 50 for international authors. Your paper ID is #{paper.id}.</p>
+            <strong>Accepted — send your payment proof</strong>
+            <p>Pay the article processing charge (INR 1500 for Indian authors, USD 50 for international) using the account details we emailed you, then upload your payment proof here. Your paper ID is #{paper.id}.</p>
           </div>
           <div className="callout-actions">
-            <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">Pay now</button>
+            <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">Upload payment proof</button>
           </div>
         </div>
       );
@@ -660,14 +660,14 @@ const AuthorDashboard = () => {
                           <tr key={paper.id}>
                             <td className="cell-primary">
                               <button type="button" className="cell-title-btn" onClick={() => setDetailPaper(paper)}>{paper.title}</button>
-                              <span className="cell-sub">Accepted. Pay the article processing charge so the paper can be published (paper ID #{paper.id}).</span>
+                              <span className="cell-sub">Accepted. Pay the article processing charge, then upload your payment proof so the paper can be published (paper ID #{paper.id}).</span>
                             </td>
                             <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
                             <td data-label="Fee" className="nowrap"><strong>INR 1500</strong> / USD 50</td>
                             <td className="col-actions">
                               <div className="row-actions">
                                 <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">
-                                  <Icon name="credit" size={15} /> Pay now
+                                  <Icon name="upload" size={15} /> Upload payment proof
                                 </button>
                               </div>
                             </td>

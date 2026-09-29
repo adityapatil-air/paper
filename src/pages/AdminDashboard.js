@@ -373,6 +373,20 @@ const AdminDashboard = () => {
     loadAdminData();
   }, [loadAdminData]);
 
+  // Deep link from the "payment proof received" email: /admin-dashboard?paper=<id> opens that paper.
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (deepLinkDone.current || loading || !papers.length) return;
+    const wantedId = new URLSearchParams(window.location.search).get('paper');
+    if (!wantedId) return;
+    const target = papers.find((p) => String(p.id) === String(wantedId));
+    if (target) {
+      setManagePaper(target);
+      deepLinkDone.current = true;
+      window.history.replaceState(null, '', '/admin-dashboard');
+    }
+  }, [papers, loading]);
+
   useEffect(() => {
     const loadImportantDates = async () => {
       try {

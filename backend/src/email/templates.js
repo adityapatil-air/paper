@@ -135,19 +135,24 @@ const templates = {
     return build({
       subject: `Accepted: ${paper.title}`,
       heading: 'Congratulations, your paper has been accepted',
-      paragraphs: [`Hi ${esc(firstName(name))},`, `We’re pleased to accept ${esc(paperLabel(paper))} for publication in IJEPA.`, `To complete publication, please pay the article processing charge and upload the proof of payment, plus the signed copyright form, from your dashboard. Write <strong>IJEPA #${esc(paper.id)}</strong> in the payment remarks.`],
+      paragraphs: [
+        `Hi ${esc(firstName(name))},`,
+        `We’re pleased to accept ${esc(paperLabel(paper))} for publication in IJEPA. Two steps remain, both from your dashboard:`,
+        `<strong>1. Pay the article processing charge</strong> using the account below, writing <strong>IJEPA #${esc(paper.id)}</strong> in the remarks, then upload your payment proof (a screenshot or receipt).`,
+        `<strong>2. Upload the signed copyright form</strong> — download it from your dashboard, sign it, and upload the PDF.`,
+      ],
       box: pay.html,
       boxText: pay.text,
-      cta: { label: 'Pay and upload proof', url: link('/author-dashboard') },
-      footnote: 'After you upload the proof, the editorial office checks it and publishes your paper.',
+      cta: { label: 'Open your dashboard to pay & upload the copyright form', url: link('/author-dashboard') },
+      footnote: 'Once your payment proof and copyright form are in, the editorial office verifies them and publishes your paper.',
     });
   },
 
   paymentProofReceived: ({ paper, reference, proofUrl }) => build({
     subject: `Payment proof received: ${paper.title}`,
     heading: 'An author sent payment proof',
-    paragraphs: [`The author of ${esc(paperLabel(paper))} uploaded proof of payment${reference ? ` (transaction ID <strong>${esc(reference)}</strong>)` : ''}.`, 'Check it against your bank or UPI statement, then publish the paper.'],
-    cta: proofUrl ? { label: 'View the payment proof', url: proofUrl } : { label: 'Open the admin dashboard', url: link('/admin-dashboard') },
+    paragraphs: [`The author of ${esc(paperLabel(paper))} uploaded proof of payment${reference ? ` (transaction ID <strong>${esc(reference)}</strong>)` : ''}.`, 'Open the paper on your dashboard to view the proof, then mark the fee as paid and publish.'],
+    cta: { label: 'See the payment proof', url: link(`/admin-dashboard?paper=${paper.id}`) },
   }),
 
   paymentMarkedPaid: ({ name, paper }) => build({
