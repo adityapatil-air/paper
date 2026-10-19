@@ -1,4 +1,5 @@
 const { PAYMENT_ACCOUNT, APC } = require('../config/paymentAccount');
+const { formatFee } = require('../paperFees');
 
 // Branded, table-based HTML (works in Gmail/Outlook) plus a plain-text version for every email.
 // Anything that comes from users (names, titles, notes) is escaped.
@@ -59,14 +60,18 @@ const build = ({ subject, heading, paragraphs, box, boxText, cta, footnote }) =>
   text: plain(heading, [...paragraphs, ...(boxText ? ['', boxText] : []), ...(footnote ? ['', footnote] : [])], cta),
 });
 
-const paymentBox = () => ({
-  html: `<strong>Amount:</strong> INR ${APC.INR.toLocaleString('en-IN')} (Indian authors) or USD ${APC.USD} (international authors)<br>
+const amountLine = (fee) => (fee != null
+  ? formatFee(fee)
+  : `INR ${APC.INR.toLocaleString('en-IN')} (Indian authors) or USD ${APC.USD} (international authors)`);
+
+const paymentBox = (fee) => ({
+  html: `<strong>Amount:</strong> ${esc(amountLine(fee))}<br>
     <strong>UPI ID:</strong> ${esc(PAYMENT_ACCOUNT.upiId)}<br>
     <strong>Account name:</strong> ${esc(PAYMENT_ACCOUNT.accountName)}<br>
     <strong>Account number:</strong> ${esc(PAYMENT_ACCOUNT.accountNumber)}<br>
     <strong>Bank:</strong> ${esc(PAYMENT_ACCOUNT.bankName)}<br>
     <strong>IFSC:</strong> ${esc(PAYMENT_ACCOUNT.ifsc)}`,
-  text: `Amount: INR ${APC.INR} (Indian authors) or USD ${APC.USD} (international authors)\nUPI ID: ${PAYMENT_ACCOUNT.upiId}\nAccount name: ${PAYMENT_ACCOUNT.accountName}\nAccount number: ${PAYMENT_ACCOUNT.accountNumber}\nBank: ${PAYMENT_ACCOUNT.bankName}\nIFSC: ${PAYMENT_ACCOUNT.ifsc}`,
+  text: `Amount: ${amountLine(fee)}\nUPI ID: ${PAYMENT_ACCOUNT.upiId}\nAccount name: ${PAYMENT_ACCOUNT.accountName}\nAccount number: ${PAYMENT_ACCOUNT.accountNumber}\nBank: ${PAYMENT_ACCOUNT.bankName}\nIFSC: ${PAYMENT_ACCOUNT.ifsc}`,
 });
 
 const templates = {
@@ -130,15 +135,15 @@ const templates = {
     cta: forReviewer ? { label: 'Open your reviewer dashboard', url: link('/reviewer-dashboard') } : { label: 'Open the admin dashboard', url: link('/admin-dashboard') },
   }),
 
-  paperAccepted: ({ name, paper }) => {
-    const pay = paymentBox();
+  paperAccepted: ({ name, paper, fee }) => {
+    const pay = paymentBox(fee);
     return build({
       subject: `Accepted: ${paper.title}`,
       heading: 'Congratulations, your paper has been accepted',
       paragraphs: [
         `Hi ${esc(firstName(name))},`,
         `We’re pleased to accept ${esc(paperLabel(paper))} for publication in IJEPA. Two steps remain, both from your dashboard:`,
-        `<strong>1. Pay the article processing charge</strong> using the account below, writing <strong>IJEPA #${esc(paper.id)}</strong> in the remarks, then upload your payment proof (a screenshot or receipt).`,
+        `<strong>1. Pay the article processing charge${fee != null ? ` of ${esc(formatFee(fee))}` : ''}</strong> using the account below, writing <strong>IJEPA #${esc(paper.id)}</strong> in the remarks, then upload your payment proof (a screenshot or receipt).`,
         `<strong>2. Upload the signed copyright form</strong> — download it from your dashboard, sign it, and upload the PDF.`,
       ],
       box: pay.html,

@@ -27,6 +27,8 @@ const needsPayment = (paper) => paper.status === 'accepted' && paper.paymentStat
 const needsCopyright = (paper) => ['accepted', 'published'].includes(paper.status) && !paper.copyrightUrl;
 
 const CURRENCY_LABEL = { INR: (n) => `₹${Number(n).toLocaleString('en-IN')}`, USD: (n) => `US$${n}` };
+// The processing charge set when the paper was accepted (INR).
+const paperFee = (paper) => CURRENCY_LABEL.INR(paper?.submissionFee || 0);
 
 // Loads Razorpay Checkout once and resolves to window.Razorpay.
 const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
@@ -42,7 +44,7 @@ const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
 // Short, status-driven hint shown in the table's "Next step" column.
 const nextStep = (paper, proofSent) => {
   if (needsPayment(paper) && proofSent) return { text: 'Payment proof sent · awaiting verification' };
-  if (needsPayment(paper)) return { text: 'Send payment proof', tone: 'warning' };
+  if (needsPayment(paper)) return { text: `Pay ${paperFee(paper)} · send payment proof`, tone: 'warning' };
   if (paper.status === 'accepted') return { text: 'Awaiting publication' };
   if (paper.status === 'submitted') return { text: 'Awaiting reviewer assignment' };
   if (paper.status === 'under_review') {
@@ -79,7 +81,7 @@ const AuthorDashboard = () => {
   const [revisionUploading, setRevisionUploading] = useState(false);
   const [paymentPaper, setPaymentPaper] = useState(null);
   const [paymentConfig, setPaymentConfig] = useState(null);
-  const [paymentCurrency, setPaymentCurrency] = useState('INR');
+  const paymentCurrency = 'INR';
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [proofFile, setProofFile] = useState(null);
   const [proofReference, setProofReference] = useState('');
@@ -470,7 +472,7 @@ const AuthorDashboard = () => {
           <Icon name="credit" size={20} />
           <div>
             <strong>Accepted — send your payment proof</strong>
-            <p>Pay the article processing charge (INR 1500 for Indian authors, USD 50 for international) using the account details we emailed you, then upload your payment proof here. Your paper ID is #{paper.id}.</p>
+            <p>Pay the article processing charge of <strong>{paperFee(paper)}</strong> using the account details we emailed you, then upload your payment proof here. Your paper ID is #{paper.id}.</p>
           </div>
           <div className="callout-actions">
             <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">Upload payment proof</button>
@@ -691,10 +693,10 @@ const AuthorDashboard = () => {
                               <button type="button" className="cell-title-btn" onClick={() => setDetailPaper(paper)}>{paper.title}</button>
                               <span className="cell-sub">{latestProof(paper)
                                 ? <>Payment proof sent. The editorial office is verifying it. <a href={latestProof(paper).url} target="_blank" rel="noopener noreferrer" className="view-link">View payment proof</a></>
-                                : `Accepted. Pay the article processing charge, then upload your payment proof so the paper can be published (paper ID #${paper.id}).`}</span>
+                                : `Accepted. Pay the article processing charge of ${paperFee(paper)}, then upload your payment proof so the paper can be published (paper ID #${paper.id}).`}</span>
                             </td>
                             <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
-                            <td data-label="Fee" className="nowrap"><strong>INR 1500</strong> / USD 50</td>
+                            <td data-label="Fee" className="nowrap"><strong>{paperFee(paper)}</strong></td>
                             <td className="col-actions">
                               <div className="row-actions">
                                 {latestProof(paper)
@@ -915,16 +917,7 @@ const AuthorDashboard = () => {
           ) : (
             <form id="payment-proof-form" onSubmit={handleSubmitProof} noValidate>
               <div className="pay-amount">
-                <Segmented
-                  label="Author type"
-                  value={paymentCurrency}
-                  onChange={setPaymentCurrency}
-                  options={[
-                    { value: 'INR', label: `Indian author · ${CURRENCY_LABEL.INR(paymentConfig.fees.INR)}` },
-                    { value: 'USD', label: `International author · ${CURRENCY_LABEL.USD(paymentConfig.fees.USD)}` },
-                  ]}
-                />
-                <p>Amount due: <strong>{CURRENCY_LABEL[paymentCurrency](paymentConfig.fees[paymentCurrency])}</strong> · Paper ID <strong>#{paymentPaper.id}</strong></p>
+                <p>Amount due: <strong>{paperFee(paymentPaper)}</strong> · Paper ID <strong>#{paymentPaper.id}</strong></p>
               </div>
 
               {sentProofs.length > 0 && (
@@ -974,9 +967,7 @@ const AuthorDashboard = () => {
                 <Alert type="warning" message="Payment details couldn't be loaded. Refresh the page, or email editor@ijepa.org for the account details." />
               )}
 
-              {paymentCurrency === 'USD' && (
-                <p className="form-hint">International authors: if you can't pay to this Indian account, email <a href={`mailto:editor@ijepa.org?subject=APC payment for paper %23${paymentPaper.id}`}>editor@ijepa.org</a> with your paper ID for other options.</p>
-              )}
+              <p className="form-hint">International authors: if you can't pay to this Indian account, email <a href={`mailto:editor@ijepa.org?subject=APC payment for paper %23${paymentPaper.id}`}>editor@ijepa.org</a> with your paper ID for other options.</p>
               <p className="pay-remark">Write <strong>IJEPA #{paymentPaper.id}</strong> in the payment remarks so we can match your payment.</p>
 
               <div className="pay-proof">

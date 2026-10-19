@@ -987,12 +987,13 @@ mockAPI.assignReviewer = async (paperId, reviewerId) => {
   }
 };
 
-mockAPI.acceptPaper = async (paperId) => {
+// fee: article processing charge in INR that the author must pay.
+mockAPI.acceptPaper = async (paperId, fee) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/accept-paper`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ paperId })
+      body: JSON.stringify({ paperId, fee })
     });
     const data = await readJson(response);
 

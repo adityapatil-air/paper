@@ -1221,3 +1221,8 @@ select.form-select::-ms-expand{display:none}
 .special-paper-list span{display:block;font-size:13px;color:var(--muted)}
 .issue-editor-grid.is-special{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:700px){.special-issue-head{flex-direction:column;padding:18px}.special-issue-cover{width:110px}.special-paper-list li{flex-direction:column;align-items:flex-start}}
+
+.fee-field{margin-top:14px}
+.fee-input{position:relative}
+.fee-input>span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--muted)}
+.fee-input .form-input{padding-left:30px}

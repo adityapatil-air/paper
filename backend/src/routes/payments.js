@@ -83,10 +83,11 @@ router.post('/create-order', requireAuth, async (req, res) => {
         const paper = await loadPayablePaper(req, res, req.body?.paperId);
         if (!paper) return;
 
-        const currency = String(req.body?.currency || 'INR').toUpperCase();
-        const amount = APC[currency];
+        // The amount is the charge set when the paper was accepted (papers.submission_fee), in INR.
+        const currency = 'INR';
+        const amount = Number(paper.submission_fee) || APC.INR;
         if (!Number.isFinite(amount) || amount <= 0) {
-            return res.status(400).json({ success: false, error: 'Choose INR or USD.' });
+            return res.status(400).json({ success: false, error: 'This paper has no fee to pay.' });
         }
 
         const options = {

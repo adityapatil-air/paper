@@ -107,6 +107,7 @@ const AdminDashboard = () => {
   const [showQuickPublishModal, setShowQuickPublishModal] = useState(false);
   const [quickPublishPaper, setQuickPublishPaper] = useState(null);
   const [acceptTargetPaper, setAcceptTargetPaper] = useState(null);
+  const [acceptFee, setAcceptFee] = useState('1500');
   const [accepting, setAccepting] = useState(false);
   const [publishDoi, setPublishDoi] = useState('');
   const [markPaidPaper, setMarkPaidPaper] = useState(null);
@@ -1037,8 +1038,12 @@ const AdminDashboard = () => {
   const requestAccept = (paper) => {
     setManagePaper(null);
     setShowReviewsModal(false);
+    setAcceptFee('1500');
     setAcceptTargetPaper(paper);
   };
+
+  const acceptFeeValid = /^\d+(\.\d{1,2})?$/.test(acceptFee.trim());
+  const feeLabel = (paper) => `₹${Number(paper?.submissionFee || 0).toLocaleString('en-IN')}`;
 
   const canMarkPaid = (paper) => (paper?.status === 'accepted' || paper?.status === 'published') && paper.paymentStatus !== 'paid';
 
@@ -1065,9 +1070,9 @@ const AdminDashboard = () => {
     if (!acceptTargetPaper) return;
     setAccepting(true);
     try {
-      const result = await mockAPI.acceptPaper(acceptTargetPaper.id);
+      const result = await mockAPI.acceptPaper(acceptTargetPaper.id, Number(acceptFee));
       if (result.success) {
-        toast.success('Paper accepted. The author will see a payment request on their dashboard.');
+        toast.success(`Paper accepted. The author is asked to pay ₹${Number(acceptFee).toLocaleString('en-IN')}.`);
         setAcceptTargetPaper(null);
         loadAdminData();
       } else {
@@ -1792,6 +1797,7 @@ const AdminDashboard = () => {
               <div><dt>Category</dt><dd>{managePaper.category || '—'}</dd></div>
               <div><dt>Assigned reviewers</dt><dd>{Array.isArray(managePaper.assignedReviewers) ? managePaper.assignedReviewers.length : 0}</dd></div>
               <div><dt>Submitted</dt><dd>{formatDate(managePaper.submissionDate)}</dd></div>
+              {['accepted', 'published'].includes(managePaper.status) && <div><dt>Processing charge</dt><dd>{feeLabel(managePaper)}</dd></div>}
               {managePaper.assignedIssue && (
                 <div><dt>Journal issue</dt><dd>Vol. {managePaper.assignedIssue.volume}, Issue {managePaper.assignedIssue.issue}</dd></div>
               )}
@@ -2205,14 +2211,39 @@ const AdminDashboard = () => {
       <ConfirmDialog
         open={Boolean(acceptTargetPaper)}
         title="Accept this paper?"
-        message="The author is asked to pay the article processing charge. You can publish the paper after that."
+        message="Set the article processing charge. The author sees this amount in the acceptance email and on their dashboard; you can publish the paper once it is paid."
         confirmLabel="Yes, accept"
         busyLabel="Accepting…"
         busy={accepting}
+        confirmDisabled={!acceptFeeValid}
         onCancel={() => { if (!accepting) setAcceptTargetPaper(null); }}
         onConfirm={confirmAccept}
       >
-        {acceptTargetPaper && <div className="paper-ref"><strong>{acceptTargetPaper.title}</strong><span>ID: {acceptTargetPaper.id}</span></div>}
+        {acceptTargetPaper && (
+          <>
+            <div className="paper-ref"><strong>{acceptTargetPaper.title}</strong><span>ID: {acceptTargetPaper.id}</span></div>
+            <div className="field fee-field">
+              <div className="field-label"><label htmlFor="accept-fee">Processing charge (INR)<span className="req" aria-hidden="true">*</span></label></div>
+              <div className="fee-input">
+                <span aria-hidden="true">₹</span>
+                <input
+                  id="accept-fee"
+                  type="text"
+                  inputMode="decimal"
+                  className={`form-input${acceptFee && !acceptFeeValid ? ' is-invalid' : ''}`}
+                  value={acceptFee}
+                  disabled={accepting}
+                  onChange={(e) => setAcceptFee(e.target.value.replace(/[^\d.]/g, ''))}
+                  aria-invalid={acceptFee && !acceptFeeValid ? true : undefined}
+                  aria-describedby="accept-fee-hint"
+                />
+              </div>
+              {acceptFee && !acceptFeeValid
+                ? <p className="field-error"><Icon name="alert" size={15} />Enter an amount, e.g. 1500.</p>
+                : <p className="field-hint" id="accept-fee-hint">Standard charge is ₹1,500. Enter 0 to waive the fee.</p>}
+            </div>
+          </>
+        )}
       </ConfirmDialog>
 
       {/* Delete issue */}

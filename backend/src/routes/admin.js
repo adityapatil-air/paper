@@ -8,6 +8,7 @@ const {
 const {
   normalizeEmail, isValidEmail, getInvites, addInvite, removeInvite, findUserByEmail,
 } = require('../reviewerInvites');
+const { parseFee, formatFee } = require('../paperFees');
 
 // Email the paper's author (account email, or the corresponding author from the form).
 const emailAuthor = (paper, build) => later(async () => {
@@ -322,6 +323,9 @@ router.post('/accept-paper', async (req, res) => {
       return res.status(409).json({ success: false, error: 'Only papers under review can be accepted.' });
     }
 
+    const fee = parseFee(req.body?.fee);
+    if (fee.error) return res.status(400).json({ success: false, error: fee.error });
+
     const { count: reviewCount, error: reviewsError } = await supabase
       .from('reviews')
       .select('id', { count: 'exact', head: true })
@@ -337,7 +341,7 @@ router.post('/accept-paper', async (req, res) => {
 
     const { error } = await supabase
       .from('papers')
-      .update({ status: 'accepted' })
+      .update({ status: 'accepted', submission_fee: fee.amount })
       .eq('id', paperId);
 
     if (error) {
@@ -358,7 +362,7 @@ router.post('/accept-paper', async (req, res) => {
         .insert({
           user_id: paper.main_author_id,
           title: 'Paper accepted',
-          message: `Your paper "${paper.title}" has been accepted for publication. Please pay the article processing charge from your dashboard so it can be published.`,
+          message: `Your paper "${paper.title}" has been accepted for publication. Please pay the article processing charge of ${formatFee(fee.amount)} from your dashboard so it can be published.`,
           type: 'success',
         });
 
@@ -367,9 +371,9 @@ router.post('/accept-paper', async (req, res) => {
       }
     }
 
-    emailAuthor(paper, (a) => templates.paperAccepted({ name: a.name, paper }));
+    emailAuthor(paper, (a) => templates.paperAccepted({ name: a.name, paper, fee: fee.amount }));
 
-    return res.json({ success: true });
+    return res.json({ success: true, fee: fee.amount });
   } catch (err) {
     console.error('Unexpected error in POST /api/admin/accept-paper', err);
     return res.status(500).json({ success: false, error: 'Failed to accept paper.' });
