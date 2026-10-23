@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../components/ui/Icon';
 
-const EDITORIAL_EMAIL = 'editor@ijepa.org';
+const EDITORIAL_EMAIL = 'info@buildsofttech.in';
 const PHONE_DISPLAY = '+91 8149844901';
 const PHONE_LINK = '+918149844901';
 
@@ -18,7 +18,7 @@ const ContactUs = () => (
 
     <div className="page-body journal-container">
       <p>
-        The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> values communication with authors, reviewers, editors, and readers. We encourage you to reach out for any queries, clarifications, or support related to manuscript submission, editorial policies, or publication processes.
+        The <strong>International Journal of Engineering Practices and Applications (IJEPA)</strong> values communication with authors, reviewers, editors, and readers. We encourage you to reach out with inquiries, questions, and collaboration opportunities.
       </p>
 
       <div className="contact-cards">
