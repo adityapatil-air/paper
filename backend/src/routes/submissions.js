@@ -1,6 +1,7 @@
 const express = require('express');
 const { paperCode } = require('../paperCode');
 const { supabase } = require('../supabaseClient');
+const { toJournalDate } = require('../publicationDate');
 const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
 const { requireAuth } = require('../middleware/auth');
 const {
@@ -243,7 +244,7 @@ router.post(
           keywords: data.keywords,
           status: data.status,
           submissionDate: data.submission_date,
-          publicationDate: data.publication_date,
+          publicationDate: toJournalDate(data.publication_date),
           doi: data.doi,
           pdfUrl: data.pdf_url,
         },

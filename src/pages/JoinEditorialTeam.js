@@ -7,11 +7,21 @@ const JoinEditorialTeam = () => {
   return (
     <div className="join-editorial-page">
       <section className="page-banner">
-        <div className="journal-container">
-          <p className="breadcrumb">Home / Join the Editorial Team</p>
-          <p className="eyebrow">SCHOLARLY LEADERSHIP</p>
-          <h1>Join the Editorial Team</h1>
-          <p>Join us as an Associate Editor or Reviewer</p>
+        <div className="journal-container banner-split">
+          <div>
+            <p className="breadcrumb">Home / Join the Editorial Team</p>
+            <p className="eyebrow">SCHOLARLY LEADERSHIP</p>
+            <h1>Join the Editorial Team</h1>
+            <p>Join us as an Associate Editor or Reviewer</p>
+          </div>
+          <aside className="banner-cta">
+            <div className="banner-cta-icon" aria-hidden="true">✎</div>
+            <div>
+              <h2>Ready to apply?</h2>
+              <p>Fill in the short application form with your degree, research record and areas of expertise. The Editorial Office replies by email.</p>
+              <a href={GOOGLE_FORM_LINK} target="_blank" rel="noopener noreferrer" className="button button-white button-small">Apply Now</a>
+            </div>
+          </aside>
         </div>
       </section>
 

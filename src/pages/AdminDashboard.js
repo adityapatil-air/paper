@@ -785,6 +785,8 @@ const AdminDashboard = () => {
         setShowAssignIssueModal(false);
         setAssignIssuePaper(null);
         setSelectedIssueId('');
+        setIssuePapersByIssueId({}); // issue contents changed; reload them when expanded
+        setExpandedIssueId(null);
         loadAdminData(); // Refresh admin data after assigning paper to issue
       } else {
         toast.error(result.error || 'Failed to assign paper to issue.');
@@ -1577,14 +1579,24 @@ const AdminDashboard = () => {
                             {issuePapersLoadingId === issue.id ? (
                               <li className="skeleton-stack"><Skeleton width="70%" /><Skeleton width="40%" /></li>
                             ) : (issuePapersByIssueId[issue.id] || []).length === 0 ? (
-                              <li className="cell-sub">No papers have been assigned to this issue yet. Publish a paper, then use Manage → Add to journal issue.</li>
+                              <li className="cell-sub">No papers have been assigned to this issue yet. Publish a paper, then use Manage → Add to journal issue, or Move a paper here from another issue.</li>
                             ) : (
                               (issuePapersByIssueId[issue.id] || []).map((paper) => (
-                                <li key={paper.id}>
-                                  {paper.pdfUrl
-                                    ? <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer">{paper.title}</a>
-                                    : <strong>{paper.title}</strong>}
-                                  <span>{joinAuthors(paper.authors)}</span>
+                                <li key={paper.id} className="issue-paper-row">
+                                  <div>
+                                    {paper.pdfUrl
+                                      ? <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer">{paper.title}</a>
+                                      : <strong>{paper.title}</strong>}
+                                    <span>{joinAuthors(paper.authors)}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="icon-btn"
+                                    onClick={() => openAssignPaperToIssueModal({ ...paper, assignedIssue: issue })}
+                                    aria-label={`Move ${paper.title} to another issue`}
+                                  >
+                                    <Icon name="book" size={15} /> Move
+                                  </button>
                                 </li>
                               ))
                             )}

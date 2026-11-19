@@ -1,5 +1,6 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
+const { toJournalDate } = require('../publicationDate');
 const { requireAdmin } = require('../middleware/requireAdmin');
 const { makeUploader, handleUpload, uploadFile, removeFileByUrl, sendStorageError } = require('../storage');
 const { getSetting, setSetting } = require('../siteSettings');
@@ -540,7 +541,7 @@ router.get('/:id/papers', async (req, res) => {
       keywords: row.keywords || [],
       status: row.status,
       submissionDate: row.submission_date,
-      publicationDate: row.publication_date,
+      publicationDate: toJournalDate(row.publication_date),
       doi: row.doi,
       category: row.category,
       citationCount: row.citation_count,
@@ -632,7 +633,7 @@ router.post('/:id/special-papers', requireAdmin, specialPaperUpload, async (req,
       category: cleanText(req.body?.category),
       status: 'published',
       submission_date: today,
-      publication_date: today,
+      publication_date: toJournalDate(today),
       submission_fee: 0,
       payment_status: 'paid',
       pdf_url: pdfUrl,

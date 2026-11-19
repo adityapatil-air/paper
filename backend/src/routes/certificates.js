@@ -1,6 +1,7 @@
 const express = require('express');
 const { paperCode } = require('../paperCode');
 const { supabase } = require('../supabaseClient');
+const { toJournalDate } = require('../publicationDate');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -53,7 +54,7 @@ router.get('/mine', requireAuth, async (req, res) => {
         .in('id', reviewedIds)
         .eq('status', 'published');
       if (error) throw error;
-      (papers || []).forEach((p) => items.push({ type: 'review', paperId: p.id, paperTitle: p.title, publicationDate: p.publication_date }));
+      (papers || []).forEach((p) => items.push({ type: 'review', paperId: p.id, paperTitle: p.title, publicationDate: toJournalDate(p.publication_date) }));
     }
 
     const { data: authored, error: authoredError } = await supabase
@@ -62,7 +63,7 @@ router.get('/mine', requireAuth, async (req, res) => {
       .eq('main_author_id', userId)
       .eq('status', 'published');
     if (authoredError) throw authoredError;
-    (authored || []).forEach((p) => items.push({ type: 'author', paperId: p.id, paperTitle: p.title, publicationDate: p.publication_date }));
+    (authored || []).forEach((p) => items.push({ type: 'author', paperId: p.id, paperTitle: p.title, publicationDate: toJournalDate(p.publication_date) }));
 
     return res.json({ success: true, certificates: items });
   } catch (err) {
@@ -127,7 +128,7 @@ router.get('/:type/:paperId', requireAuth, async (req, res) => {
         paperTitle: paper.title,
         paperCode: paperCode(paper),
         authors: paper.authors || [],
-        publicationDate: paper.publication_date,
+        publicationDate: toJournalDate(paper.publication_date),
         reviewDate,
         doi: paper.doi || null,
         issue,

@@ -1226,3 +1226,38 @@ select.form-select::-ms-expand{display:none}
 .fee-input{position:relative}
 .fee-input>span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--muted)}
 .fee-input .form-input{padding-left:30px}
+
+/* Editorial Board / Join pages: call-to-action card beside the banner title */
+.banner-split{display:grid;grid-template-columns:1fr minmax(300px,440px);gap:40px;align-items:center;position:relative;z-index:1}
+.banner-cta{display:flex;gap:14px;align-items:flex-start;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-md);padding:18px 20px;backdrop-filter:blur(4px)}
+.banner-cta-icon{flex:0 0 auto;width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:rgba(84,186,255,.18);color:#8ed6ff;font-size:20px}
+.page-banner .banner-cta h2{margin:0;font-size:16px;font-weight:800;color:#fff;line-height:1.3}
+.page-banner .banner-cta p{margin:6px 0 12px;font-size:13px;line-height:1.55;color:#d7ecf8}
+.button-white{background:#fff;color:var(--navy);border-color:#fff}
+.button-white:hover{background:#eaf5fd;color:var(--navy)}
+@media(max-width:900px){.banner-split{grid-template-columns:1fr;gap:22px}}
+
+/* Editor-in-Chief column | divider | Associate Editors grid */
+.board-layout{display:grid;grid-template-columns:minmax(210px,240px) 1px 1fr;gap:28px;align-items:start;padding-top:8px}
+.board-layout.is-single{grid-template-columns:1fr}
+.board-divider{align-self:stretch;background:var(--line);width:1px}
+.board-chief .board-card{position:sticky;top:96px}
+.board-grid.is-chief{grid-template-columns:1fr}
+.board-grid.is-associates{grid-template-columns:repeat(4,1fr)}
+.board-layout .section-heading{margin-bottom:16px}
+@media(max-width:1100px){.board-grid.is-associates{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.board-layout{grid-template-columns:1fr}.board-divider{display:none}.board-chief .board-card{position:static;max-width:320px}.board-grid.is-associates{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:390px){.board-grid.is-associates{grid-template-columns:1fr}}
+
+/* Larger member photos; card padding trimmed so cards stay about the same size */
+.board-card{padding:16px 14px}
+.board-card .member-avatar{width:96px;height:96px;font-size:26px;margin-bottom:10px}
+
+/* Admin: issue contents with a Move button per paper */
+.issue-paper-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.issue-paper-row>div{min-width:0}
+.issue-paper-row .icon-btn{flex:0 0 auto}
+
+/* Paper titles open the paper page */
+.article-title-link{color:inherit;text-decoration:none;transition:color .15s}
+.article-title-link:hover,.article-title-link:focus-visible{color:var(--blue);text-decoration:underline;text-underline-offset:3px}

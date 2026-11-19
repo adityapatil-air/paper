@@ -174,55 +174,80 @@ const EditorialBoard = () => {
     .slice(0, 2)
     .join('');
 
+  const renderCard = (m) => (
+    <article className="board-card" key={m.id || `${m.section}-${m.name}-${m.email}`}>
+      {m.photo
+        ? <img className="member-avatar member-photo" src={m.photo} alt={m.name} />
+        : <div className="member-avatar">{initialsOf(m.name)}</div>}
+      <strong>{m.name}</strong>
+      {m.title && <span>{m.title}</span>}
+      {m.affiliation && <small>{m.affiliation}</small>}
+      {m.email && <a href={`mailto:${m.email}`}>{m.email}</a>}
+      {m.profileUrl && <a href={m.profileUrl} target="_blank" rel="noreferrer">Profile ↗</a>}
+    </article>
+  );
+
+  // Editor-in-Chief sits in a narrow column, a divider, then the Associate Editors grid,
+  // so the single chief card does not leave a row of empty space.
+  const entries = Object.entries(sections);
+  const chiefKey = entries.find(([k]) => /chief/i.test(k))?.[0];
+  const associateKey = entries.find(([k]) => /associate/i.test(k))?.[0];
+  const rest = entries.filter(([k]) => k !== chiefKey && k !== associateKey);
+
   return (
     <div className="editorial-board-page">
       <section className="page-banner">
-        <div className="journal-container">
-          <p className="breadcrumb">Home / Editorial Board</p>
-          <p className="eyebrow">SCHOLARLY LEADERSHIP</p>
-          <h1>Editorial Board</h1>
+        <div className="journal-container banner-split">
+          <div>
+            <p className="breadcrumb">Home / Editorial Board</p>
+            <p className="eyebrow">SCHOLARLY LEADERSHIP</p>
+            <h1>Editorial Board</h1>
+          </div>
+          <aside className="banner-cta">
+            <div className="banner-cta-icon" aria-hidden="true">✎</div>
+            <div>
+              <h2>Interested in Joining the Editorial Board?</h2>
+              <p>IJEPA welcomes qualified academics and industry professionals as Associate Editors or Reviewers. If you have a strong research background, we invite you to apply.</p>
+              <a href="/joinusedito" className="button button-white button-small">Apply Now</a>
+            </div>
+          </aside>
         </div>
       </section>
 
       <div className="page-body journal-container">
         {loading ? (
           <div className="loading-state" role="status">Loading editorial board…</div>
-        ) : Object.keys(sections).length === 0 ? (
+        ) : entries.length === 0 ? (
           <div className="empty-state">{error || 'No editorial board members found.'}</div>
         ) : (
-          Object.entries(sections).map(([sectionName, members]) => (
-            <section key={sectionName} className="content-section board-section" style={{ marginTop: 0 }}>
-              <div className="section-heading"><h2>{sectionName}</h2></div>
-              <div className="board-grid">
-                {members.map((m) => (
-                  <article className="board-card" key={m.id || `${m.section}-${m.name}-${m.email}`}>
-                    {m.photo
-                      ? <img className="member-avatar member-photo" src={m.photo} alt={m.name} />
-                      : <div className="member-avatar">{initialsOf(m.name)}</div>}
-                    <strong>{m.name}</strong>
-                    {m.title && <span>{m.title}</span>}
-                    {m.affiliation && <small>{m.affiliation}</small>}
-                    {m.email && <a href={`mailto:${m.email}`}>{m.email}</a>}
-                    {m.profileUrl && <a href={m.profileUrl} target="_blank" rel="noreferrer">Profile ↗</a>}
-                  </article>
-                ))}
-              </div>
-            </section>
-          ))
+          <>
+            {(chiefKey || associateKey) && (
+              <section className={`board-layout${chiefKey && associateKey ? '' : ' is-single'}`}>
+                {chiefKey && (
+                  <div className="board-chief">
+                    <div className="section-heading"><h2>{chiefKey}</h2></div>
+                    <div className="board-grid is-chief">{sections[chiefKey].map(renderCard)}</div>
+                  </div>
+                )}
+                {chiefKey && associateKey && <div className="board-divider" aria-hidden="true" />}
+                {associateKey && (
+                  <div className="board-associates">
+                    <div className="section-heading"><h2>{associateKey}</h2></div>
+                    <div className="board-grid is-associates">{sections[associateKey].map(renderCard)}</div>
+                  </div>
+                )}
+              </section>
+            )}
+            {rest.map(([sectionName, members]) => (
+              <section key={sectionName} className="content-section board-section">
+                <div className="section-heading"><h2>{sectionName}</h2></div>
+                <div className="board-grid">{members.map(renderCard)}</div>
+              </section>
+            ))}
+          </>
         )}
 
-        <div className="callout board-callout">
-          <div className="callout-inner journal-container is-compact">
-            <div className="callout-icon">✎</div>
-            <div>
-              <h2>Interested in Joining the Editorial Board?</h2>
-              <p>IJEPA welcomes qualified academics and industry professionals to contribute as Associate Editors or Reviewers. If you have a strong research background and a commitment to scholarly excellence, we invite you to apply.</p>
-            </div>
-            <a href="/joinusedito" className="button button-outline">Apply Now</a>
-          </div>
-        </div>
-
-        <p style={{ textAlign: 'center', marginTop: 20 }}>
+        <p style={{ textAlign: 'center', marginTop: 32 }}>
           For inquiries regarding the Editorial Board, please contact the Editorial Office at{' '}
           <a href="mailto:info@buildsofttech.in">info@buildsofttech.in</a>.
         </p>

@@ -1,5 +1,6 @@
 const express = require('express');
 const { supabase } = require('../supabaseClient');
+const { toJournalDate } = require('../publicationDate');
 const { Readable } = require('stream');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/requireAdmin');
@@ -60,7 +61,7 @@ const mapPaperRow = (row, assignmentsByPaperId, issueByPaperId = {}) => {
     keywords: row.keywords || [],
     status: row.status,
     submissionDate: row.submission_date,
-    publicationDate: row.publication_date,
+    publicationDate: toJournalDate(row.publication_date),
     doi: row.doi,
     pdfUrl: row.pdf_url,
     copyrightUrl: row.copyright_url || null,

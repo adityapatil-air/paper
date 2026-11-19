@@ -10,7 +10,7 @@ const authorsText = (authors) => (Array.isArray(authors)
 const formatDate = (value) => {
   if (!value) return null;
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 };
 
 export const issueLabel = (issue) => `Volume ${issue.volume}, Issue ${issue.issue}`;

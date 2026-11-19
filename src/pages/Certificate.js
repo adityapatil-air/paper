@@ -17,7 +17,7 @@ const EDITOR_IN_CHIEF = { name: 'Dr. Navnath D. Kale', role: 'Editor-in-Chief, I
 const longDate = (value) => {
   if (!value) return '';
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 };
 
 const issueText = (issue) => {

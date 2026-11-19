@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 export const formatArticleDate = (value) => (value
-  ? new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
+  ? new Date(value).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })
   : 'Publication date pending');
 
 // Journal paper ID, e.g. "IJEPA-2026-031". The API sends it (backend/src/paperCode.js); the fallback
@@ -26,7 +26,7 @@ const ArticleCard = ({ paper }) => (
       <span className="article-id">Paper ID: {paperCode(paper)}</span>
       <span className="article-tag">{paper.category || 'Research Article'}</span>
     </div>
-    <h3>{paper.title}</h3>
+    <h3><Link to={articleUrl(paper)} className="article-title-link">{paper.title}</Link></h3>
     <p className="article-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
     <small>Published: {formatArticleDate(paper.publicationDate)}</small>
     <div className="article-actions">

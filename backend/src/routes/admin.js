@@ -10,6 +10,7 @@ const {
 } = require('../reviewerInvites');
 const { parseFee, formatFee } = require('../paperFees');
 const { paperCode } = require('../paperCode');
+const { toJournalDate } = require('../publicationDate');
 
 // Email the paper's author (account email, or the corresponding author from the form).
 const emailAuthor = (paper, build) => later(async () => {
@@ -487,7 +488,7 @@ router.post('/publish-paper', async (req, res) => {
     const now = new Date();
     const update = {
       status: 'published',
-      publication_date: now.toISOString().split('T')[0],
+      publication_date: toJournalDate(now.toISOString().split('T')[0]),
     };
     if (doi) update.doi = doi;
 
