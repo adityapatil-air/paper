@@ -59,7 +59,10 @@ const Header = () => {
       <div className="main-nav-wrap">
         <Link to="/" className="journal-brand" onClick={closeMenu}>
           <img src={logo} alt="IJEPA" />
-          <span className="brand-acronym">IJEPA</span>
+          <span className="brand-stack">
+            <span className="brand-acronym">IJEPA</span>
+            <span className="brand-tagline">Discover.Research.Publish</span>
+          </span>
         </Link>
         <button
           ref={menuButtonRef}
