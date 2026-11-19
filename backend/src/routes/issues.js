@@ -434,15 +434,21 @@ router.post('/:id/assign-paper', requireAdmin, async (req, res) => {
           error: 'This paper is already assigned to an issue.',
         });
       }
-      if (existingAssignments.some((a) => Number(a.issue_id) === issueId)) {
-        return res.json({ success: true });
-      }
       const { data: target } = await supabase.from('issues').select('id').eq('id', issueId).maybeSingle();
       if (!target) return res.status(404).json({ success: false, error: 'Issue not found.' });
-      const { error: moveError } = await supabase.from('issue_papers').update({ issue_id: issueId }).eq('paper_id', parsedPaperId);
-      if (moveError) {
-        console.error('Error moving paper to another issue', moveError);
+      // A paper belongs to exactly one issue. Drop every other link (older data can hold more
+      // than one), then make sure the link to the target exists.
+      const { error: dropError } = await supabase.from('issue_papers').delete().eq('paper_id', parsedPaperId).neq('issue_id', issueId);
+      if (dropError) {
+        console.error('Error removing old issue links while moving paper', dropError);
         return res.status(500).json({ success: false, error: 'Failed to move the paper to this issue.' });
+      }
+      if (!existingAssignments.some((a) => Number(a.issue_id) === issueId)) {
+        const { error: linkError } = await supabase.from('issue_papers').insert({ issue_id: issueId, paper_id: parsedPaperId });
+        if (linkError) {
+          console.error('Error moving paper to another issue', linkError);
+          return res.status(500).json({ success: false, error: 'Failed to move the paper to this issue.' });
+        }
       }
       return res.json({ success: true, moved: true });
     }

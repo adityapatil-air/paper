@@ -78,9 +78,9 @@ const Header = () => {
         <nav id="primary-nav" className={`primary-nav ${isMenuOpen ? 'is-open' : ''}`} aria-label="Primary navigation">
           <Link to="/" className={location.pathname === '/' ? 'active' : ''} onClick={closeMenu}>Home</Link>
           {navLinks.map((link) => <Link key={link.to} to={link.to} className={location.pathname === link.to ? 'active' : ''} onClick={closeMenu}>{link.label}</Link>)}
-          <Link to="/submitform" className="nav-submit" onClick={closeMenu}>Submit Manuscript</Link>
           {user && <Link to={dashboardPath} className={location.pathname.includes('dashboard') ? 'active' : ''} onClick={closeMenu}>Dashboard</Link>}
           <Link to="/papers" className="search-link" aria-label="Search and browse papers" title="Search and browse papers" onClick={closeMenu}>⌕</Link>
+          <Link to="/submitform" className="nav-submit" onClick={closeMenu}>Submit Manuscript</Link>
           <div className="mobile-auth-links">
             {user
               ? <button onClick={handleLogout}>Logout</button>
