@@ -1,4 +1,5 @@
 const express = require('express');
+const { paperCode } = require('../paperCode');
 const { supabase } = require('../supabaseClient');
 const { makeUploader, handleUpload, uploadFile, sendStorageError } = require('../storage');
 const { requireAuth } = require('../middleware/auth');
@@ -221,13 +222,13 @@ router.post(
       }
 
       // Confirmation to the corresponding author, and a heads-up to the editorial office.
-      const submitted = { id: data.id, title: data.title };
+      const submitted = { id: data.id, title: data.title, pdf_url: data.pdf_url, submission_date: data.submission_date, publication_date: data.publication_date };
       later(async () => {
         await sendEmail({ to: { email: String(email).trim(), name: fullName }, ...templates.submissionReceivedAuthor({ name: fullName, paper: submitted }) });
         const admins = await getAdminRecipients();
         await notifyInApp(admins.map((a) => a.id), {
           title: 'New submission',
-          message: `"${submitted.title}" (paper #${submitted.id}) was submitted by ${String(fullName).trim()}. Assign a reviewer to start the review.`,
+          message: `"${submitted.title}" (${paperCode(submitted)}) was submitted by ${String(fullName).trim()}. Assign a reviewer to start the review.`,
         });
         await sendToMany(admins, () => templates.submissionReceivedAdmin({ paper: submitted, authorName: fullName, authorEmail: email }));
       });
@@ -343,7 +344,7 @@ router.post(
         // Load basic paper info for message
         const { data: paperInfo, error: paperInfoError } = await supabase
           .from('papers')
-          .select('id, title')
+          .select('id, title, pdf_url, submission_date, publication_date')
           .eq('id', paperId)
           .single();
 
@@ -399,7 +400,7 @@ router.post(
 
       // Email the same people: admins and the reviewers assigned to the paper.
       later(async () => {
-        const { data: revised } = await supabase.from('papers').select('id, title').eq('id', paperId).maybeSingle();
+        const { data: revised } = await supabase.from('papers').select('id, title, pdf_url, submission_date, publication_date').eq('id', paperId).maybeSingle();
         if (!revised) return;
         const admins = await getAdminRecipients();
         const reviewers = await getUserRecipients(await getAssignedReviewerIds(paperId));
@@ -435,7 +436,7 @@ router.post(
 
       const { data: paper, error: paperError } = await supabase
         .from('papers')
-        .select('id, title, status, main_author_id')
+        .select('id, title, pdf_url, submission_date, publication_date, status, main_author_id')
         .eq('id', paperId)
         .maybeSingle();
 

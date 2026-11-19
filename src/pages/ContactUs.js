@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../components/ui/Icon';
 
-const EDITORIAL_EMAIL = 'editor@ijepa.org';
+const EDITORIAL_EMAIL = 'info@buildsofttech.in';
 const PHONE_DISPLAY = '+91 8149844901';
 const PHONE_LINK = '+918149844901';
 

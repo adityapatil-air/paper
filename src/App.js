@@ -57,6 +57,8 @@ function App() {
               <Route path="/papers" element={<BrowsePapers />} />
               <Route path="/author-guidelines" element={<AuthorGuidelines />} />
               <Route path="/indexing" element={<Indexing />} />
+              <Route path="/article/:volume/:issue/:code" element={<PaperRedirect />} />
+              <Route path="/article/:code" element={<PaperRedirect />} />
               <Route path="/p/:id" element={<PaperRedirect />} />
               <Route path="/paper/:slug" element={<PaperRedirect />} />
                 <Route path="/callforpapers" element={<CallForPapers />} />

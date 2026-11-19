@@ -573,12 +573,13 @@ export const mockAPI = {
     }
   },
 
-  assignPaperToIssue: async (paperId, issueId) => {
+  // { move: true } moves a paper that is already in another issue.
+  assignPaperToIssue: async (paperId, issueId, { move = false } = {}) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/issues/${issueId}/assign-paper`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ paperId }),
+        body: JSON.stringify({ paperId, move }),
       });
       const data = await response.json();
 

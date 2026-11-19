@@ -100,7 +100,7 @@ const AuthorGuidelines = () => {
         <h2>5. Submission Process</h2>
         <div className="page-card">
           <ul className="content-list is-flush">
-            <li>Manuscripts should be submitted via the <a href="/SubmitForm">Online Submission System</a> or emailed directly to <span style={{ fontFamily: 'monospace' }}>editor@ijepa.org</span>.</li>
+            <li>Manuscripts should be submitted via the <a href="/SubmitForm">Online Submission System</a> or emailed directly to <span style={{ fontFamily: 'monospace' }}>info@buildsofttech.in</span>.</li>
             <li>Along with the manuscript, authors must provide:
               <ul className="content-list is-nested is-flush">
                 <li>A cover letter highlighting the contribution of the paper.</li>
@@ -160,7 +160,7 @@ const AuthorGuidelines = () => {
         <h2>11. Contact Information</h2>
         <div className="page-card">
           <p>For queries regarding manuscript preparation and submission, please contact:</p>
-          <p style={{ marginBottom: 0 }}><strong>Editorial Office, IJEPA</strong><br />Email: editor@ijepa.org</p>
+          <p style={{ marginBottom: 0 }}><strong>Editorial Office, IJEPA</strong><br />Email: info@buildsofttech.in</p>
         </div>
 
         <p style={{ textAlign: 'center', fontStyle: 'italic', marginTop: 20 }}>

@@ -10,7 +10,7 @@ const FALLBACK_BOARD = [
     name: 'Dr. Navnath D. Kale',
     title: 'Senior Assistant Professor, Dept. of Computer Engineering',
     affiliation: 'MIT Academy of Engineering, Pune, India.',
-    email: 'editor@ijepa.org, navnath.kale@mitaoe.ac.in',
+    email: 'info@buildsofttech.in, navnath.kale@mitaoe.ac.in',
     profileUrl: 'https://mitaoe.ac.in/school-of-computer-engineering-n-d-kale.php',
     sortOrder: 0,
   },
@@ -224,7 +224,7 @@ const EditorialBoard = () => {
 
         <p style={{ textAlign: 'center', marginTop: 20 }}>
           For inquiries regarding the Editorial Board, please contact the Editorial Office at{' '}
-          <a href="mailto:editor@ijepa.org">editor@ijepa.org</a>.
+          <a href="mailto:info@buildsofttech.in">info@buildsofttech.in</a>.
         </p>
       </div>
     </div>

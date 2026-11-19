@@ -1,13 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './ui/Icon';
-
-const slugify = (value) => String(value || '')
-  .trim()
-  .toLowerCase()
-  .replace(/['"]/g, '')
-  .replace(/[^a-z0-9]+/g, '-')
-  .replace(/^-+|-+$/g, '');
+import { articleUrl } from './ArticleCard';
 
 const authorsText = (authors) => (Array.isArray(authors)
   ? authors.map((a) => (typeof a === 'string' ? a : a?.fullName || a?.name || '')).filter(Boolean).join(', ')
@@ -92,7 +86,7 @@ const CurrentIssue = ({ issue, papers = [], papersLoading = false, maxPapers, sh
             <ul className="ci-paper-list">
               {visiblePapers.map((paper) => (
                 <li key={paper.id}>
-                  {paper.pdfUrl ? <Link to={`/paper/${slugify(paper.title)}`}>{paper.title}</Link> : <strong>{paper.title}</strong>}
+                  {paper.pdfUrl ? <Link to={articleUrl(paper)}>{paper.title}</Link> : <strong>{paper.title}</strong>}
                   <span>{authorsText(paper.authors) || '—'}</span>
                 </li>
               ))}

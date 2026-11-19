@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Navigate, Link } from 'react-router-dom';
+import { useParams, useLocation, Navigate, Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { mockAPI } from '../data/mockData';
 import NotFound from './NotFound';
+import { paperCode, articleUrl } from '../components/ArticleCard';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -32,8 +33,20 @@ const useCitationMeta = (paper, downloadHref) => {
     addMeta('citation_journal_title', JOURNAL_TITLE);
     addMeta('citation_issn', '3139-5961');
     addMeta('citation_doi', paper.doi);
+    if (paper.issue?.volume && paper.issue?.issue) {
+      addMeta('citation_volume', paper.issue.volume);
+      addMeta('citation_issue', paper.issue.issue);
+    }
+    const pageUrl = new URL(articleUrl(paper), window.location.origin).toString();
+    addMeta('citation_abstract_html_url', pageUrl);
     (paper.keywords || []).filter(Boolean).forEach((k) => addMeta('citation_keywords', k));
     if (downloadHref) addMeta('citation_pdf_url', new URL(downloadHref.replace('?download=1', ''), window.location.origin).toString());
+
+    const canonical = document.createElement('link');
+    canonical.setAttribute('rel', 'canonical');
+    canonical.setAttribute('href', pageUrl);
+    document.head.appendChild(canonical);
+    added.push(canonical);
 
     const previousTitle = document.title;
     document.title = `${paper.title} | IJEPA`;
@@ -56,7 +69,8 @@ const formatLongDate = (value) => {
 };
 
 const PaperRedirect = () => {
-  const { id, slug } = useParams();
+  const { id, slug, code } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [paperId, setPaperId] = useState(null);
   const [paper, setPaper] = useState(null);
@@ -82,7 +96,11 @@ const PaperRedirect = () => {
         setLoading(true);
         let paper = null;
 
-        if (slug) {
+        if (code) {
+          const wanted = String(code).toUpperCase();
+          const published = await mockAPI.getPublishedPapers();
+          paper = (published || []).find((p) => paperCode(p) === wanted);
+        } else if (slug) {
           const published = await mockAPI.getPublishedPapers();
           paper = (published || []).find((p) => slugify(p?.title) === slug);
         } else {
@@ -115,9 +133,9 @@ const PaperRedirect = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, slug]);
+  }, [id, slug, code]);
 
-  const hasParam = Boolean(id || slug);
+  const hasParam = Boolean(id || slug || code);
   const pdfSrc = paperId ? `${API_BASE_URL}/api/papers/${paperId}/download` : null;
   const downloadHref = paperId ? `${API_BASE_URL}/api/papers/${paperId}/download?download=1` : null;
 
@@ -129,6 +147,10 @@ const PaperRedirect = () => {
   useCitationMeta(paper, downloadHref);
 
   if (!hasParam) return <Navigate to="/" replace />;
+  // Old links (/p/27, /paper/<title>, or an issue the paper has since moved out of) go to the canonical address.
+  if (!loading && paper && paper.status === 'published' && location.pathname !== articleUrl(paper)) {
+    return <Navigate to={articleUrl(paper)} replace />;
+  }
   if (!loading && !paperId) {
     return <NotFound title="Paper not found" message="This paper does not exist or is not published. Browse the published papers to find what you are looking for." />;
   }
@@ -170,6 +192,8 @@ const PaperRedirect = () => {
             <h1 id="article-title">{paper.title}</h1>
             <p className="article-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
             <dl className="meta-list">
+              <div><dt>Paper ID</dt><dd>{paperCode(paper)}</dd></div>
+              {paper.issue?.volume && paper.issue?.issue ? <div><dt>Issue</dt><dd>Volume {paper.issue.volume}, Issue {paper.issue.issue}</dd></div> : null}
               {paper.publicationDate && <div><dt>Published</dt><dd>{formatLongDate(paper.publicationDate)}</dd></div>}
               <div><dt>Journal</dt><dd>IJEPA · ISSN 3139-5961 (Online)</dd></div>
               {paper.doi && (

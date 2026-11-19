@@ -3,6 +3,7 @@ const { supabase } = require('../supabaseClient');
 const { Readable } = require('stream');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/requireAdmin');
+const { paperCode, articlePath } = require('../paperCode');
 
 const router = express.Router();
 
@@ -46,8 +47,10 @@ router.delete('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-const mapPaperRow = (row, assignmentsByPaperId) => {
+const mapPaperRow = (row, assignmentsByPaperId, issueByPaperId = {}) => {
   const assignedReviewers = assignmentsByPaperId[row.id] || [];
+  const code = paperCode(row);
+  const issue = issueByPaperId[row.id] || null;
 
   return {
     id: row.id,
@@ -68,7 +71,20 @@ const mapPaperRow = (row, assignmentsByPaperId) => {
     paymentStatus: row.payment_status,
     assignedReviewers,
     reviewDeadline: row.review_deadline,
+    paperCode: code,
+    issue,
+    articlePath: articlePath(code, issue),
   };
+};
+
+// Issue (volume/number) each paper belongs to. Special issues have issue number 0.
+const loadIssueByPaper = async () => {
+  const { data, error } = await supabase.from('issue_papers').select('paper_id, issues!inner(id, volume, issue)');
+  if (error) {
+    console.error('Error loading paper issues', error);
+    return {};
+  }
+  return Object.fromEntries((data || []).map((r) => [r.paper_id, { id: r.issues.id, volume: r.issues.volume, issue: r.issues.issue }]));
 };
 
 const loadAssignmentsByPaper = async () => {
@@ -150,7 +166,8 @@ router.get('/', requireAuth, async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch papers.' });
     }
 
-    const papers = (paperRows || []).map((row) => hideAuthorsFromReviewer(mapPaperRow(row, assignmentsByPaperId), req.user));
+    const issueByPaperId = await loadIssueByPaper();
+    const papers = (paperRows || []).map((row) => hideAuthorsFromReviewer(mapPaperRow(row, assignmentsByPaperId, issueByPaperId), req.user));
 
     return res.json({ success: true, papers });
   } catch (err) {
@@ -181,7 +198,8 @@ router.get('/published', async (req, res) => {
     }
 
     const assignmentsByPaperId = await loadAssignmentsByPaper();
-    const papers = (paperRows || []).map((row) => mapPaperRow(row, assignmentsByPaperId));
+    const issueByPaperId = await loadIssueByPaper();
+    const papers = (paperRows || []).map((row) => mapPaperRow(row, assignmentsByPaperId, issueByPaperId));
 
     return res.json({ success: true, papers });
   } catch (err) {
@@ -285,7 +303,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Paper not found.' });
     }
 
-    const paper = hideAuthorsFromReviewer(mapPaperRow(row, assignmentsByPaperId), req.user);
+    const paper = hideAuthorsFromReviewer(mapPaperRow(row, assignmentsByPaperId, await loadIssueByPaper()), req.user);
 
     return res.json({ success: true, paper });
   } catch (err) {

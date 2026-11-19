@@ -1,4 +1,5 @@
 const express = require('express');
+const { paperCode } = require('../paperCode');
 const { supabase } = require('../supabaseClient');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/requireAdmin');
@@ -250,7 +251,7 @@ router.post('/', requireRole('reviewer'), async (req, res) => {
     // The author hears that a review is in (never who wrote it: review is double-blind);
     // the editorial office gets the reviewer and recommendation.
     later(async () => {
-      const { data: reviewed } = await supabase.from('papers').select('id, title, main_author_id').eq('id', paperId).maybeSingle();
+      const { data: reviewed } = await supabase.from('papers').select('id, title, pdf_url, submission_date, publication_date, main_author_id').eq('id', paperId).maybeSingle();
       if (!reviewed) return;
       if (reviewed.main_author_id) {
         await notifyInApp([reviewed.main_author_id], {
@@ -263,7 +264,7 @@ router.post('/', requireRole('reviewer'), async (req, res) => {
       const admins = await getAdminRecipients();
       await notifyInApp(admins.map((a) => a.id), {
         title: 'Review submitted',
-        message: `${reviewer?.name || 'A reviewer'} submitted a review for "${reviewed.title}" (paper #${reviewed.id}).`,
+        message: `${reviewer?.name || 'A reviewer'} submitted a review for "${reviewed.title}" (${paperCode(reviewed)}).`,
       });
       await sendToMany(admins, () => templates.reviewCompletedAdmin({ paper: reviewed, reviewerName: reviewer?.name, recommendation }));
     });

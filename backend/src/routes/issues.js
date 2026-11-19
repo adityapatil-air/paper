@@ -3,6 +3,7 @@ const { supabase } = require('../supabaseClient');
 const { requireAdmin } = require('../middleware/requireAdmin');
 const { makeUploader, handleUpload, uploadFile, removeFileByUrl, sendStorageError } = require('../storage');
 const { getSetting, setSetting } = require('../siteSettings');
+const { paperCode, articlePath } = require('../paperCode');
 
 const router = express.Router();
 
@@ -425,10 +426,24 @@ router.post('/:id/assign-paper', requireAdmin, async (req, res) => {
     }
 
     if (existingAssignments && existingAssignments.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'This paper is already assigned to an issue.',
-      });
+      // `move: true` moves the paper from its current issue to this one.
+      if (!toBool(req.body?.move)) {
+        return res.status(400).json({
+          success: false,
+          error: 'This paper is already assigned to an issue.',
+        });
+      }
+      if (existingAssignments.some((a) => Number(a.issue_id) === issueId)) {
+        return res.json({ success: true });
+      }
+      const { data: target } = await supabase.from('issues').select('id').eq('id', issueId).maybeSingle();
+      if (!target) return res.status(404).json({ success: false, error: 'Issue not found.' });
+      const { error: moveError } = await supabase.from('issue_papers').update({ issue_id: issueId }).eq('paper_id', parsedPaperId);
+      if (moveError) {
+        console.error('Error moving paper to another issue', moveError);
+        return res.status(500).json({ success: false, error: 'Failed to move the paper to this issue.' });
+      }
+      return res.json({ success: true, moved: true });
     }
 
     // Insert assignment (issue_papers table must exist)
@@ -513,7 +528,11 @@ router.get('/:id/papers', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to load issue papers.' });
     }
 
+    const { data: issueRow } = await supabase.from('issues').select('id, volume, issue').eq('id', issueId).maybeSingle();
     const papers = (paperRows || []).map((row) => ({
+      paperCode: paperCode(row),
+      articlePath: articlePath(paperCode(row), issueRow),
+      issue: issueRow || null,
       id: row.id,
       title: row.title,
       authors: row.authors || [],

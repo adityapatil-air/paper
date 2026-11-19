@@ -2,7 +2,7 @@ import React from 'react';
 
 const JoinEditorialTeam = () => {
   const GOOGLE_FORM_LINK = "https://forms.gle/UrzaLpgBvWUu4hJn9";
-  const JOURNAL_EMAIL = "editor@ijepa.org";
+  const JOURNAL_EMAIL = "info@buildsofttech.in";
 
   return (
     <div className="join-editorial-page">

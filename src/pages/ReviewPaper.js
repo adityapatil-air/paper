@@ -8,6 +8,7 @@ import EmptyState from '../components/ui/EmptyState';
 import Spinner from '../components/ui/Spinner';
 import { Skeleton, SkeletonText } from '../components/ui/Skeleton';
 import { formatDate, paperAuthorsLabel } from '../components/ui/DashHeader';
+import { paperCode } from '../components/ArticleCard';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -113,7 +114,7 @@ const ReviewPaper = () => {
         <article className="viewer-shell" aria-labelledby="manuscript-title">
           <header className="viewer-head">
             <div>
-              <p className="dash-role"><span className="dash-role-dot" aria-hidden="true" />Manuscript · Paper ID {paper.id}</p>
+              <p className="dash-role"><span className="dash-role-dot" aria-hidden="true" />Manuscript · Paper ID {paperCode(paper)}</p>
               <h1 id="manuscript-title">{paper.title}</h1>
               <dl className="meta-list">
                 <div className="is-wide"><dt>Authors</dt><dd>{paperAuthorsLabel(paper) || 'N/A'}</dd></div>

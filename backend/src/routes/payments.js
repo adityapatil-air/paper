@@ -5,6 +5,7 @@ const { supabase } = require('../supabaseClient');
 const { requireAuth } = require('../middleware/auth');
 const { makeUploader, handleUpload, uploadFile, listFiles, sendStorageError } = require('../storage');
 const { PAYMENT_ACCOUNT, APC } = require('../config/paymentAccount');
+const { paperCode } = require('../paperCode');
 const { later, sendToMany, templates, getAdminRecipients } = require('../email');
 
 const proofUpload = makeUploader({ proof: 'proof' });
@@ -21,7 +22,7 @@ const loadPayablePaper = async (req, res, rawPaperId) => {
     }
     const { data: paper, error } = await supabase
         .from('papers')
-        .select('id, title, status, main_author_id, submission_fee, payment_status')
+        .select('id, title, pdf_url, submission_date, publication_date, status, main_author_id, submission_fee, payment_status')
         .eq('id', paperId)
         .maybeSingle();
     if (error) {
@@ -77,7 +78,7 @@ router.get('/key', (req, res) => {
 router.post('/create-order', requireAuth, async (req, res) => {
     try {
         if (!paymentsConfigured()) {
-            return res.status(503).json({ success: false, error: 'Online payment is not available yet. Please contact editor@ijepa.org.' });
+            return res.status(503).json({ success: false, error: 'Online payment is not available yet. Please contact info@buildsofttech.in.' });
         }
 
         const paper = await loadPayablePaper(req, res, req.body?.paperId);
@@ -135,7 +136,7 @@ router.post('/proof/:paperId', requireAuth, handleUpload(proofUpload.single('pro
             const rows = (admins || []).map((a) => ({
                 user_id: a.id,
                 title: 'Payment proof received',
-                message: `The author sent payment proof for "${paper.title}" (paper #${paper.id})${reference ? `, transaction ID ${reference}` : ''}. Check it in the paper's details, then publish.`,
+                message: `The author sent payment proof for "${paper.title}" (${paperCode(paper)})${reference ? `, transaction ID ${reference}` : ''}. Check it in the paper's details, then publish.`,
                 type: 'info',
             }));
             if (rows.length) {

@@ -23,7 +23,7 @@ const TITLES = {
   '/admin-dashboard': 'Admin dashboard',
 };
 
-// Sets a per-page <title>. Article pages (/p/:id, /paper/:slug) and the 404 page set
+// Sets a per-page <title>. Article pages (/article/..., /p/:id, /paper/:slug) and the 404 page set
 // their own titles, so other paths are left alone.
 const RouteTitle = () => {
   const { pathname } = useLocation();

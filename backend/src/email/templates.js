@@ -1,19 +1,20 @@
 const { PAYMENT_ACCOUNT, APC } = require('../config/paymentAccount');
 const { formatFee } = require('../paperFees');
+const { paperCode, articlePath } = require('../paperCode');
 
 // Branded, table-based HTML (works in Gmail/Outlook) plus a plain-text version for every email.
 // Anything that comes from users (names, titles, notes) is escaped.
 
 const siteUrl = () => String(process.env.SITE_URL || process.env.FRONTEND_ORIGIN || 'http://localhost:3005').replace(/\/+$/, '');
 const link = (path) => `${siteUrl()}${path}`;
-const CONTACT = 'editor@ijepa.org';
+const CONTACT = 'info@buildsofttech.in';
 
 const esc = (value) => String(value ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || 'there';
-const paperLabel = (paper) => `“${paper.title}” (paper #${paper.id})`;
+const paperLabel = (paper) => `“${paper.title}” (${paperCode(paper)})`;
 
 const button = (label, url) => `
   <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px"><tr><td style="border-radius:8px;background:#0a6acb">
@@ -143,7 +144,7 @@ const templates = {
       paragraphs: [
         `Hi ${esc(firstName(name))},`,
         `We’re pleased to accept ${esc(paperLabel(paper))} for publication in IJEPA. Two steps remain, both from your dashboard:`,
-        `<strong>1. Pay the article processing charge${fee != null ? ` of ${esc(formatFee(fee))}` : ''}</strong> using the account below, writing <strong>IJEPA #${esc(paper.id)}</strong> in the remarks, then upload your payment proof (a screenshot or receipt).`,
+        `<strong>1. Pay the article processing charge${fee != null ? ` of ${esc(formatFee(fee))}` : ''}</strong> using the account below, writing <strong>${esc(paperCode(paper))}</strong> in the remarks, then upload your payment proof (a screenshot or receipt).`,
         `<strong>2. Upload the signed copyright form</strong> — download it from your dashboard, sign it, and upload the PDF.`,
       ],
       box: pay.html,
@@ -181,7 +182,7 @@ const templates = {
     heading: 'Your paper is published',
     paragraphs: [`Hi ${esc(firstName(name))},`, `${esc(paperLabel(paper))} is now published in IJEPA and freely available to read.`, 'Your Certificate of Publication is ready to download.'],
     cta: { label: 'Download your certificate', url: link(`/certificate/author/${paper.id}`) },
-    footnote: `Paper page: <a href="${esc(link(`/p/${paper.id}`))}" style="color:#0a6acb">${esc(link(`/p/${paper.id}`))}</a>`,
+    footnote: `Paper page: <a href="${esc(link(articlePath(paperCode(paper))))}" style="color:#0a6acb">${esc(link(articlePath(paperCode(paper))))}</a>`,
   }),
 
   paperPublishedReviewer: ({ name, paper }) => build({

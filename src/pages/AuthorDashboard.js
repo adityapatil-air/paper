@@ -14,6 +14,7 @@ import Spinner from '../components/ui/Spinner';
 import StatusBadge, { Badge } from '../components/ui/StatusBadge';
 import { recommendationLabel } from '../components/ui/Stars';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
+import { paperCode } from '../components/ArticleCard';
 import { DashHeader, StatCard, FilterBar, Segmented, TabList, TabPanel, SORT_OPTIONS, formatDate, joinAuthors } from '../components/ui/DashHeader';
 import copyrightTemplate from '../assets/Copyright.pdf';
 import CertificateList from '../components/ui/CertificateList';
@@ -223,7 +224,7 @@ const AuthorDashboard = () => {
         amount: order.amount,
         currency: order.currency,
         name: 'IJEPA',
-        description: `Article processing charge · Paper #${paper.id}`,
+        description: `Article processing charge · ${paperCode(paper)}`,
         prefill: { name: user?.name || '', email: user?.email || '' },
         notes: { paperId: String(paper.id) },
         theme: { color: '#0a6acb' },
@@ -240,7 +241,7 @@ const AuthorDashboard = () => {
             setPaymentPaper(null);
             loadAuthorPapers();
           } else {
-            toast.error(`${verify.error} If money was deducted, contact editor@ijepa.org with paper ID #${paper.id}.`);
+            toast.error(`${verify.error} If money was deducted, contact info@buildsofttech.in with paper ID ${paperCode(paper)}.`);
           }
         },
         modal: { ondismiss: () => setPaymentBusy(false) },
@@ -472,7 +473,7 @@ const AuthorDashboard = () => {
           <Icon name="credit" size={20} />
           <div>
             <strong>Accepted — send your payment proof</strong>
-            <p>Pay the article processing charge of <strong>{paperFee(paper)}</strong> using the account details we emailed you, then upload your payment proof here. Your paper ID is #{paper.id}.</p>
+            <p>Pay the article processing charge of <strong>{paperFee(paper)}</strong> using the account details we emailed you, then upload your payment proof here. Your paper ID is {paperCode(paper)}.</p>
           </div>
           <div className="callout-actions">
             <button type="button" onClick={() => handlePayment(paper)} className="button button-primary button-small">Upload payment proof</button>
@@ -693,7 +694,7 @@ const AuthorDashboard = () => {
                               <button type="button" className="cell-title-btn" onClick={() => setDetailPaper(paper)}>{paper.title}</button>
                               <span className="cell-sub">{latestProof(paper)
                                 ? <>Payment proof sent. The editorial office is verifying it. <a href={latestProof(paper).url} target="_blank" rel="noopener noreferrer" className="view-link">View payment proof</a></>
-                                : `Accepted. Pay the article processing charge of ${paperFee(paper)}, then upload your payment proof so the paper can be published (paper ID #${paper.id}).`}</span>
+                                : `Accepted. Pay the article processing charge of ${paperFee(paper)}, then upload your payment proof so the paper can be published (paper ID ${paperCode(paper)}).`}</span>
                             </td>
                             <td data-label="Submitted" className="nowrap">{formatDate(paper.submissionDate)}</td>
                             <td data-label="Fee" className="nowrap"><strong>{paperFee(paper)}</strong></td>
@@ -917,7 +918,7 @@ const AuthorDashboard = () => {
           ) : (
             <form id="payment-proof-form" onSubmit={handleSubmitProof} noValidate>
               <div className="pay-amount">
-                <p>Amount due: <strong>{paperFee(paymentPaper)}</strong> · Paper ID <strong>#{paymentPaper.id}</strong></p>
+                <p>Amount due: <strong>{paperFee(paymentPaper)}</strong> · Paper ID <strong>{paperCode(paymentPaper)}</strong></p>
               </div>
 
               {sentProofs.length > 0 && (
@@ -964,11 +965,11 @@ const AuthorDashboard = () => {
                 </section>
               </div>
               ) : (
-                <Alert type="warning" message="Payment details couldn't be loaded. Refresh the page, or email editor@ijepa.org for the account details." />
+                <Alert type="warning" message="Payment details couldn't be loaded. Refresh the page, or email info@buildsofttech.in for the account details." />
               )}
 
-              <p className="form-hint">International authors: if you can't pay to this Indian account, email <a href={`mailto:editor@ijepa.org?subject=APC payment for paper %23${paymentPaper.id}`}>editor@ijepa.org</a> with your paper ID for other options.</p>
-              <p className="pay-remark">Write <strong>IJEPA #{paymentPaper.id}</strong> in the payment remarks so we can match your payment.</p>
+              <p className="form-hint">International authors: if you can't pay to this Indian account, email <a href={`mailto:info@buildsofttech.in?subject=APC payment for ${paperCode(paymentPaper)}`}>info@buildsofttech.in</a> with your paper ID for other options.</p>
+              <p className="pay-remark">Write <strong>{paperCode(paymentPaper)}</strong> in the payment remarks so we can match your payment.</p>
 
               <div className="pay-proof">
                 <h3>After paying, send us the proof</h3>

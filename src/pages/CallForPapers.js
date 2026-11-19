@@ -88,7 +88,7 @@ const CallForPapers = () => {
               Manuscripts can be submitted online via our{' '}
               <Link to="/SubmitForm">Online Submission System</Link>{' '}
               or by email to{' '}
-              <a href="mailto:editor@ijepa.org">editor@ijepa.org</a>.
+              <a href="mailto:info@buildsofttech.in">info@buildsofttech.in</a>.
             </li>
           </ul>
         </div>

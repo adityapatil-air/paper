@@ -128,8 +128,8 @@ const Login = () => {
 
               <div className="auth-links-row">
                 {/* No self-service reset yet (the backend sends no email); the editorial office resets passwords. */}
-                <a href="mailto:editor@ijepa.org?subject=Password%20reset%20request" className="form-link">
-                  Forgot your password? Email editor@ijepa.org
+                <a href="mailto:info@buildsofttech.in?subject=Password%20reset%20request" className="form-link">
+                  Forgot your password? Email info@buildsofttech.in
                 </a>
               </div>
 

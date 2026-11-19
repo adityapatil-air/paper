@@ -1,4 +1,5 @@
 const express = require('express');
+const { paperCode } = require('../paperCode');
 const { supabase } = require('../supabaseClient');
 const { requireAuth } = require('../middleware/auth');
 
@@ -21,15 +22,6 @@ const ensureSupabase = (res) => {
 const certificateNumber = (type, paper, userId) => {
   const year = String(paper.publication_date || '').slice(0, 4) || new Date().getFullYear();
   return `IJEPA-${type === 'review' ? 'REV' : 'AUT'}-${year}-${String(paper.id).padStart(4, '0')}-${String(userId).padStart(3, '0')}`;
-};
-
-// Journal paper ID, e.g. IJEPA-2026-031 (same rule as src/components/ArticleCard.js): taken from
-// the back-catalogue PDF name, otherwise IJEPA-<year>-<database id>.
-const paperCode = (paper) => {
-  const fromFile = String(paper.pdf_url || '').match(/IJEPA-\d{4}-\d{3,}/i);
-  if (fromFile) return fromFile[0].toUpperCase();
-  const year = String(paper.publication_date || '').slice(0, 4) || new Date().getFullYear();
-  return `IJEPA-${year}-${String(paper.id).padStart(3, '0')}`;
 };
 
 // Issue the paper was published in, if it has been assigned to one.
@@ -91,7 +83,7 @@ router.get('/:type/:paperId', requireAuth, async (req, res) => {
 
     const { data: paper, error: paperError } = await supabase
       .from('papers')
-      .select('id, title, authors, status, publication_date, main_author_id, doi, pdf_url')
+      .select('id, title, authors, status, publication_date, submission_date, main_author_id, doi, pdf_url')
       .eq('id', paperId)
       .maybeSingle();
     if (paperError) throw paperError;

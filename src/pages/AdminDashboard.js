@@ -12,6 +12,7 @@ import FilePicker from '../components/ui/FilePicker';
 import IssueEditor from '../components/admin/IssueEditor';
 import ReviewerManager from '../components/admin/ReviewerManager';
 import SpecialIssues from '../components/admin/SpecialIssues';
+import { paperCode } from '../components/ArticleCard';
 import Spinner from '../components/ui/Spinner';
 import StatusBadge, { Badge } from '../components/ui/StatusBadge';
 import Stars, { RECOMMENDATIONS, recommendationLabel } from '../components/ui/Stars';
@@ -760,8 +761,8 @@ const AdminDashboard = () => {
     }
 
     setAssignIssuePaper(paper);
-    // Preselect the current issue (the usual target); otherwise make the admin choose.
-    const currentIssue = issues.find((issue) => issue.isCurrent);
+    // Moving: start from the paper's issue. New: preselect the current issue (the usual target).
+    const currentIssue = paper.assignedIssue || issues.find((issue) => issue.isCurrent);
     setSelectedIssueId(currentIssue ? String(currentIssue.id) : '');
     setShowAssignIssueModal(true);
   };
@@ -777,9 +778,10 @@ const AdminDashboard = () => {
 
     try {
       setAssignIssueSubmitting(true);
-      const result = await mockAPI.assignPaperToIssue(assignIssuePaper.id, issueId);
+      const isMove = Boolean(assignIssuePaper.assignedIssue);
+      const result = await mockAPI.assignPaperToIssue(assignIssuePaper.id, issueId, { move: isMove });
       if (result.success) {
-        toast.success('Paper assigned to issue successfully.');
+        toast.success(isMove ? 'Paper moved to the new issue. Its web address now uses that issue.' : 'Paper assigned to issue successfully.');
         setShowAssignIssueModal(false);
         setAssignIssuePaper(null);
         setSelectedIssueId('');
@@ -1765,7 +1767,7 @@ const AdminDashboard = () => {
         onClose={() => setManagePaper(null)}
         size="lg"
         title={managePaper?.title || ''}
-        description={managePaper ? `Paper ID ${managePaper.id}` : undefined}
+        description={managePaper ? `Paper ID ${paperCode(managePaper)}` : undefined}
         footer={managePaper && (
           <>
             <button type="button" className="button button-danger-outline footer-start" onClick={() => { const p = managePaper; setManagePaper(null); openDeletePaperModal(p); }}>
@@ -1873,9 +1875,9 @@ const AdminDashboard = () => {
                     <Icon name="credit" size={15} /> Mark fee as paid
                   </button>
                 )}
-                {managePaper.status === 'published' && issues.length > 0 && !managePaper.assignedIssue && (
+                {managePaper.status === 'published' && issues.length > 0 && (
                   <button type="button" className="icon-btn" onClick={() => { const p = managePaper; setManagePaper(null); openAssignPaperToIssueModal(p); }}>
-                    <Icon name="book" size={15} /> Add to journal issue
+                    <Icon name="book" size={15} /> {managePaper.assignedIssue ? 'Change journal issue' : 'Add to journal issue'}
                   </button>
                 )}
               </div>
@@ -2014,7 +2016,7 @@ const AdminDashboard = () => {
         onClose={closePdfViewer}
         size="xl"
         title={pdfViewerPaper?.title || ''}
-        description={pdfViewerPaper ? `Paper ID ${pdfViewerPaper.id}` : undefined}
+        description={pdfViewerPaper ? `Paper ID ${paperCode(pdfViewerPaper)}` : undefined}
         footer={pdfViewerPaper?.pdfUrl && (
           <a href={pdfViewerPaper.pdfUrl} target="_blank" rel="noopener noreferrer" className="button button-primary">
             <Icon name="download" size={16} /> Download
@@ -2151,7 +2153,7 @@ const AdminDashboard = () => {
         onCancel={closeDeletePaper}
         onConfirm={handleConfirmDeletePaper}
       >
-        {deleteModalPaper && <div className="paper-ref"><strong>{deleteModalPaper.title}</strong><span>ID: {deleteModalPaper.id}</span></div>}
+        {deleteModalPaper && <div className="paper-ref"><strong>{deleteModalPaper.title}</strong><span>{paperCode(deleteModalPaper)}</span></div>}
       </ConfirmDialog>
 
       {/* Publish */}
@@ -2165,7 +2167,7 @@ const AdminDashboard = () => {
         onCancel={() => { if (!publishing) { setShowQuickPublishModal(false); setQuickPublishPaper(null); } }}
         onConfirm={confirmPublish}
       >
-        {quickPublishPaper && <div className="paper-ref"><strong>{quickPublishPaper.title}</strong><span>ID: {quickPublishPaper.id}</span></div>}
+        {quickPublishPaper && <div className="paper-ref"><strong>{quickPublishPaper.title}</strong><span>{paperCode(quickPublishPaper)}</span></div>}
         {quickPublishPaper && (
           <div className="form-group">
             <label htmlFor="publish-doi">DOI (optional)</label>
@@ -2203,7 +2205,7 @@ const AdminDashboard = () => {
         onCancel={() => { if (!markingPaid) setMarkPaidPaper(null); }}
         onConfirm={confirmMarkPaid}
       >
-        {markPaidPaper && <div className="paper-ref"><strong>{markPaidPaper.title}</strong><span>ID: {markPaidPaper.id}</span></div>}
+        {markPaidPaper && <div className="paper-ref"><strong>{markPaidPaper.title}</strong><span>{paperCode(markPaidPaper)}</span></div>}
 
       </ConfirmDialog>
 
@@ -2221,7 +2223,7 @@ const AdminDashboard = () => {
       >
         {acceptTargetPaper && (
           <>
-            <div className="paper-ref"><strong>{acceptTargetPaper.title}</strong><span>ID: {acceptTargetPaper.id}</span></div>
+            <div className="paper-ref"><strong>{acceptTargetPaper.title}</strong><span>{paperCode(acceptTargetPaper)}</span></div>
             <div className="field fee-field">
               <div className="field-label"><label htmlFor="accept-fee">Processing charge (INR)<span className="req" aria-hidden="true">*</span></label></div>
               <div className="fee-input">
@@ -2438,13 +2440,21 @@ const AdminDashboard = () => {
         open={showAssignIssueModal && Boolean(assignIssuePaper)}
         onClose={closeAssignIssueModal}
         closeDisabled={assignIssueSubmitting}
-        title="Assign to journal issue"
+        title={assignIssuePaper?.assignedIssue ? 'Change journal issue' : 'Assign to journal issue'}
         description={assignIssuePaper?.title}
         footer={(
           <>
             <button type="button" onClick={closeAssignIssueModal} disabled={assignIssueSubmitting} className="button button-ghost">Cancel</button>
-            <button type="button" onClick={handleAssignPaperToIssue} disabled={assignIssueSubmitting || !selectedIssueId} className="button button-primary" aria-busy={assignIssueSubmitting || undefined}>
-              {assignIssueSubmitting ? <><Spinner size="sm" /> Assigning…</> : 'Assign to issue'}
+            <button
+              type="button"
+              onClick={handleAssignPaperToIssue}
+              disabled={assignIssueSubmitting || !selectedIssueId || String(assignIssuePaper?.assignedIssue?.id ?? '') === selectedIssueId}
+              className="button button-primary"
+              aria-busy={assignIssueSubmitting || undefined}
+            >
+              {assignIssueSubmitting
+                ? <><Spinner size="sm" /> Saving…</>
+                : assignIssuePaper?.assignedIssue ? 'Move to this issue' : 'Assign to issue'}
             </button>
           </>
         )}
@@ -2459,7 +2469,11 @@ const AdminDashboard = () => {
               </option>
             ))}
           </select>
-          <p className="field-hint">Choose the issue this published paper belongs to.</p>
+          <p className="field-hint">
+            {assignIssuePaper?.assignedIssue
+              ? `Now in Volume ${assignIssuePaper.assignedIssue.volume}, Issue ${assignIssuePaper.assignedIssue.issue}. Moving it also changes its web address; old links keep working.`
+              : 'Choose the issue this published paper belongs to.'}
+          </p>
         </div>
       </Modal>
     </div>

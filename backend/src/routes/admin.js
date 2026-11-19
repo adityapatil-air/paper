@@ -9,6 +9,7 @@ const {
   normalizeEmail, isValidEmail, getInvites, addInvite, removeInvite, findUserByEmail,
 } = require('../reviewerInvites');
 const { parseFee, formatFee } = require('../paperFees');
+const { paperCode } = require('../paperCode');
 
 // Email the paper's author (account email, or the corresponding author from the form).
 const emailAuthor = (paper, build) => later(async () => {
@@ -279,12 +280,12 @@ router.post('/assign-reviewer', async (req, res) => {
     }
 
     later(async () => {
-      const { data: assigned } = await supabase.from('papers').select('id, title').eq('id', paperId).maybeSingle();
+      const { data: assigned } = await supabase.from('papers').select('id, title, pdf_url, submission_date, publication_date').eq('id', paperId).maybeSingle();
       const reviewer = await getUserRecipient(parseInt(reviewerId, 10));
       if (!assigned || !reviewer) return;
       await notifyInApp([reviewer.id], {
         title: 'New paper to review',
-        message: `You have been assigned "${assigned.title}" (paper #${assigned.id}) for review.`,
+        message: `You have been assigned "${assigned.title}" (${paperCode(assigned)}) for review.`,
       });
       await sendEmail({ to: reviewer, ...templates.reviewerAssigned({ name: reviewer.name, paper: assigned }) });
     });
@@ -308,7 +309,7 @@ router.post('/accept-paper', async (req, res) => {
 
     const { data: paper, error: paperError } = await supabase
       .from('papers')
-      .select('id, title, status, main_author_id')
+      .select('id, title, pdf_url, submission_date, publication_date, status, main_author_id')
       .eq('id', paperId)
       .maybeSingle();
 
@@ -393,7 +394,7 @@ router.post('/mark-paid', async (req, res) => {
 
     const { data: paper, error: paperError } = await supabase
       .from('papers')
-      .select('id, title, status, payment_status, main_author_id')
+      .select('id, title, pdf_url, submission_date, publication_date, status, payment_status, main_author_id')
       .eq('id', paperId)
       .maybeSingle();
 
@@ -459,7 +460,7 @@ router.post('/publish-paper', async (req, res) => {
     // Load paper to check it was accepted and to notify the main author after publishing
     const { data: paper, error: paperError } = await supabase
       .from('papers')
-      .select('id, title, status, main_author_id')
+      .select('id, title, pdf_url, submission_date, publication_date, status, main_author_id')
       .eq('id', paperId)
       .single();
 
@@ -521,7 +522,7 @@ router.post('/publish-paper', async (req, res) => {
       const reviewers = await getUserRecipients(await getPaperReviewerIds(paper.id));
       await notifyInApp(reviewers.map((r) => r.id), {
         title: 'A paper you reviewed is published',
-        message: `"${paper.title}" (paper #${paper.id}) is published. Your Certificate of Reviewing is ready in the Certificates tab.`,
+        message: `"${paper.title}" (${paperCode(paper)}) is published. Your Certificate of Reviewing is ready in the Certificates tab.`,
         type: 'success',
       });
       await sendToMany(reviewers, (r) => templates.paperPublishedReviewer({ name: r.name, paper }));
@@ -547,7 +548,7 @@ router.post('/request-revisions', async (req, res) => {
 
     const { data: paper, error: paperError } = await supabase
       .from('papers')
-      .select('id, title, main_author_id')
+      .select('id, title, pdf_url, submission_date, publication_date, main_author_id')
       .eq('id', paperId)
       .single();
 
@@ -620,7 +621,7 @@ router.post('/reject-paper', async (req, res) => {
 
     const { data: paper, error: paperError } = await supabase
       .from('papers')
-      .select('id, title, main_author_id')
+      .select('id, title, pdf_url, submission_date, publication_date, main_author_id')
       .eq('id', paperId)
       .single();
 

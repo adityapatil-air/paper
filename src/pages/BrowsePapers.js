@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { mockAPI } from '../data/mockData';
+import { articleUrl } from '../components/ArticleCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDate } from '../components/ui/DashHeader';
 
@@ -299,7 +300,7 @@ const BrowsePapers = () => {
                       {group.papers.map((paper) => (
                         <article className="article-card" key={paper.id}>
                           {paper.category && <span className="article-tag">{paper.category}</span>}
-                          <h3><Link to={`/p/${paper.id}`}>{paper.title}</Link></h3>
+                          <h3><Link to={articleUrl(paper)}>{paper.title}</Link></h3>
                           <p className="article-authors">
                             Authors: {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors || 'N/A'}
                           </p>
